@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Allow any logged-in user to read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 2. Allow Admins and Superadmins to see all member profiles (needed for members list and stats)
+    match /users/{userId} {
+      allow read: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin'];
+    }
+
+    // 3. General rule for other collections (Meetings, Shops, Complaints, etc.)
+    // Requires being logged in
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

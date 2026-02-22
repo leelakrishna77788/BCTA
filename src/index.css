@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --primary: 220 90% 56%;
+    --primary-dark: 220 90% 46%;
+    --secondary: 258 90% 66%;
+    --accent: 172 66% 50%;
+    --surface: 220 20% 97%;
+    --card: 0 0% 100%;
+    --bg: 220 25% 95%;
+    --text: 220 30% 15%;
+    --muted: 220 15% 55%;
+    --border: 220 20% 88%;
+    --danger: 0 85% 58%;
+    --success: 142 72% 45%;
+    --warning: 38 92% 52%;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-800 font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  input,
+  select,
+  textarea {
+    @apply outline-none;
+  }
+}
+
+@layer components {
+
+  /* Modern Glassmorphic Cards */
+  .card {
+    @apply bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 border border-white/50 p-6 transition-all duration-300 hover:shadow-xl shadow-slate-200/50;
+  }
+
+  /* Stat Cards with Glow Defaults */
+  .stat-card {
+    @apply bg-white/80 backdrop-blur-lg rounded-3xl shadow-sm border border-slate-100 p-6 flex items-center gap-4 hover:shadow-xl shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300;
+  }
+
+  /* Premium Buttons */
+  .btn-primary {
+    @apply relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-300 shadow-xl shadow-slate-200/50 hover:shadow-xl shadow-slate-200/50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed before:absolute before:inset-0 before:bg-white/20 before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-500;
+  }
+
+  .btn-secondary {
+    @apply bg-white/50 backdrop-blur-md hover:bg-white text-slate-700 font-semibold px-5 py-2.5 rounded-xl border border-slate-200/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95;
+  }
+
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-300 shadow-xl shadow-slate-200/50 hover:shadow-xl shadow-slate-200/50 active:scale-95;
+  }
+
+  .btn-success {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-300 shadow-xl shadow-slate-200/50 hover:shadow-xl shadow-slate-200/50 active:scale-95;
+  }
+
+  /* Refined Inputs with Focus Rings */
+  .input-field {
+    @apply w-full px-4 py-3 border border-slate-200/80 rounded-xl bg-slate-50/50 text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300;
+  }
+
+  .label {
+    @apply block text-sm font-semibold text-slate-700 mb-1.5 ml-1 tracking-tight;
+  }
+
+  /* Badges with Soft Glows */
+  .badge-active {
+    @apply bg-emerald-50 text-emerald-600 border border-emerald-200/60 text-xs font-bold px-3 py-1 rounded-full shadow-xl shadow-slate-200/50;
+  }
+
+  .badge-blocked {
+    @apply bg-red-50 text-red-600 border border-red-200/60 text-xs font-bold px-3 py-1 rounded-full shadow-xl shadow-slate-200/50;
+  }
+
+  .badge-pending {
+    @apply bg-amber-50 text-amber-600 border border-amber-200/60 text-xs font-bold px-3 py-1 rounded-full shadow-xl shadow-slate-200/50;
+  }
+
+  /* Sidebar Navigation Links */
+  .sidebar-link {
+    @apply relative flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-500 hover:text-blue-600 transition-all duration-300 font-semibold text-sm overflow-hidden;
+  }
+
+  .sidebar-link::before {
+    content: '';
+    @apply absolute inset-0 bg-blue-50 opacity-0 transition-opacity duration-300 rounded-2xl -z-10;
+  }
+
+  .sidebar-link:hover::before {
+    @apply opacity-100;
+  }
+
+  .sidebar-link.active {
+    @apply text-blue-700 bg-blue-50/80 shadow-xl shadow-slate-200/50 border border-blue-100/50;
+  }
+
+  .sidebar-link.active::after {
+    content: '';
+    @apply absolute left-0 top-2 bottom-2 w-1.5 bg-blue-600 rounded-r-full shadow-xl shadow-slate-200/50;
+  }
+
+  /* Typography */
+  .page-title {
+    @apply text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-700 to-slate-800 tracking-tight mb-8;
+  }
+
+  /* Modern Tables */
+  .table-header {
+    @apply bg-slate-50/80 text-xs font-bold text-slate-500 uppercase tracking-widest px-5 py-4 border-b border-slate-200/60;
+  }
+
+  .table-cell {
+    @apply px-5 py-4 text-sm text-slate-700 border-b border-slate-100/60 font-medium;
+  }
+}
+
+/* Scrollbar styling for Webkit */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300/80 rounded-full border-2 border-slate-50;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
+
+/* QR Scanner overlay styling overrides */
+#reader {
+  width: 100% !important;
+  border: none !important;
+  background: transparent;
+}
+
+#reader video {
+  border-radius: 24px !important;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+}
+
+#reader__scan_region {
+  border-radius: 24px !important;
+  overflow: hidden;
+}
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 15px rgba(79, 70, 229, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+  }
+}
+
+/* Utility assignment */
+.animate-fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
