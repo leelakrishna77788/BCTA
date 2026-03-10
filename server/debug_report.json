@@ -1,0 +1,479 @@
+--- USERS ---
+4uvyNhQAjpeSF0i3uXOZ8ANdObw1 => {
+  "uid": "4uvyNhQAjpeSF0i3uXOZ8ANdObw1",
+  "name": "Phani",
+  "email": "saiphanikumar39@gmail.com",
+  "role": "member",
+  "memberId": "BCTA-2026-672",
+  "attendanceCount": 0,
+  "paymentStatus": "unpaid",
+  "createdAt": {
+    "_seconds": 1771838128,
+    "_nanoseconds": 598000000
+  },
+  "status": "blocked"
+}
+9SoNZCCwqufiHBzbNjhrEs0utfi1 => {
+  "uid": "9SoNZCCwqufiHBzbNjhrEs0utfi1",
+  "name": "Member User",
+  "email": "member1@test.com",
+  "role": "member",
+  "status": "active",
+  "memberId": "BCTA-2026-954",
+  "attendanceCount": 0,
+  "paymentStatus": "unpaid",
+  "createdAt": {
+    "_seconds": 1771766855,
+    "_nanoseconds": 130000000
+  }
+}
+AxBdOWos7FWhbFm2Y6QU65xQM1K3 => {
+  "uid": "AxBdOWos7FWhbFm2Y6QU65xQM1K3",
+  "name": "srikanth",
+  "email": "suvvarinaga@gmail.com",
+  "role": "member",
+  "status": "active",
+  "memberId": "BCTA-2026-480",
+  "attendanceCount": 0,
+  "paymentStatus": "unpaid",
+  "createdAt": {
+    "_seconds": 1771837973,
+    "_nanoseconds": 999000000
+  }
+}
+CpD6OixQGJarfqoeJViY3knGOmf1 => {
+  "uid": "CpD6OixQGJarfqoeJViY3knGOmf1",
+  "name": "rock",
+  "email": "vankanithin2004@gmail.com",
+  "role": "member",
+  "memberId": "BCTA-2026-359",
+  "attendanceCount": 0,
+  "paymentStatus": "unpaid",
+  "createdAt": {
+    "_seconds": 1772966766,
+    "_nanoseconds": 324000000
+  },
+  "status": "blocked"
+}
+EwKNKZr9vhgMpLTxPUqAn5OyZxm2 => {
+  "uid": "EwKNKZr9vhgMpLTxPUqAn5OyZxm2",
+  "name": "leela",
+  "email": "leelakrishna77788@gmail.com",
+  "role": "member",
+  "status": "active",
+  "memberId": "BCTA-2026-982",
+  "attendanceCount": 0,
+  "paymentStatus": "unpaid",
+  "createdAt": {
+    "_seconds": 1771766078,
+    "_nanoseconds": 299000000
+  }
+}
+GiFbJVUmtOdY8kDJBaFp48uHEWf2 => {
+  "uid": "GiFbJVUmtOdY8kDJBaFp48uHEWf2",
+  "name": "Admin User",
+  "email": "admin1@test.com",
+  "role": "admin",
+  "status": "active",
+  "createdAt": {
+    "_seconds": 1771766937,
+    "_nanoseconds": 24000000
+  }
+}
+kWGiZgAWNsMg01GvvxOh6iRaRKl1 => {
+  "uid": "kWGiZgAWNsMg01GvvxOh6iRaRKl1",
+  "name": "Chetan",
+  "email": "chetantamiri@gmail.com",
+  "role": "admin",
+  "status": "active",
+  "createdAt": {
+    "_seconds": 1771766187,
+    "_nanoseconds": 553000000
+  }
+}
+ps3fGoSf2mRTveFL5Mj3KDKT2IM2 => {
+  "uid": "ps3fGoSf2mRTveFL5Mj3KDKT2IM2",
+  "name": "Ravi Sharma",
+  "email": "ravi@bcta.com",
+  "role": "member",
+  "status": "active",
+  "memberId": "BCTA-2026-560",
+  "attendanceCount": 0,
+  "paymentStatus": "unpaid",
+  "createdAt": {
+    "_seconds": 1772968524,
+    "_nanoseconds": 84000000
+  }
+}
+q4wCrYHqZsVGfDqmhcKhbi9dI2P2 => {
+  "uid": "q4wCrYHqZsVGfDqmhcKhbi9dI2P2",
+  "name": "admin",
+  "email": "superadmin@bcta.com",
+  "role": "admin",
+  "status": "active",
+  "createdAt": {
+    "_seconds": 1772970945,
+    "_nanoseconds": 136000000
+  }
+}
+
+--- MEETINGS ---
+6eT9jlE7WJmshtnRQIKZ => {
+  "topic": "dnfs;dfh",
+  "description": "EFNJBK;",
+  "date": {
+    "_seconds": 1771718400,
+    "_nanoseconds": 0
+  },
+  "startTime": "18:48",
+  "endTime": "18:53",
+  "location": "RIOEGHWIORGHWRO",
+  "gpsLink": "",
+  "qrToken": null,
+  "qrExpiresAt": null,
+  "qrDuration": 30,
+  "status": "upcoming",
+  "createdBy": "kWGiZgAWNsMg01GvvxOh6iRaRKl1",
+  "createdAt": {
+    "_seconds": 1771766234,
+    "_nanoseconds": 293000000
+  }
+}
+6fnKkvkY8m6ecNKxKsvs => {
+  "topic": "Test Meeting",
+  "description": "",
+  "date": {
+    "_seconds": 1772928000,
+    "_nanoseconds": 0
+  },
+  "startTime": "17:55",
+  "endTime": "",
+  "location": "",
+  "gpsLink": "",
+  "qrToken": null,
+  "qrExpiresAt": null,
+  "qrDuration": 60,
+  "status": "upcoming",
+  "createdBy": "q4wCrYHqZsVGfDqmhcKhbi9dI2P2",
+  "createdAt": {
+    "_seconds": 1772972285,
+    "_nanoseconds": 417000000
+  }
+}
+IH1gR9wgK5xQ602BVMVA => {
+  "topic": "awreytr6ADWRTERT",
+  "description": "",
+  "date": {
+    "_seconds": 1771718400,
+    "_nanoseconds": 0
+  },
+  "startTime": "20:03",
+  "endTime": "19:05",
+  "location": "BHIMAVARAM",
+  "gpsLink": "",
+  "qrToken": null,
+  "qrExpiresAt": null,
+  "qrDuration": 30,
+  "status": "upcoming",
+  "createdBy": "GiFbJVUmtOdY8kDJBaFp48uHEWf2",
+  "createdAt": {
+    "_seconds": 1771767092,
+    "_nanoseconds": 797000000
+  }
+}
+U5KbJwVWKrshCG0k3ton => {
+  "topic": "Test Meeting",
+  "description": "",
+  "date": {
+    "_seconds": 1772928000,
+    "_nanoseconds": 0
+  },
+  "startTime": "18:00",
+  "endTime": "",
+  "location": "",
+  "gpsLink": "",
+  "qrToken": null,
+  "qrExpiresAt": null,
+  "qrDuration": 30,
+  "status": "upcoming",
+  "createdBy": "q4wCrYHqZsVGfDqmhcKhbi9dI2P2",
+  "createdAt": {
+    "_seconds": 1772972356,
+    "_nanoseconds": 66000000
+  }
+}
+t0O7aJ0o0yuRM05t8Fyo => {
+  "topic": "Test Meeting",
+  "description": "",
+  "date": {
+    "_seconds": 1772928000,
+    "_nanoseconds": 0
+  },
+  "startTime": "19:00",
+  "endTime": "",
+  "location": "",
+  "gpsLink": "",
+  "qrToken": null,
+  "qrExpiresAt": null,
+  "qrDuration": 30,
+  "status": "upcoming",
+  "createdBy": "q4wCrYHqZsVGfDqmhcKhbi9dI2P2",
+  "createdAt": {
+    "_seconds": 1772972510,
+    "_nanoseconds": 279000000
+  }
+}
+vmopfaaZ1OqtLcKR7g1a => {
+  "topic": "Test Meeting",
+  "description": "",
+  "date": {
+    "_seconds": 1772928000,
+    "_nanoseconds": 0
+  },
+  "startTime": "17:50",
+  "endTime": "",
+  "location": "",
+  "gpsLink": "",
+  "qrToken": null,
+  "qrExpiresAt": null,
+  "qrDuration": 30,
+  "status": "upcoming",
+  "createdBy": "q4wCrYHqZsVGfDqmhcKhbi9dI2P2",
+  "createdAt": {
+    "_seconds": 1772972246,
+    "_nanoseconds": 909000000
+  }
+}
+ybaVBEGi6YIj45tXeEh3 => {
+  "topic": "Test Meeting",
+  "description": "",
+  "date": {
+    "_seconds": 1772928000,
+    "_nanoseconds": 0
+  },
+  "startTime": "19:00",
+  "endTime": "",
+  "location": "",
+  "gpsLink": "",
+  "qrToken": null,
+  "qrExpiresAt": null,
+  "qrDuration": 30,
+  "status": "upcoming",
+  "createdBy": "q4wCrYHqZsVGfDqmhcKhbi9dI2P2",
+  "createdAt": {
+    "_seconds": 1772972414,
+    "_nanoseconds": 536000000
+  }
+}
+
+--- AUTH USERS ---
+User: {
+  "uid": "3ZYDQQYvF5hvCAWUVs4uC6dh1z92",
+  "email": "testuser@example.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Sun, 22 Feb 2026 13:00:08 GMT",
+    "creationTime": "Sun, 22 Feb 2026 13:00:08 GMT",
+    "lastRefreshTime": "Sun, 22 Feb 2026 13:00:08 GMT"
+  },
+  "passwordHash": "KSuOKx2KAageyl5n9g6Q9X4hpC-s6yq7JbsKRtZtAyNZfBKw_jaAR7lr46R2Z3C55IvU8Lr_zHQJwy59-so_cw==",
+  "passwordSalt": "4KrlPZH3DApg_A==",
+  "tokensValidAfterTime": "Sun, 22 Feb 2026 13:00:08 GMT",
+  "providerData": [
+    {
+      "uid": "testuser@example.com",
+      "email": "testuser@example.com",
+      "providerId": "password"
+    }
+  ]
+}
+User: {
+  "uid": "4uvyNhQAjpeSF0i3uXOZ8ANdObw1",
+  "email": "saiphanikumar39@gmail.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Mon, 23 Feb 2026 09:15:26 GMT",
+    "creationTime": "Mon, 23 Feb 2026 09:15:26 GMT",
+    "lastRefreshTime": "Mon, 23 Feb 2026 09:15:26 GMT"
+  },
+  "passwordHash": "4e-18zcaDayPD6C3BxDmRkPpq2Qxf7huNtMI8yBMIzjyglXgqN6IDcYw_zjoTP7qe6JmfnY3X8NGaC0zY1KZ9w==",
+  "passwordSalt": "-edx1Nmd3S8OEQ==",
+  "tokensValidAfterTime": "Mon, 23 Feb 2026 09:15:26 GMT",
+  "providerData": [
+    {
+      "uid": "saiphanikumar39@gmail.com",
+      "email": "saiphanikumar39@gmail.com",
+      "providerId": "password"
+    }
+  ]
+}
+User: {
+  "uid": "5IuCxIBPPRXdVCJndjxBxafgzoy1",
+  "email": "test_trim@example.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Sun, 22 Feb 2026 12:40:06 GMT",
+    "creationTime": "Sun, 22 Feb 2026 12:37:56 GMT",
+    "lastRefreshTime": "Sun, 22 Feb 2026 12:40:06 GMT"
+  },
+  "passwordHash": "yPfDXr-NHmlssiGuKH6IDnoJ-gweH-6jOEAGvv-VNZrZlJmjr8_Eacu67pmDGlADEc2B4KQ0dpWfifkv5g_RPw==",
+  "passwordSalt": "hd8s7a1mGX57_w==",
+  "tokensValidAfterTime": "Sun, 22 Feb 2026 12:37:56 GMT",
+  "providerData": [
+    {
+      "uid": "test_trim@example.com",
+      "email": "test_trim@example.com",
+      "providerId": "password"
+    }
+  ]
+}
+User: {
+  "uid": "9SoNZCCwqufiHBzbNjhrEs0utfi1",
+  "email": "member1@test.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Sun, 22 Feb 2026 13:37:31 GMT",
+    "creationTime": "Sun, 22 Feb 2026 13:27:33 GMT",
+    "lastRefreshTime": "Sun, 22 Feb 2026 13:37:31 GMT"
+  },
+  "passwordHash": "PQpwQxTi3PiRUJTq0kYDeKlMmCh-wtGgUkSJQ9a9WfLG2M6uK00iAsZkBO-qMvJn0rhYftvwAIhorRPzoKk6vw==",
+  "passwordSalt": "7rcrqmI5HIvgrQ==",
+  "tokensValidAfterTime": "Sun, 22 Feb 2026 13:27:33 GMT",
+  "providerData": [
+    {
+      "uid": "member1@test.com",
+      "email": "member1@test.com",
+      "providerId": "password"
+    }
+  ]
+}
+User: {
+  "uid": "AveUstEt1CVj6wGsY5jA2eYPofv1",
+  "email": "test_jan22@example.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Sun, 22 Feb 2026 12:30:59 GMT",
+    "creationTime": "Sun, 22 Feb 2026 12:28:40 GMT",
+    "lastRefreshTime": "Sun, 22 Feb 2026 12:30:59 GMT"
+  },
+  "passwordHash": "UrA-yzdtElmJ-UB-o5OmyC5lA9panZRGzw8rQnkuX4OEOphoNYgrzRloizPIWEllHgJfkDrIZlp1Mh9pNObXhw==",
+  "passwordSalt": "lRWs2vGGxwOmOA==",
+  "tokensValidAfterTime": "Sun, 22 Feb 2026 12:28:40 GMT",
+  "providerData": [
+    {
+      "uid": "test_jan22@example.com",
+      "email": "test_jan22@example.com",
+      "providerId": "password"
+    }
+  ]
+}
+User: {
+  "uid": "AxBdOWos7FWhbFm2Y6QU65xQM1K3",
+  "email": "suvvarinaga@gmail.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Mon, 23 Feb 2026 09:29:22 GMT",
+    "creationTime": "Mon, 23 Feb 2026 09:12:50 GMT",
+    "lastRefreshTime": "Mon, 23 Feb 2026 11:02:52 GMT"
+  },
+  "passwordHash": "NqZZRE0iSb4YdjqhUMDy0BHTjtxX85TIym2jeg1HU_x-NlfWkOj-e_qMMFowjI8rqCoVu4ckKA5g1zLQ97GHKA==",
+  "passwordSalt": "gFBIn1cDlJolRA==",
+  "tokensValidAfterTime": "Mon, 23 Feb 2026 09:12:50 GMT",
+  "providerData": [
+    {
+      "uid": "suvvarinaga@gmail.com",
+      "email": "suvvarinaga@gmail.com",
+      "providerId": "password"
+    }
+  ]
+}
+User: {
+  "uid": "CpD6OixQGJarfqoeJViY3knGOmf1",
+  "email": "vankanithin2004@gmail.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Sun, 08 Mar 2026 10:46:03 GMT",
+    "creationTime": "Sun, 08 Mar 2026 10:46:03 GMT",
+    "lastRefreshTime": "Sun, 08 Mar 2026 10:46:03 GMT"
+  },
+  "passwordHash": "tJQIxZDnaZEX8DJqqnGiKxc8DB2hAoUpS-rp1un314IB1v51dx9w_aj4fvc-DQO2BCLERq3B0UdCn3mQM-2__g==",
+  "passwordSalt": "R_qrqSF0S5-hHQ==",
+  "tokensValidAfterTime": "Sun, 08 Mar 2026 10:46:03 GMT",
+  "providerData": [
+    {
+      "uid": "vankanithin2004@gmail.com",
+      "email": "vankanithin2004@gmail.com",
+      "providerId": "password"
+    }
+  ]
+}
+User: {
+  "uid": "EwKNKZr9vhgMpLTxPUqAn5OyZxm2",
+  "email": "leelakrishna77788@gmail.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Sun, 08 Mar 2026 12:10:28 GMT",
+    "creationTime": "Sun, 22 Feb 2026 13:14:35 GMT",
+    "lastRefreshTime": "Sun, 08 Mar 2026 12:10:28 GMT"
+  },
+  "passwordHash": "IbAqTLj_fCzNvrWh43FmSikgB61WL32SiwiGO5ciB6wN8yL-9yIYjJbWN61WYvpX4fXhrpWxOK4CxuaZGGmZsw==",
+  "passwordSalt": "Y5ByPBTIx0f8aQ==",
+  "tokensValidAfterTime": "Sun, 22 Feb 2026 13:14:35 GMT",
+  "providerData": [
+    {
+      "uid": "leelakrishna77788@gmail.com",
+      "email": "leelakrishna77788@gmail.com",
+      "providerId": "password"
+    }
+  ]
+}
+User: {
+  "uid": "GiFbJVUmtOdY8kDJBaFp48uHEWf2",
+  "email": "admin1@test.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Sun, 22 Feb 2026 13:28:54 GMT",
+    "creationTime": "Sun, 22 Feb 2026 13:28:54 GMT",
+    "lastRefreshTime": "Sun, 22 Feb 2026 13:28:54 GMT"
+  },
+  "passwordHash": "R96bx4ipVeqAswYWXbxkMKImKNyXdSVwj8D5Nw4GA1ggnwOScGuGdn4jojBaYx9685DF1m6OVCGjrZlYNa8PsQ==",
+  "passwordSalt": "5AKkpJo95i-8sQ==",
+  "tokensValidAfterTime": "Sun, 22 Feb 2026 13:28:54 GMT",
+  "providerData": [
+    {
+      "uid": "admin1@test.com",
+      "email": "admin1@test.com",
+      "providerId": "password"
+    }
+  ]
+}
+User: {
+  "uid": "RMAsdVvXxOSIsuxyqq9D3FICbMS2",
+  "email": "new_test_unique@example.com",
+  "emailVerified": false,
+  "disabled": false,
+  "metadata": {
+    "lastSignInTime": "Sun, 22 Feb 2026 12:41:32 GMT",
+    "creationTime": "Sun, 22 Feb 2026 12:41:32 GMT",
+    "lastRefreshTime": "Sun, 22 Feb 2026 12:41:32 GMT"
+  },
+  "passwordHash": "b9QFmZlCJRruPYTBMp2ckZuhcNxPYeoF4f0xxuWPbuCHZ_ZrqyWS-M5y6n6-otsxsDLnBqvEXe_6fOcmeDG20A==",
+  "passwordSalt": "IhGaDH8a9syWZg==",
+  "tokensValidAfterTime": "Sun, 22 Feb 2026 12:41:32 GMT",
+  "providerData": [
+    {
+      "uid": "new_test_unique@example.com",
+      "email": "new_test_unique@example.com",
+      "providerId": "password"
+    }
+  ]
+}
