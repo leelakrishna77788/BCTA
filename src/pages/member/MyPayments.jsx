@@ -22,7 +22,7 @@ const MyPayments = () => {
         <div className="space-y-5 animate-fade-in max-w-2xl mx-auto">
             <h1 className="page-title mb-0">My Payments</h1>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="card text-center p-4">
                     <p className="text-xl font-bold text-blue-600">₹{totalPaid}</p>
                     <p className="text-xs text-slate-500 mt-1">Total Paid</p>

@@ -9,10 +9,6 @@ const DashboardLayout = () => {
 
     return (
         <div className="flex h-screen bg-slate-50 relative overflow-hidden font-sans">
-            {/* Global Animated Background Blobs for Dashboard */}
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-400/10 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-float pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-400/10 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-float pointer-events-none" style={{ animationDelay: '2s' }} />
-
             <Sidebar
                 collapsed={collapsed}
                 setCollapsed={setCollapsed}

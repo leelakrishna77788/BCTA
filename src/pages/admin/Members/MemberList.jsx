@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, query, where, orderBy, onSnapshot, updateDoc, doc } from "firebase/firestore";
-import { db } from "../../../firebase/firebase";
 import { Search, Plus, Eye, UserX, UserCheck, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import { membersApi } from "../../../services/api";
 
 const MemberList = () => {
     const [members, setMembers] = useState([]);
@@ -13,18 +12,22 @@ const MemberList = () => {
     const [statusFilter, setStatusFilter] = useState("all");
     const [paymentFilter, setPaymentFilter] = useState("all");
 
+    const fetchMembers = async () => {
+        try {
+            setLoading(true);
+            const data = await membersApi.getAll();
+            setMembers(data);
+            setFiltered(data);
+        } catch (err) {
+            console.error("Failed to fetch members:", err);
+            toast.error("Failed to load members directory");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const unsubscribe = onSnapshot(
-            query(collection(db, "users"), where("role", "==", "member"), orderBy("createdAt", "desc")),
-            (snap) => {
-                const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                setMembers(data);
-                setFiltered(data);
-                setLoading(false);
-            },
-            (err) => { console.error(err); setLoading(false); }
-        );
-        return unsubscribe;
+        fetchMembers();
     }, []);
 
     useEffect(() => {
@@ -46,9 +49,10 @@ const MemberList = () => {
     const toggleBlock = async (member) => {
         const newStatus = member.status === "active" ? "blocked" : "active";
         try {
-            await updateDoc(doc(db, "users", member.id), { status: newStatus });
+            await membersApi.toggleStatus(member.uid || member.id, newStatus);
             toast.success(`Member ${newStatus === "active" ? "unblocked" : "blocked"} successfully`);
-        } catch {
+            fetchMembers(); // Refresh list
+        } catch (err) {
             toast.error("Failed to update status");
         }
     };
@@ -65,8 +69,7 @@ const MemberList = () => {
                 </Link>
             </div>
 
-            {/* Filters */}
-            <div className="card !p-4 bg-white/60 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50">
+            <div className="card !p-4 bg-white border border-slate-200 shadow-sm rounded-xl">
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 flex items-center gap-3 bg-white border border-slate-200/60 rounded-xl px-4 py-2.5 shadow-sm focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-300 transition-all">
                         <Search size={18} className="text-slate-400" />
@@ -101,8 +104,7 @@ const MemberList = () => {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="card p-0 overflow-hidden border border-slate-200/60 shadow-xl shadow-slate-200/50 bg-white/80 backdrop-blur-xl">
+            <div className="card p-0 overflow-hidden border border-slate-200 shadow-sm bg-white rounded-xl">
                 <div className="overflow-x-auto">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -126,7 +128,7 @@ const MemberList = () => {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {filtered.map(m => (
-                                    <tr key={m.id} className="hover:bg-blue-50/30 transition-colors group">
+                                    <tr key={m.id || m.uid} className="hover:bg-blue-50/30 transition-colors group">
                                         <td className="table-cell pl-6 py-4">
                                             <div className="flex items-center gap-4">
                                                 {m.photoURL ? (
@@ -171,7 +173,7 @@ const MemberList = () => {
                                         </td>
                                         <td className="table-cell pr-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Link to={`/admin/members/${m.id}`}
+                                                <Link to={`/admin/members/${m.uid || m.id}`}
                                                     className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
                                                     title="View Profile">
                                                     <Eye size={16} />

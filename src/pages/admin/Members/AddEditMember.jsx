@@ -128,7 +128,7 @@ const AddEditMember = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
 
                 {/* Photo Upload */}
-                <div className="card bg-white/60 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50 hover:shadow-xl shadow-slate-200/50 transition-shadow">
+                <div className="card bg-white border border-slate-200 shadow-sm rounded-xl transition-shadow">
                     <h2 className="text-sm font-bold text-slate-800 mb-5 tracking-tight uppercase">Profile Photo</h2>
                     <div className="flex items-center gap-6">
                         <div className="relative group">
@@ -155,7 +155,7 @@ const AddEditMember = () => {
                 </div>
 
                 {/* Personal Information */}
-                <div className="card bg-white/60 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50 hover:shadow-xl shadow-slate-200/50 transition-shadow">
+                <div className="card bg-white border border-slate-200 shadow-sm rounded-xl transition-shadow">
                     <h2 className="text-sm font-bold text-slate-800 mb-6 tracking-tight uppercase">Personal Information</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         <Field label="Surname" name="surname" placeholder="e.g. Sharma" required />
@@ -203,7 +203,7 @@ const AddEditMember = () => {
                 </div>
 
                 {/* Account & Shop */}
-                <div className="card bg-white/60 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50 hover:shadow-xl shadow-slate-200/50 transition-shadow">
+                <div className="card bg-white border border-slate-200 shadow-sm rounded-xl transition-shadow">
                     <h2 className="text-sm font-bold text-slate-800 mb-6 tracking-tight uppercase">Account & Contact</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <Field label="Email Address" name="email" type="email" placeholder="member@example.com" required />
@@ -223,7 +223,7 @@ const AddEditMember = () => {
                 </div>
 
                 {/* Nominee Details */}
-                <div className="card bg-white/60 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50 hover:shadow-xl shadow-slate-200/50 transition-shadow">
+                <div className="card bg-white border border-slate-200 shadow-sm rounded-xl transition-shadow">
                     <h2 className="text-sm font-bold text-slate-800 mb-6 tracking-tight uppercase flex items-center justify-between">
                         <span>Nominee Details</span>
                         <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded normal-case font-medium">Optional</span>
@@ -235,7 +235,7 @@ const AddEditMember = () => {
                     </div>
                 </div>
 
-                <div className="flex gap-4 pt-4 border-t border-slate-200/60 sticky bottom-4 bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white z-20">
+                <div className="flex gap-4 pt-4 border-t border-slate-200/60 sticky bottom-4 bg-white p-4 rounded-xl shadow-md border border-slate-200 z-20">
                     <button type="button" onClick={() => navigate(-1)} className="btn-secondary flex-1 sm:flex-none py-3 font-semibold shadow-sm">Cancel</button>
                     <button type="submit" disabled={loading} className="btn-primary flex-1 py-3 font-semibold shadow-xl shadow-slate-200/50 hover:shadow-xl shadow-slate-200/50 transition-all flex items-center justify-center gap-2">
                         {loading ? (

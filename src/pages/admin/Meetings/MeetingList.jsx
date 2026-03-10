@@ -23,11 +23,17 @@ const MeetingList = () => {
     });
 
     useEffect(() => {
-        const unsub = onSnapshot(
-            query(collection(db, "meetings"), orderBy("createdAt", "desc")),
-            snap => { setMeetings(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }
-        );
-        return unsub;
+        const fetchMeetings = async () => {
+            try {
+                const data = await meetingsApi.getAll();
+                setMeetings(data);
+            } catch (err) {
+                console.error("Failed to fetch meetings:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchMeetings();
     }, []);
 
     const handleSubmit = async (e) => {

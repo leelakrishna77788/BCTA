@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
-import { db } from "../../../firebase/firebase";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserCheck, UserX, Users } from "lucide-react";
+import { meetingsApi } from "../../../services/api";
 
 const AttendanceDashboard = () => {
     const { id } = useParams();
@@ -13,22 +12,27 @@ const AttendanceDashboard = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const [meetingSnap, attSnap, membersSnap] = await Promise.all([
-                getDoc(doc(db, "meetings", id)),
-                getDocs(query(collection(db, "attendance"), where("meetingId", "==", id))),
-                getDocs(query(collection(db, "users"), where("role", "==", "member"))),
-            ]);
-            setMeeting(meetingSnap.data());
-            const attendedUIDs = attSnap.docs.map(d => d.data().memberUID);
-            const members = membersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            setAttended(members.filter(m => attendedUIDs.includes(m.id)));
-            setAllMembers(members);
+            try {
+                const data = await meetingsApi.getAttendance(id);
+                setMeeting(data.meeting);
+                const attendedUIDs = data.attended.map(a => a.memberUID);
+                setAttended(data.allMembers.filter(m => attendedUIDs.includes(m.id)));
+                setAllMembers(data.allMembers);
+            } catch (err) {
+                console.error("Failed to fetch attendance:", err);
+            }
         };
         fetchData();
     }, [id]);
 
     const notAttended = allMembers.filter(m => !attended.find(a => a.id === m.id));
     const rate = allMembers.length > 0 ? Math.round((attended.length / allMembers.length) * 100) : 0;
+
+    if (!meeting) return (
+        <div className="flex justify-center h-64 items-center">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+    );
 
     return (
         <div className="space-y-5 animate-fade-in">

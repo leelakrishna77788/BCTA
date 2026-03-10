@@ -1,233 +1,225 @@
 import React, { useEffect, useState, useRef } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "../../../firebase/firebase";
 import { useParams, useNavigate } from "react-router-dom";
-import { QRCodeSVG } from "qrcode.react";
 import { v4 as uuidv4 } from "uuid";
 import toast from "react-hot-toast";
 import { ArrowLeft, RefreshCw, Clock, Shield, Play, Square, Download } from "lucide-react";
+import { meetingsApi } from "../../../services/api";
 
 const MeetingQR = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [meeting, setMeeting] = useState(null);
-    const [qrData, setQrData] = useState("");
-    const [timeLeft, setTimeLeft] = useState(30);
     const [isActive, setIsActive] = useState(false);
+    const [qrData, setQrData] = useState("");
     const [expiry, setExpiry] = useState(null);
-    const [totalExpiry, setTotalExpiry] = useState(null);
-    const refreshRef = useRef(null);
-    const countdownRef = useRef(null);
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [countdown, setCountdown] = useState(30);
+
+    const refreshRef = useRef();
+    const countdownRef = useRef();
 
     useEffect(() => {
         const fetchMeeting = async () => {
-            const snap = await getDoc(doc(db, "meetings", id));
-            if (snap.exists()) {
-                const data = { id: snap.id, ...snap.data() };
+            try {
+                const data = await meetingsApi.getById(id);
                 setMeeting(data);
-                setQrData(JSON.stringify({ meetingId: id, token: data.qrToken, t: Date.now() }));
-                // If already active
-                if (data.qrExpiresAt?.toDate && new Date() < data.qrExpiresAt.toDate()) {
-                    setIsActive(true);
-                    setExpiry(data.qrExpiresAt.toDate());
+
+                // If already active in DB
+                if (data.status === "active" && data.qrExpiresAt) {
+                    const exp = new Date(data.qrExpiresAt);
+                    if (new Date() < exp) {
+                        setIsActive(true);
+                        setExpiry(exp);
+                        setQrData(JSON.stringify({ meetingId: id, token: data.qrToken, t: Date.now() }));
+                        startIntervals(exp);
+                    } else {
+                        // Mark as expired if time passed
+                        await meetingsApi.stop(id);
+                    }
                 }
+            } catch (err) {
+                console.error("Failed to fetch meeting:", err);
+                toast.error("Failed to load meeting details");
             }
         };
         fetchMeeting();
-        return () => { clearInterval(refreshRef.current); clearInterval(countdownRef.current); };
+        return () => {
+            clearInterval(refreshRef.current);
+            clearInterval(countdownRef.current);
+        };
     }, [id]);
 
-    const startQR = async () => {
-        if (!meeting) return;
-        const expiryTime = new Date(Date.now() + meeting.qrDuration * 60000);
-        const token = uuidv4();
-        await updateDoc(doc(db, "meetings", id), {
-            status: "active",
-            qrToken: token,
-            qrExpiresAt: expiryTime,
-        });
-        setMeeting(p => ({ ...p, qrToken: token, status: "active" }));
-        setExpiry(expiryTime);
-        setTotalExpiry(expiryTime);
-        setIsActive(true);
-        setQrData(JSON.stringify({ meetingId: id, token, t: Date.now() }));
-        toast.success("QR Attendance started! QR refreshes every 30s.");
+    const startIntervals = (expiryTime) => {
+        clearInterval(refreshRef.current);
+        clearInterval(countdownRef.current);
 
-        // Refresh QR token every 30 seconds
-        let countdown = 30;
+        // 1. Rotation Logic (Every 30s)
         refreshRef.current = setInterval(async () => {
             if (new Date() > expiryTime) {
-                clearInterval(refreshRef.current);
-                clearInterval(countdownRef.current);
-                setIsActive(false);
-                await updateDoc(doc(db, "meetings", id), { status: "expired" });
-                toast("Meeting QR has expired", { icon: "⏰" });
+                stopAttendance();
                 return;
             }
             const newToken = uuidv4();
-            await updateDoc(doc(db, "meetings", id), { qrToken: newToken });
-            setMeeting(p => ({ ...p, qrToken: newToken }));
-            setQrData(JSON.stringify({ meetingId: id, token: newToken, t: Date.now() }));
-            countdown = 30;
+            try {
+                await meetingsApi.refreshQR(id, newToken);
+                setQrData(JSON.stringify({ meetingId: id, token: newToken, t: Date.now() }));
+                setCountdown(30);
+            } catch (err) {
+                console.error("Refresh fail:", err);
+            }
         }, 30000);
 
-        // Countdown tick
+        // 2. Local Countdowns
         countdownRef.current = setInterval(() => {
-            countdown--;
-            setTimeLeft(countdown <= 0 ? 30 : countdown);
+            const now = new Date();
+            const diff = Math.max(0, Math.floor((expiryTime - now) / 1000));
+            setTimeLeft(diff);
+            setCountdown(prev => prev > 0 ? prev - 1 : 30);
         }, 1000);
     };
 
-    const stopQR = async () => {
-        clearInterval(refreshRef.current);
-        clearInterval(countdownRef.current);
-        await updateDoc(doc(db, "meetings", id), { status: "expired" });
-        setIsActive(false);
-        toast("QR stopped");
+    const startAttendance = async () => {
+        const duration = parseInt(window.prompt("Enter duration in minutes:", "60"));
+        if (!duration || isNaN(duration)) return;
+
+        try {
+            const expiryTime = new Date(Date.now() + duration * 60000);
+            await meetingsApi.start(id, { durationMinutes: duration });
+
+            setMeeting(p => ({ ...p, status: "active" }));
+            setIsActive(true);
+            setExpiry(expiryTime);
+            startIntervals(expiryTime);
+            toast.success("Attendance started!");
+        } catch (err) {
+            toast.error("Failed to start attendance");
+        }
     };
 
-    const downloadQR = () => {
-        const svg = document.getElementById("meeting-qr");
-        const serializer = new XMLSerializer();
-        const svgStr = serializer.serializeToString(svg);
-        const a = document.createElement("a");
-        a.href = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgStr);
-        a.download = `meeting-qr-${id}.svg`;
-        a.click();
+    const stopAttendance = async () => {
+        try {
+            await meetingsApi.stop(id);
+            clearInterval(refreshRef.current);
+            clearInterval(countdownRef.current);
+            setIsActive(false);
+            setMeeting(p => ({ ...p, status: "expired" }));
+            toast("Attendance stopped", { icon: "🛑" });
+        } catch (err) {
+            toast.error("Failed to stop");
+        }
     };
 
-    if (!meeting) return (
-        <div className="flex justify-center h-64 items-center">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-    );
+    if (!meeting) return <div className="p-10 text-center">Loading meeting...</div>;
 
     return (
-        <div className="space-y-5 animate-fade-in">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600">
+        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-10">
+            {/* Header */}
+            <div className="flex items-center gap-4">
+                <button onClick={() => navigate("/admin/meetings")} className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
                     <ArrowLeft size={20} />
                 </button>
                 <div>
-                    <h1 className="page-title mb-0">Meeting QR Code</h1>
-                    <p className="text-slate-500 text-sm">{meeting.topic}</p>
+                    <h1 className="text-2xl font-bold text-slate-900">{meeting.topic}</h1>
+                    <p className="text-slate-500 font-medium">Attendance Management</p>
+                </div>
+                <div className="ml-auto flex gap-2">
+                    <button onClick={() => navigate(`/admin/meetings/${id}/attendance`)} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-bold border border-indigo-100 hover:bg-indigo-100 transition-colors">
+                        Attendance Dashboard
+                    </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* QR Display */}
-                <div className="card text-center">
-                    <div className="relative inline-block">
-                        <div className={`p-6 bg-white rounded-2xl border-4 transition-colors duration-300 ${isActive ? "border-emerald-400 shadow-lg shadow-emerald-100" : "border-slate-200"}`}>
-                            <QRCodeSVG
-                                id="meeting-qr"
-                                value={qrData || "BCTA-QR"}
-                                size={220}
-                                level="H"
-                                includeMargin
-                                imageSettings={{
-                                    src: "",
-                                    x: undefined, y: undefined,
-                                    height: 0, width: 0, excavate: false,
-                                }}
-                            />
-                        </div>
-                        {isActive && (
-                            <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full animate-pulse" />
-                        )}
-                    </div>
-
-                    {isActive && (
-                        <div className="mt-4">
-                            <div className="flex items-center justify-center gap-2 text-sm text-slate-600 mb-2">
-                                <RefreshCw size={14} className="animate-spin" />
-                                Refreshes in <span className="font-bold text-blue-600">{timeLeft}s</span>
+                <div className="md:col-span-2 card flex flex-col items-center justify-center p-8 min-h-[450px]">
+                    {!isActive ? (
+                        <div className="text-center space-y-4">
+                            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                                <Shield size={40} />
                             </div>
-                            <div className="w-full bg-slate-100 rounded-full h-2 mx-auto max-w-xs">
-                                <div
-                                    className="bg-blue-500 h-2 rounded-full transition-all duration-1000"
-                                    style={{ width: `${(timeLeft / 30) * 100}%` }}
-                                />
-                            </div>
-                            {expiry && (
-                                <p className="text-xs text-slate-400 mt-2">
-                                    Expires at {expiry.toLocaleTimeString()}
-                                </p>
-                            )}
+                            <h2 className="text-xl font-bold text-slate-800">QR Attendance Inactive</h2>
+                            <p className="text-slate-500 max-w-xs mx-auto text-sm">Start the attendance flow to generate a secure, rotating QR code for members.</p>
+                            <button onClick={startAttendance} className="btn-primary mt-4 flex items-center gap-2 px-8">
+                                <Play size={18} /> Start QR Attendance
+                            </button>
                         </div>
-                    )}
+                    ) : (
+                        <div className="w-full text-center space-y-8 animate-scale-in">
+                            <div className="relative inline-block p-6 bg-white rounded-3xl shadow-xl border border-slate-100">
+                                {qrData ? (
+                                    <div className="bg-white p-4 rounded-xl border-2 border-slate-50">
+                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`} alt="Meeting QR" className="mx-auto" />
+                                    </div>
+                                ) : (
+                                    <div className="w-[250px] h-[250px] bg-slate-50 animate-pulse rounded-xl" />
+                                )}
+                                <div className="absolute -top-3 -right-3 w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                                    {countdown}s
+                                </div>
+                            </div>
 
-                    {!isActive && (
-                        <p className="mt-4 text-sm text-slate-400">Click "Start QR" to activate attendance scanning</p>
+                            <div className="space-y-2">
+                                <h3 className="text-lg font-bold text-slate-800 flex items-center justify-center gap-2">
+                                    <RefreshCw size={18} className="text-blue-500 animate-spin-slow" />
+                                    Dynamic Security Active
+                                </h3>
+                                <p className="text-sm text-slate-500">QR token refreshes every 30 seconds to prevent fraudulent scans.</p>
+                            </div>
+
+                            <div className="flex gap-3 justify-center">
+                                <button onClick={stopAttendance} className="px-6 py-2.5 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm border border-rose-100 hover:bg-rose-100 transition-colors flex items-center gap-2">
+                                    <Square size={16} /> Stop Attendance
+                                </button>
+                                <button className="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors flex items-center gap-2">
+                                    <Download size={16} /> Save QR
+                                </button>
+                            </div>
+                        </div>
                     )}
                 </div>
 
-                {/* Controls */}
-                <div className="space-y-4">
-                    <div className="card">
-                        <h3 className="text-sm font-semibold text-slate-700 mb-3">Meeting Info</h3>
-                        <dl className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <dt className="text-slate-500">Topic:</dt>
-                                <dd className="font-medium text-slate-800">{meeting.topic}</dd>
+                {/* Status & Info */}
+                <div className="space-y-6">
+                    <div className="card p-6 border-l-4 border-l-blue-500">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Live Status</h4>
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"}`}>
+                                    <Clock size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-slate-800">{isActive ? "Flowing" : "Stopped"}</p>
+                                    <p className="text-xs text-slate-500">Attendance State</p>
+                                </div>
                             </div>
-                            <div className="flex justify-between">
-                                <dt className="text-slate-500">Date:</dt>
-                                <dd className="font-medium">{meeting.date?.toDate?.().toLocaleDateString("en-IN")}</dd>
-                            </div>
-                            <div className="flex justify-between">
-                                <dt className="text-slate-500">Time:</dt>
-                                <dd className="font-medium">{meeting.startTime} – {meeting.endTime || "TBD"}</dd>
-                            </div>
-                            <div className="flex justify-between">
-                                <dt className="text-slate-500">QR Duration:</dt>
-                                <dd className="font-medium">{meeting.qrDuration} min</dd>
-                            </div>
-                            <div className="flex justify-between">
-                                <dt className="text-slate-500">Status:</dt>
-                                <dd>
-                                    <span className={
-                                        meeting.status === "active" ? "badge-active" :
-                                            meeting.status === "upcoming" ? "badge-pending" : "badge-blocked"
-                                    }>{meeting.status}</span>
-                                </dd>
-                            </div>
-                        </dl>
+
+                            {isActive && (
+                                <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                                    <p className="text-2xl font-black text-blue-700 tabular-nums">
+                                        {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                                    </p>
+                                    <p className="text-xs font-bold text-blue-600 uppercase tracking-tighter mt-1">Time Remaining</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="card">
-                        <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                            <Shield size={15} /> Security
-                        </h3>
-                        <ul className="text-xs text-slate-500 space-y-1.5">
-                            <li className="flex items-center gap-1.5">✅ QR token rotates every 30 seconds</li>
-                            <li className="flex items-center gap-1.5">✅ Blocked members cannot scan</li>
-                            <li className="flex items-center gap-1.5">✅ QR expires after {meeting.qrDuration} minutes</li>
-                            <li className="flex items-center gap-1.5">✅ Duplicate scan prevention</li>
-                        </ul>
+                    <div className="card p-6 grayscale">
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Meeting Details</h4>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-sm font-bold text-slate-800">{meeting.date}</p>
+                                <p className="text-xs text-slate-500">Scheduled Date</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-slate-800">{meeting.startTime}</p>
+                                <p className="text-xs text-slate-500">Start Time</p>
+                            </div>
+                            <div className="p-3 bg-slate-50 rounded-lg text-center text-xs text-slate-400 font-mono">
+                                ID: {id}
+                            </div>
+                        </div>
                     </div>
-
-                    <div className="flex gap-3">
-                        {!isActive ? (
-                            <button onClick={startQR} className="btn-success flex-1 flex items-center justify-center gap-2">
-                                <Play size={16} /> Start QR Attendance
-                            </button>
-                        ) : (
-                            <button onClick={stopQR} className="btn-danger flex-1 flex items-center justify-center gap-2">
-                                <Square size={16} /> Stop QR
-                            </button>
-                        )}
-                        <button onClick={downloadQR} className="btn-secondary flex items-center gap-2">
-                            <Download size={16} /> Save QR
-                        </button>
-                    </div>
-
-                    <button
-                        onClick={() => navigate(`/admin/meetings/${id}/attendance`)}
-                        className="btn-secondary w-full flex items-center justify-center gap-2"
-                    >
-                        View Attendance Dashboard →
-                    </button>
                 </div>
             </div>
         </div>

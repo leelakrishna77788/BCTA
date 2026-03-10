@@ -48,7 +48,11 @@ export const meetingsApi = {
     getAll: () => apiClient.get('/meetings'),
     create: (data) => apiClient.post('/meetings', data),
     getById: (id) => apiClient.get(`/meetings/${id}`),
-    refreshQR: (id) => apiClient.post(`/meetings/${id}/refresh-qr`),
+    start: (id, data) => apiClient.patch(`/meetings/${id}/start`, data),
+    refreshQR: (id, qrToken) => apiClient.post(`/meetings/${id}/refresh-qr`, { qrToken }),
+    stop: (id) => apiClient.patch(`/meetings/${id}/stop`),
+    markAttendance: (data) => apiClient.post('/meetings/attend', data),
+    getAttendance: (id) => apiClient.get(`/meetings/${id}/attendance`),
     delete: (id) => apiClient.delete(`/meetings/${id}`),
 };
 
@@ -62,10 +66,20 @@ export const shopsApi = {
 export const complaintsApi = {
     getAll: () => apiClient.get('/complaints'),
     resolve: (id, resolution) => apiClient.patch(`/complaints/${id}/resolve`, { resolution }),
+    delete: (id) => apiClient.delete(`/complaints/${id}`),
 };
 
 export const notificationsApi = {
+    getAll: () => apiClient.get('/notifications'),
     send: (data) => apiClient.post('/notifications/send', data),
+};
+
+export const adminApi = {
+    getDashboardStats: () => apiClient.get('/admin/dashboard-stats'),
+};
+
+export const paymentsApi = {
+    getAll: () => apiClient.get('/payments'),
 };
 
 export default apiClient;

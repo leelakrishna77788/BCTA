@@ -17,12 +17,16 @@ const meetingsRoutes = require('./routes/meetingsRoutes');
 const shopsRoutes = require('./routes/shopsRoutes');
 const complaintsRoutes = require('./routes/complaintsRoutes');
 const notificationsRoutes = require('./routes/notificationsRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const paymentsRoutes = require('./routes/paymentsRoutes');
 
 app.use('/api/members', membersRoutes);
 app.use('/api/meetings', meetingsRoutes);
 app.use('/api/shops', shopsRoutes);
 app.use('/api/complaints', complaintsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

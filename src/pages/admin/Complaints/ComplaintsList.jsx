@@ -1,22 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { collection, query, orderBy, doc, deleteDoc } from "firebase/firestore";
+import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "../../../firebase/firebase";
-import { onSnapshot } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { CheckCircle, Trash2, MessageSquareWarning, Image } from "lucide-react";
 import { complaintsApi } from "../../../services/api";
 
 const ComplaintsList = () => {
     const [complaints, setComplaints] = useState([]);
-    const [filter, setFilter] = useState("open");
+    const [filter, setFilter] = useState("all");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsub = onSnapshot(
-            query(collection(db, "complaints"), orderBy("createdAt", "desc")),
-            snap => { setComplaints(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }
-        );
-        return unsub;
+        const fetchComplaints = async () => {
+            try {
+                const data = await complaintsApi.getAll();
+                setComplaints(data);
+            } catch (err) {
+                console.error("Failed to fetch complaints:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchComplaints();
     }, []);
 
     const filtered = complaints.filter(c => filter === "all" ? true : c.status === filter);
@@ -28,6 +33,9 @@ const ComplaintsList = () => {
         try {
             await complaintsApi.resolve(id, resolution);
             toast.success("Complaint resolved via API");
+            // Refresh local state or re-fetch
+            const data = await complaintsApi.getAll();
+            setComplaints(data);
         } catch (err) {
             toast.error(err.message || "Failed to resolve complaint");
         }
@@ -36,13 +44,12 @@ const ComplaintsList = () => {
     const remove = async (id) => {
         if (!window.confirm("Delete this complaint?")) return;
 
-        // Wait, is there a delete API?
-        // Actually, deleting directly is fine for now but let's stick to what we have.
         try {
-            await deleteDoc(doc(db, "complaints", id));
+            await complaintsApi.delete(id);
             toast.success("Deleted");
-        } catch {
-            toast.error("Failed to delete complaint");
+            setComplaints(prev => prev.filter(c => c.id !== id));
+        } catch (err) {
+            toast.error(err.message || "Failed to delete complaint");
         }
     };
 
@@ -76,7 +83,7 @@ const ComplaintsList = () => {
                                         <span className="font-mono text-xs text-blue-600">{c.memberId || "Unknown"}</span>
                                         <span className={c.status === "open" ? "badge-pending" : "badge-active"}>{c.status}</span>
                                         <span className="text-xs text-slate-400 ml-auto">
-                                            {c.createdAt?.toDate?.().toLocaleDateString("en-IN")}
+                                            {c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString("en-IN") : new Date(c.createdAt).toLocaleDateString("en-IN")}
                                         </span>
                                     </div>
                                     <p className="text-sm text-slate-700">{c.description}</p>

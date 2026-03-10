@@ -6,12 +6,41 @@ const getMeetings = async (req, res) => {
         const meetingsSnap = await db.collection('meetings').orderBy('createdAt', 'desc').get();
         const meetings = [];
         meetingsSnap.forEach(doc => {
-            meetings.push({ id: doc.id, ...doc.data() });
+            const data = doc.data();
+            meetings.push({
+                id: doc.id,
+                ...data,
+                date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+                qrExpiresAt: data.qrExpiresAt?.toDate ? data.qrExpiresAt.toDate().toISOString() : data.qrExpiresAt
+            });
         });
         res.status(200).json(meetings);
     } catch (error) {
         console.error('Error fetching meetings:', error);
         res.status(500).json({ error: 'Failed to fetch meetings' });
+    }
+};
+
+// Get a single meeting by ID
+const getMeetingById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const doc = await db.collection('meetings').doc(id).get();
+        if (!doc.exists) {
+            return res.status(404).json({ error: 'Meeting not found' });
+        }
+        const data = doc.data();
+        res.status(200).json({
+            id: doc.id,
+            ...data,
+            date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+            qrExpiresAt: data.qrExpiresAt?.toDate ? data.qrExpiresAt.toDate().toISOString() : data.qrExpiresAt
+        });
+    } catch (error) {
+        console.error('Error fetching meeting:', error);
+        res.status(500).json({ error: 'Failed to fetch meeting' });
     }
 };
 
@@ -89,6 +118,26 @@ const stopMeetingQR = async (req, res) => {
     }
 };
 
+// Refresh meeting QR (Admin only)
+const refreshMeetingQR = async (req, res) => {
+    const { id } = req.params;
+    const { qrToken } = req.body;
+
+    if (!qrToken) {
+        return res.status(400).json({ error: 'Missing qrToken' });
+    }
+
+    try {
+        await db.collection('meetings').doc(id).update({
+            qrToken
+        });
+        res.status(200).json({ message: 'Meeting QR refreshed', qrToken });
+    } catch (error) {
+        console.error('Error refreshing meeting QR:', error);
+        res.status(500).json({ error: 'Failed to refresh meeting QR' });
+    }
+};
+
 // Mark attendance (Member)
 const markAttendance = async (req, res) => {
     const { meetingId, token } = req.body;
@@ -156,10 +205,46 @@ const markAttendance = async (req, res) => {
     }
 };
 
+// Get attendance for a meeting (Admin only)
+const getMeetingAttendance = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const [meetingSnap, attSnap, membersSnap] = await Promise.all([
+            db.collection('meetings').doc(id).get(),
+            db.collection('attendance').where('meetingId', '==', id).get(),
+            db.collection('users').where('role', '==', 'member').get(),
+        ]);
+
+        if (!meetingSnap.exists) {
+            return res.status(404).json({ error: 'Meeting not found' });
+        }
+
+        const meeting = { id: meetingSnap.id, ...meetingSnap.data() };
+        const attended = [];
+        attSnap.forEach(doc => attended.push(doc.data()));
+
+        const members = [];
+        membersSnap.forEach(doc => members.push({ id: doc.id, ...doc.data() }));
+
+        res.status(200).json({
+            meeting,
+            attended,
+            allMembers: members
+        });
+    } catch (error) {
+        console.error('Error fetching meeting attendance:', error);
+        res.status(500).json({ error: 'Failed to fetch attendance data' });
+    }
+};
+
 module.exports = {
     getMeetings,
+    getMeetingById,
     createMeeting,
     startMeetingQR,
     stopMeetingQR,
-    markAttendance
+    refreshMeetingQR,
+    markAttendance,
+    getMeetingAttendance
 };

@@ -8,6 +8,7 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 // Auth
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import LandingPage from "./pages/LandingPage";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -47,9 +48,9 @@ function App() {
         />
         <Routes>
           {/* Public */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* Admin routes */}
           <Route path="/admin" element={

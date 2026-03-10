@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
-import { db } from "../../../firebase/firebase";
 import { CreditCard, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+import { paymentsApi } from "../../../services/api";
 
 const PaymentsDashboard = () => {
     const [products, setProducts] = useState([]);
@@ -9,11 +8,17 @@ const PaymentsDashboard = () => {
     const [filter, setFilter] = useState("all");
 
     useEffect(() => {
-        const unsub = onSnapshot(
-            query(collection(db, "products"), orderBy("distributedAt", "desc")),
-            snap => { setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }
-        );
-        return unsub;
+        const fetchPayments = async () => {
+            try {
+                const data = await paymentsApi.getAll();
+                setProducts(data);
+            } catch (err) {
+                console.error("Failed to fetch payments:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPayments();
     }, []);
 
     const totalRevenue = products.reduce((s, p) => s + (p.totalAmount || 0), 0);
@@ -68,19 +73,19 @@ const PaymentsDashboard = () => {
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-100">
-                                <th className="table-header text-left">Member</th>
+                                <th className="table-header text-left pl-6">Member</th>
                                 <th className="table-header text-left">Shop</th>
                                 <th className="table-header text-left">Product</th>
                                 <th className="table-header text-left">Total</th>
                                 <th className="table-header text-left">Paid</th>
                                 <th className="table-header text-left">Due</th>
-                                <th className="table-header text-left">Date</th>
+                                <th className="table-header text-left pr-6">Date</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filtered.map(p => (
                                 <tr key={p.id} className={`hover:bg-slate-50 ${p.remainingAmount > 0 ? "border-l-2 border-red-400" : ""}`}>
-                                    <td className="table-cell">
+                                    <td className="table-cell pl-6">
                                         <p className="font-medium">{p.memberName}</p>
                                         <p className="text-xs text-slate-400 font-mono">{p.memberId}</p>
                                     </td>
@@ -93,8 +98,12 @@ const PaymentsDashboard = () => {
                                             ₹{p.remainingAmount}
                                         </span>
                                     </td>
-                                    <td className="table-cell text-xs text-slate-400">
-                                        {p.distributedAt?.toDate?.().toLocaleDateString("en-IN") || "—"}
+                                    <td className="table-cell text-xs text-slate-400 pr-6">
+                                        {p.distributedAt ?
+                                            (p.distributedAt.toDate ? p.distributedAt.toDate().toLocaleDateString("en-IN") :
+                                                p.distributedAt._seconds ? new Date(p.distributedAt._seconds * 1000).toLocaleDateString("en-IN") :
+                                                    new Date(p.distributedAt).toLocaleDateString("en-IN"))
+                                            : "—"}
                                     </td>
                                 </tr>
                             ))}

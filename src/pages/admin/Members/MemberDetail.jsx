@@ -70,17 +70,15 @@ const MemberDetail = () => {
             </div>
 
             {/* Profile Header */}
-            <div className="card !p-0 overflow-hidden bg-white/60 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50">
+            <div className="card !p-0 overflow-hidden bg-white border border-slate-200 shadow-sm rounded-2xl">
                 {/* Banner Gradient */}
-                <div className="h-32 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px] mixer-blend-overlay"></div>
-                    <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-white/20 rounded-full blur-2xl"></div>
+                <div className="h-32 w-full bg-slate-900 relative overflow-hidden">
                     <div className="absolute top-4 right-4 flex gap-2 z-10">
-                        <Link to={`/admin/members/${id}/edit`} className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-md px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-white/20 shadow-sm">
+                        <Link to={`/admin/members/${id}/edit`} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors border border-slate-700 shadow-sm">
                             <Edit size={16} /> Edit Profile
                         </Link>
                         <button onClick={toggleBlock}
-                            className={`backdrop-blur-md px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border shadow-sm ${member.status === "active" ? "bg-red-500/80 hover:bg-red-500 text-white border-red-400/50" : "bg-emerald-500/80 hover:bg-emerald-500 text-white border-emerald-400/50"}`}>
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors border shadow-sm ${member.status === "active" ? "bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/20" : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border-emerald-500/20"}`}>
                             {member.status === "active" ? <><UserX size={16} /> Block User</> : <><UserCheck size={16} /> Unblock User</>}
                         </button>
                     </div>
@@ -88,15 +86,14 @@ const MemberDetail = () => {
 
                 <div className="px-6 sm:px-10 pb-8 flex flex-col md:flex-row gap-6 items-start md:items-end -mt-16 relative z-10">
                     <div className="relative group">
-                        <div className="absolute inset-0 bg-white rounded-[2rem] blur-md opacity-50 group-hover:opacity-100 transition-opacity"></div>
                         {member.photoURL ? (
-                            <img src={member.photoURL} alt="" className="relative w-32 h-32 rounded-[2rem] object-cover border-4 border-white shadow-xl transition-transform group-hover:scale-105" />
+                            <img src={member.photoURL} alt="" className="relative w-32 h-32 rounded-2xl object-cover border-4 border-white shadow-md transition-transform" />
                         ) : (
-                            <div className="relative w-32 h-32 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] flex items-center justify-center text-white text-4xl font-extrabold border-4 border-white shadow-xl transition-transform group-hover:scale-105">
+                            <div className="relative w-32 h-32 bg-slate-800 rounded-2xl flex items-center justify-center text-white text-4xl font-bold border-4 border-white shadow-md transition-transform">
                                 {member.name?.[0]}
                             </div>
                         )}
-                        <span className={`absolute -bottom-2 -right-2 text-xs font-bold px-3 py-1 rounded-lg border-2 border-white shadow-lg uppercase tracking-wider ${member.status === "active" ? "bg-emerald-500 text-white" : "bg-slate-500 text-white"}`}>
+                        <span className={`absolute -bottom-2 -right-2 text-xs font-bold px-3 py-1 rounded-lg border-2 border-white shadow-sm uppercase tracking-wider ${member.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
                             <div className="flex items-center gap-1.5">
                                 <div className={`w-1.5 h-1.5 rounded-full ${member.status === "active" ? "bg-emerald-200 animate-pulse" : "bg-slate-300"}`}></div>
                                 {member.status}
@@ -136,8 +133,8 @@ const MemberDetail = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Shop & Nominee */}
-                <div className="card bg-white/60 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50 lg:col-span-1 h-full">
-                    <h3 className="text-sm font-bold text-slate-800 mb-6 tracking-tight uppercase border-b border-slate-100 pb-4">Contact Details</h3>
+                <div className="card bg-white border border-slate-200 shadow-sm rounded-xl lg:col-span-1 h-full">
+                    <h3 className="text-sm font-bold text-slate-900 mb-6 tracking-tight uppercase border-b border-slate-100 pb-4">Contact Details</h3>
                     <div className="space-y-6">
                         <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50/50 border border-slate-100 transition-colors hover:bg-blue-50/30 hover:border-blue-100 group">
                             <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
@@ -169,19 +166,18 @@ const MemberDetail = () => {
                 </div>
 
                 {/* Quick Stats Grid */}
-                <div className="card bg-white/60 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50 lg:col-span-2">
-                    <h3 className="text-sm font-bold text-slate-800 mb-6 tracking-tight uppercase border-b border-slate-100 pb-4">Activity Overview</h3>
+                <div className="card bg-white border border-slate-200 shadow-sm rounded-xl lg:col-span-2">
+                    <h3 className="text-sm font-bold text-slate-900 mb-6 tracking-tight uppercase border-b border-slate-100 pb-4">Activity Overview</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {[
-                            { label: "Meetings Attended", value: attendance.length, color: "bg-gradient-to-br from-blue-500 to-indigo-600", light: "bg-blue-50 text-blue-700 border-blue-100" },
-                            { label: "Products Received", value: products.length, color: "bg-gradient-to-br from-violet-500 to-purple-600", light: "bg-violet-50 text-violet-700 border-violet-100" },
-                            { label: "Total Pending Dues", value: `₹${totalDue}`, color: "bg-gradient-to-br from-rose-500 to-red-600", light: "bg-red-50 text-red-700 border-red-100" },
-                            { label: "Account Gender", value: member.gender, color: "bg-gradient-to-br from-emerald-400 to-teal-500", light: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+                            { label: "Meetings Attended", value: attendance.length, light: "bg-blue-50 text-blue-700 border-blue-100" },
+                            { label: "Products Received", value: products.length, light: "bg-violet-50 text-violet-700 border-violet-100" },
+                            { label: "Total Pending Dues", value: `₹${totalDue}`, light: "bg-red-50 text-red-700 border-red-100" },
+                            { label: "Account Gender", value: member.gender, light: "bg-emerald-50 text-emerald-700 border-emerald-100" },
                         ].map(s => (
-                            <div key={s.label} className={`rounded-[1.5rem] p-5 border ${s.light} relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 shadow-sm hover:shadow-md`}>
-                                <p className="text-3xl font-extrabold tracking-tight mb-1 relative z-10">{s.value}</p>
-                                <p className="text-[11px] font-bold uppercase tracking-wider opacity-70 relative z-10">{s.label}</p>
-                                <div className={`absolute -right-6 -bottom-6 w-20 h-20 rounded-full ${s.color} opacity-10 blur-xl group-hover:opacity-20 transition-opacity duration-300`}></div>
+                            <div key={s.label} className={`rounded-xl p-5 border ${s.light} relative overflow-hidden group hover:-translate-y-1 transition-transform duration-200 shadow-sm`}>
+                                <p className="text-3xl font-bold tracking-tight mb-1 relative z-10">{s.value}</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wider relative z-10">{s.label}</p>
                             </div>
                         ))}
                     </div>
@@ -207,7 +203,7 @@ const MemberDetail = () => {
             </div>
 
             {/* Product History */}
-            <div className="card !p-0 overflow-hidden bg-white/80 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50">
+            <div className="card !p-0 overflow-hidden bg-white border border-slate-200 shadow-sm rounded-xl">
                 <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">

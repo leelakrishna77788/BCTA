@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode";
+import React, { useState } from "react";
+import { Scanner } from "@yudiel/react-qr-scanner";
 import { doc, getDoc, getDocs, updateDoc, addDoc, collection, query, where, serverTimestamp } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 import { useAuth } from "../../context/AuthContext";
@@ -8,77 +8,18 @@ import { CheckCircle, QrCode, RefreshCw } from "lucide-react";
 
 const ScanQR = () => {
     const { currentUser, userProfile } = useAuth();
-    const scannerRef = useRef(null);
     const [scanning, setScanning] = useState(false);
     const [result, setResult] = useState(null);
     const [processing, setProcessing] = useState(false);
     const [permissionError, setPermissionError] = useState(null);
 
-    const startScanner = async () => {
-        if (scannerRef.current) return;
-        setPermissionError(null);
-
-        try {
-            // Check if mediaDevices API is available
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                const msg = "Camera access is not supported by your browser or connection. Please ensure you are using a secure connection (HTTPS).";
-                setPermissionError(msg);
-                toast.error(msg);
-                return;
-            }
-
-            // Explicitly request camera permission first
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            // Stop the tracks immediately after permission is granted
-            stream.getTracks().forEach(track => track.stop());
-        } catch (err) {
-            console.error("Camera permission error:", err);
-            let message = "Camera access denied. Please allow camera permissions in your browser settings.";
-            if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-                message = "No camera found on this device.";
-            } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-                message = "Camera is already in use by another application.";
-            }
-            setPermissionError(message);
-            toast.error(message);
-            return;
+    const handleScanError = (error) => {
+        console.error("QR Scan Error:", error);
+        if (error?.name === "NotAllowedError") {
+            setPermissionError("Camera access denied. Please allow permissions.");
+            setScanning(false);
         }
-
-        setScanning(true);
-        setResult(null);
-
-        setTimeout(() => {
-            const scanner = new Html5QrcodeScanner("reader", {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-                showTorchButtonIfSupported: true,
-            }, false);
-
-            scanner.render(
-                async (decoded) => {
-                    scanner.clear().catch(() => { });
-                    scannerRef.current = null;
-                    setScanning(false);
-                    await processQR(decoded);
-                },
-                (err) => {
-                    // Ignore transient scanning errors
-                }
-            );
-            scannerRef.current = scanner;
-        }, 100);
     };
-
-    const stopScanner = () => {
-        if (scannerRef.current) {
-            scannerRef.current.clear().catch(() => { });
-            scannerRef.current = null;
-        }
-        setScanning(false);
-    };
-
-    useEffect(() => () => stopScanner(), []);
 
     const processQR = async (raw) => {
         setProcessing(true);
@@ -88,53 +29,32 @@ const ScanQR = () => {
 
             // --- MEETING QR ---
             if (data.meetingId) {
-                const meetingRef = doc(db, "meetings", data.meetingId);
-                const meetingSnap = await getDoc(meetingRef);
-                if (!meetingSnap.exists()) { toast.error("Meeting not found"); setProcessing(false); return; }
-                const meeting = meetingSnap.data();
-
-                // Validate token
-                if (meeting.qrToken !== data.token) {
-                    toast.error("QR code expired! Ask admin to refresh.");
-                    setProcessing(false); return;
-                }
-
-                // Check expiry
-                if (meeting.qrExpiresAt?.toDate && new Date() > meeting.qrExpiresAt.toDate()) {
-                    toast.error("Meeting QR has expired!");
-                    setProcessing(false); return;
-                }
-
-                // Check member status
                 if (userProfile.status === "blocked") {
                     toast.error("You are blocked from attending meetings!");
                     setProcessing(false); return;
                 }
 
-                // Check duplicate scan
-                const dupQ = query(collection(db, "attendance"),
-                    where("meetingId", "==", data.meetingId),
-                    where("memberUID", "==", currentUser.uid));
-                const dupSnap = await getDocs(dupQ);
-                if (!dupSnap.empty) { toast("Already marked present!", { icon: "👍" }); setResult({ type: "meeting", success: true, alreadyScanned: true, topic: meeting.topic }); setProcessing(false); return; }
+                try {
+                    const res = await meetingsApi.markAttendance({
+                        meetingId: data.meetingId,
+                        token: data.token
+                    });
 
-                // Mark attendance
-                await addDoc(collection(db, "attendance"), {
-                    meetingId: data.meetingId,
-                    memberId: userProfile.memberId,
-                    memberUID: currentUser.uid,
-                    memberName: `${userProfile.name} ${userProfile.surname}`,
-                    scannedAt: serverTimestamp(),
-                    status: "present",
-                });
+                    if (res.alreadyScanned) {
+                        toast("Already marked present!", { icon: "👍" });
+                    } else {
+                        toast.success("Attendance marked successfully! ✅");
+                    }
 
-                // Increment count
-                await updateDoc(doc(db, "users", currentUser.uid), {
-                    attendanceCount: (userProfile.attendanceCount || 0) + 1
-                });
-
-                toast.success("Attendance marked successfully! ✅");
-                setResult({ type: "meeting", success: true, topic: meeting.topic, location: meeting.location });
+                    setResult({
+                        type: "meeting",
+                        success: true,
+                        alreadyScanned: !!res.alreadyScanned,
+                        topic: data.topic || "Meeting"
+                    });
+                } catch (err) {
+                    toast.error(err.message || "Failed to mark attendance");
+                }
             }
 
             // --- SHOP QR ---
@@ -177,27 +97,53 @@ const ScanQR = () => {
             {/* Scanner */}
             {!result && (
                 <div className="card">
-                    <div id="reader" className="w-full" />
                     {!scanning ? (
                         <div className="space-y-4">
                             {permissionError && (
                                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center animate-fade-in">
                                     <p className="text-amber-800 text-sm font-semibold mb-2">Camera Access Blocked</p>
                                     <p className="text-amber-600 text-xs mb-3">{permissionError}</p>
-                                    <button onClick={startScanner} className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-4 py-2 rounded-lg transition-colors font-bold">
+                                    <button onClick={() => setScanning(true)} className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-4 py-2 rounded-lg transition-colors font-bold">
                                         Try Again
                                     </button>
                                 </div>
                             )}
-                            <button onClick={startScanner} disabled={userProfile?.status === "blocked"}
+                            <button onClick={() => { setPermissionError(null); setScanning(true); }} disabled={userProfile?.status === "blocked"}
                                 className="btn-primary w-full flex items-center justify-center gap-2 py-4">
                                 <QrCode size={20} /> {permissionError ? "Retry Camera Access" : "Start Camera & Scan"}
                             </button>
                         </div>
                     ) : (
-                        <button onClick={stopScanner} className="btn-secondary w-full mt-4">
-                            Cancel Scan
-                        </button>
+                        <div className="space-y-4 animate-fade-in relative">
+                            <div className="overflow-hidden rounded-xl border-2 border-slate-200 aspect-square relative bg-slate-900">
+                                <Scanner
+                                    onScan={(data) => {
+                                        if (data && data.length > 0) {
+                                            setScanning(false);
+                                            processQR(data[0].rawValue);
+                                        }
+                                    }}
+                                    onError={handleScanError}
+                                    components={{
+                                        audio: false,
+                                        onOff: true,
+                                        torch: true,
+                                        zoom: true,
+                                        finder: true,
+                                    }}
+                                    styles={{
+                                        container: { width: "100%", height: "100%" }
+                                    }}
+                                />
+                                {/* Scanning Overlay Animation */}
+                                <div className="absolute inset-0 pointer-events-none">
+                                    <div className="w-full h-1 bg-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.8)] animate-scanner-beam absolute top-1/2 -translate-y-1/2"></div>
+                                </div>
+                            </div>
+                            <button onClick={() => setScanning(false)} className="btn-secondary w-full">
+                                Cancel Scan
+                            </button>
+                        </div>
                     )}
                 </div>
             )}
