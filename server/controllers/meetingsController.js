@@ -1,6 +1,40 @@
 const { db } = require('../config/firebaseAdmin');
+const { body, validationResult } = require('express-validator');
 
-// Get all meetings (Admin only typically, or active ones for members)
+const validate = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+};
+
+const createMeetingValidationRules = [
+    body('topic').trim().notEmpty().withMessage('Topic is required'),
+    body('date').isISO8601().withMessage('Valid date is required'),
+    body('startTime').trim().notEmpty().withMessage('Start time is required'),
+    body('endTime').optional().trim(),
+    body('description').optional().trim(),
+    body('location').optional().trim(),
+    body('gpsLink').optional().trim().isURL().withMessage('GPS link must be a valid URL'),
+    body('qrDuration').optional().isInt({ min: 1, max: 120 }).toInt(),
+];
+
+const markAttendanceValidationRules = [
+    body('meetingId').trim().notEmpty().withMessage('Meeting ID is required'),
+    body('token').trim().notEmpty().withMessage('Token is required'),
+];
+
+const markAttendanceByAdminValidationRules = [
+    body('memberUID').trim().notEmpty().withMessage('Member UID is required'),
+];
+
+const qrTokenValidationRules = [
+    body('qrToken').trim().notEmpty().withMessage('QR token is required'),
+    body('qrExpiresAt').isISO8601().withMessage('QR expiry time is required'),
+];
+
+// Get all meetings (Admin only)
 const getMeetings = async (req, res) => {
     try {
         const meetingsSnap = await db.collection('meetings').orderBy('createdAt', 'desc').get();
@@ -63,7 +97,7 @@ const createMeeting = async (req, res) => {
             gpsLink: gpsLink || '',
             qrToken: null,
             qrExpiresAt: null,
-            qrDuration: Number(qrDuration) || 30, // Default 30 minutes
+            qrDuration: Number(qrDuration) || 30,
             status: 'upcoming',
             createdBy: req.user.uid,
             createdAt: new Date(),
@@ -80,7 +114,7 @@ const createMeeting = async (req, res) => {
 // Start meeting QR (Admin only)
 const startMeetingQR = async (req, res) => {
     const { id } = req.params;
-    const { qrToken, qrExpiresAt } = req.body; // Passed from Admin frontend after generating token
+    const { qrToken, qrExpiresAt } = req.body;
 
     if (!qrToken || !qrExpiresAt) {
         return res.status(400).json({ error: 'Missing qrToken or qrExpiresAt' });
@@ -138,7 +172,7 @@ const refreshMeetingQR = async (req, res) => {
     }
 };
 
-// Mark attendance (Member)
+// Mark attendance by scanning the meeting QR (Member)
 const markAttendance = async (req, res) => {
     const { meetingId, token } = req.body;
     const memberUID = req.user.uid;
@@ -205,6 +239,67 @@ const markAttendance = async (req, res) => {
     }
 };
 
+// Mark attendance for a member by Admin scanning their personal QR (Admin only)
+const markAttendanceByAdmin = async (req, res) => {
+    const { id: meetingId } = req.params;
+    const { memberUID } = req.body;
+
+    if (!memberUID) {
+        return res.status(400).json({ error: 'Missing memberUID' });
+    }
+
+    try {
+        // 1. Validate meeting exists
+        const meetingDoc = await db.collection('meetings').doc(meetingId).get();
+        if (!meetingDoc.exists) return res.status(404).json({ error: 'Meeting not found' });
+
+        // 2. Validate member exists and is not blocked
+        const userDoc = await db.collection('users').doc(memberUID).get();
+        if (!userDoc.exists) return res.status(404).json({ error: 'Member not found' });
+        const userData = userDoc.data();
+
+        if (userData.status === 'blocked') {
+            return res.status(403).json({ error: 'This member is blocked and cannot be marked present' });
+        }
+
+        // 3. Prevent duplicate
+        const dupCheck = await db.collection('attendance')
+            .where('meetingId', '==', meetingId)
+            .where('memberUID', '==', memberUID)
+            .get();
+
+        if (!dupCheck.empty) {
+            return res.status(400).json({ error: 'Attendance already marked', success: true, alreadyScanned: true });
+        }
+
+        // 4. Mark Attendance
+        await db.collection('attendance').add({
+            meetingId,
+            memberId: userData.memberId,
+            memberUID,
+            memberName: `${userData.name} ${userData.surname}`.trim(),
+            scannedAt: new Date(),
+            status: 'present',
+            markedBy: 'admin',
+        });
+
+        // 5. Increment attendance count
+        await db.collection('users').doc(memberUID).update({
+            attendanceCount: (userData.attendanceCount || 0) + 1
+        });
+
+        res.status(200).json({
+            message: `Attendance marked for ${userData.name} ${userData.surname}`,
+            success: true,
+            memberName: `${userData.name} ${userData.surname}`.trim(),
+        });
+
+    } catch (error) {
+        console.error('Error marking attendance by admin:', error);
+        res.status(500).json({ error: 'Failed to mark attendance' });
+    }
+};
+
 // Get attendance for a meeting (Admin only)
 const getMeetingAttendance = async (req, res) => {
     const { id } = req.params;
@@ -239,6 +334,11 @@ const getMeetingAttendance = async (req, res) => {
 };
 
 module.exports = {
+    validate,
+    createMeetingValidationRules,
+    markAttendanceValidationRules,
+    markAttendanceByAdminValidationRules,
+    qrTokenValidationRules,
     getMeetings,
     getMeetingById,
     createMeeting,
@@ -246,5 +346,6 @@ module.exports = {
     stopMeetingQR,
     refreshMeetingQR,
     markAttendance,
+    markAttendanceByAdmin,
     getMeetingAttendance
 };

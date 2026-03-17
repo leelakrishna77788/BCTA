@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { db } from "../../../firebase/firebase";
 import { CreditCard, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
-import { paymentsApi } from "../../../services/api";
 
 const PaymentsDashboard = () => {
     const [products, setProducts] = useState([]);
@@ -8,26 +9,24 @@ const PaymentsDashboard = () => {
     const [filter, setFilter] = useState("all");
 
     useEffect(() => {
-        const fetchPayments = async () => {
-            try {
-                const data = await paymentsApi.getAll();
-                setProducts(data);
-            } catch (err) {
-                console.error("Failed to fetch payments:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchPayments();
+        const q = query(collection(db, "products"), orderBy("distributedAt", "desc"));
+        const unsub = onSnapshot(q, (snap) => {
+            setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            setLoading(false);
+        }, (err) => {
+            console.error("Payments fetch error:", err);
+            setLoading(false);
+        });
+        return unsub;
     }, []);
 
-    const totalRevenue = products.reduce((s, p) => s + (p.totalAmount || 0), 0);
-    const totalPaid = products.reduce((s, p) => s + (p.paidAmount || 0), 0);
-    const totalDue = products.reduce((s, p) => s + (p.remainingAmount || 0), 0);
-    const pendingItems = products.filter(p => p.remainingAmount > 0);
+    const totalRevenue = products.reduce((s, p) => s + (parseFloat(p.totalAmount) || 0), 0);
+    const totalPaid = products.reduce((s, p) => s + (parseFloat(p.paidAmount) || 0), 0);
+    const totalDue = products.reduce((s, p) => s + (parseFloat(p.remainingAmount) || 0), 0);
+    const pendingItems = products.filter(p => parseFloat(p.remainingAmount) > 0);
 
     const filtered = filter === "all" ? products :
-        filter === "paid" ? products.filter(p => p.remainingAmount === 0) :
+        filter === "paid" ? products.filter(p => parseFloat(p.remainingAmount) === 0) :
             pendingItems;
 
     return (
@@ -45,7 +44,7 @@ const PaymentsDashboard = () => {
                     { label: "Total Pending", value: `₹${totalDue.toLocaleString()}`, color: "bg-red-500", icon: AlertCircle },
                     { label: "Pending Items", value: pendingItems.length, color: "bg-amber-500", icon: TrendingUp },
                 ].map(s => (
-                    <div key={s.label} className="stat-card">
+                    <div key={s.label} className="stat-card bg-white p-4 rounded-xl border border-slate-200 flex items-center gap-3">
                         <div className={`w-11 h-11 ${s.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
                             <s.icon size={18} className="text-white" />
                         </div>
@@ -68,12 +67,12 @@ const PaymentsDashboard = () => {
             </div>
 
             {/* Table */}
-            <div className="card p-0 overflow-hidden">
+            <div className="card p-0 overflow-hidden border border-slate-200 bg-white rounded-xl shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-100">
-                                <th className="table-header text-left pl-6">Member</th>
+                                <th className="table-header text-left pl-6 py-3">Member</th>
                                 <th className="table-header text-left">Shop</th>
                                 <th className="table-header text-left">Product</th>
                                 <th className="table-header text-left">Total</th>
@@ -82,33 +81,30 @@ const PaymentsDashboard = () => {
                                 <th className="table-header text-left pr-6">Date</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-100">
                             {filtered.map(p => (
-                                <tr key={p.id} className={`hover:bg-slate-50 ${p.remainingAmount > 0 ? "border-l-2 border-red-400" : ""}`}>
-                                    <td className="table-cell pl-6">
-                                        <p className="font-medium">{p.memberName}</p>
+                                <tr key={p.id} className={`hover:bg-slate-50 transition-colors ${p.remainingAmount > 0 ? "border-l-4 border-red-500" : ""}`}>
+                                    <td className="table-cell pl-6 py-4">
+                                        <p className="font-semibold text-slate-800">{p.memberName}</p>
                                         <p className="text-xs text-slate-400 font-mono">{p.memberId}</p>
                                     </td>
-                                    <td className="table-cell text-xs">{p.shopName}</td>
-                                    <td className="table-cell">{p.productName}</td>
-                                    <td className="table-cell font-semibold">₹{p.totalAmount}</td>
-                                    <td className="table-cell text-emerald-600 font-semibold">₹{p.paidAmount}</td>
+                                    <td className="table-cell text-xs font-medium text-slate-600">{p.shopName}</td>
+                                    <td className="table-cell font-medium">{p.productName}</td>
+                                    <td className="table-cell font-bold">₹{p.totalAmount}</td>
+                                    <td className="table-cell text-emerald-600 font-bold">₹{p.paidAmount}</td>
                                     <td className="table-cell">
-                                        <span className={`font-semibold ${p.remainingAmount > 0 ? "text-red-500" : "text-emerald-600"}`}>
+                                        <span className={`font-bold ${parseFloat(p.remainingAmount) > 0 ? "text-red-500" : "text-emerald-600"}`}>
                                             ₹{p.remainingAmount}
                                         </span>
                                     </td>
                                     <td className="table-cell text-xs text-slate-400 pr-6">
-                                        {p.distributedAt ?
-                                            (p.distributedAt.toDate ? p.distributedAt.toDate().toLocaleDateString("en-IN") :
-                                                p.distributedAt._seconds ? new Date(p.distributedAt._seconds * 1000).toLocaleDateString("en-IN") :
-                                                    new Date(p.distributedAt).toLocaleDateString("en-IN"))
-                                            : "—"}
+                                        {p.distributedAt?.toDate ? p.distributedAt.toDate().toLocaleDateString("en-IN") : 
+                                         (p.distributedAt ? new Date(p.distributedAt).toLocaleDateString("en-IN") : "—")}
                                     </td>
                                 </tr>
                             ))}
                             {!loading && filtered.length === 0 && (
-                                <tr><td colSpan={7} className="table-cell text-center text-slate-400 py-12">No records found</td></tr>
+                                <tr><td colSpan={7} className="table-cell text-center text-slate-400 py-16">No records found</td></tr>
                             )}
                         </tbody>
                     </table>

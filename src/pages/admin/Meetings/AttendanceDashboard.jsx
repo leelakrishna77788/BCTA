@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserCheck, UserX, Users } from "lucide-react";
-import { meetingsApi } from "../../../services/api";
+import { db } from "../../../firebase/firebase";
+import { doc, getDoc, getDocs, collection, query, where, onSnapshot } from "firebase/firestore";
 
 const AttendanceDashboard = () => {
     const { id } = useParams();
@@ -9,17 +10,34 @@ const AttendanceDashboard = () => {
     const [meeting, setMeeting] = useState(null);
     const [attended, setAttended] = useState([]);
     const [allMembers, setAllMembers] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const data = await meetingsApi.getAttendance(id);
-                setMeeting(data.meeting);
-                const attendedUIDs = data.attended.map(a => a.memberUID);
-                setAttended(data.allMembers.filter(m => attendedUIDs.includes(m.id)));
-                setAllMembers(data.allMembers);
+                // 1. Get Meeting Details
+                const meetingSnap = await getDoc(doc(db, "meetings", id));
+                if (meetingSnap.exists()) {
+                    setMeeting({ id: meetingSnap.id, ...meetingSnap.data() });
+                }
+
+                // 2. Get All Members
+                const membersSnap = await getDocs(query(collection(db, "users"), where("role", "==", "member")));
+                const membersList = membersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                setAllMembers(membersList);
+
+                // 3. Listen for Attendance Real-time
+                const q = query(collection(db, "attendance"), where("meetingId", "==", id));
+                const unsub = onSnapshot(q, (snap) => {
+                    const attendedUIDs = snap.docs.map(d => d.data().memberUID);
+                    setAttended(membersList.filter(m => attendedUIDs.includes(m.id)));
+                    setLoading(false);
+                });
+
+                return unsub;
             } catch (err) {
                 console.error("Failed to fetch attendance:", err);
+                setLoading(false);
             }
         };
         fetchData();
@@ -28,7 +46,7 @@ const AttendanceDashboard = () => {
     const notAttended = allMembers.filter(m => !attended.find(a => a.id === m.id));
     const rate = allMembers.length > 0 ? Math.round((attended.length / allMembers.length) * 100) : 0;
 
-    if (!meeting) return (
+    if (loading || !meeting) return (
         <div className="flex justify-center h-64 items-center">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
         </div>

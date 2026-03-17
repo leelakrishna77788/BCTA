@@ -5,7 +5,6 @@ import { db, storage } from "../../../firebase/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { v4 as uuidv4 } from "uuid";
 import { Upload, ArrowLeft } from "lucide-react";
 import { membersApi } from "../../../services/api";
 
@@ -19,7 +18,7 @@ const generateMemberId = () => {
 };
 
 const AddEditMember = () => {
-    const { createMember } = useAuth();
+    useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [photoPreview, setPhotoPreview] = useState(null);

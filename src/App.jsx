@@ -18,6 +18,7 @@ import AddEditMember from "./pages/admin/Members/AddEditMember";
 import MeetingList from "./pages/admin/Meetings/MeetingList";
 import MeetingQR from "./pages/admin/Meetings/MeetingQR";
 import AttendanceDashboard from "./pages/admin/Meetings/AttendanceDashboard";
+import GlobalAttendance from "./pages/admin/Meetings/GlobalAttendance";
 import ShopList from "./pages/admin/Shops/ShopList";
 import ShopDetail from "./pages/admin/Shops/ShopDetail";
 import PaymentsDashboard from "./pages/admin/Payments/PaymentsDashboard";
@@ -68,6 +69,7 @@ function App() {
 
             {/* Meetings */}
             <Route path="meetings" element={<MeetingList />} />
+            <Route path="meetings/attendance/all" element={<GlobalAttendance />} />
             <Route path="meetings/:id" element={<MeetingQR />} />
             <Route path="meetings/:id/attendance" element={<AttendanceDashboard />} />
 

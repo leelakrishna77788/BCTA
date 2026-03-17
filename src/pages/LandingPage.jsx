@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
     QrCode, Users, CreditCard, Shield, Bell, Smartphone,
@@ -603,7 +603,7 @@ export default function LandingPage() {
                                         {/* Recent activity */}
                                         <div className="space-y-2">
                                             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Recent Scans</p>
-                                            {["Ravi Sharma", "Suresh Kumar", "Anil Reddy"].map((name, i) => (
+                                            {["Ravi Sharma", "Suresh Kumar", "Anil Reddy"].map((name) => (
                                                 <div key={name} className="flex items-center gap-3 bg-white/3 rounded-xl px-3.5 py-2.5 border border-white/5">
                                                     <div className="w-8 h-8 bg-gradient-to-br from-slate-700 to-slate-800 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">{name[0]}</div>
                                                     <div className="flex-1">

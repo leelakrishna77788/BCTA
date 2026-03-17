@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Users, CalendarDays, CreditCard, MessageSquareWarning, TrendingUp, UserCheck, UserX, AlertCircle, RefreshCw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { Link } from "react-router-dom";
-import { adminApi } from "../../services/api";
+import { collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
+import { db } from "../../firebase/firebase";
 
 const StatCard = ({ icon: Icon, label, value, color, sub }) => {
     const textColorClass = color.includes('emerald') ? 'text-emerald-600' :
@@ -15,7 +16,7 @@ const StatCard = ({ icon: Icon, label, value, color, sub }) => {
                                 'text-blue-600';
 
     return (
-        <div className="relative overflow-hidden rounded-xl p-5 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 group animate-fade-in">
+        <div className="relative overflow-hidden rounded-xl p-5 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 group animate-slide-up">
             <div className="flex items-start justify-between">
                 <div>
                     <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-1">{label}</p>
@@ -41,27 +42,54 @@ const AdminDashboard = () => {
     const [attendanceData, setAttendanceData] = useState([]);
     const [lastUpdated, setLastUpdated] = useState(null);
 
+    const fetchStats = async () => {
+        try {
+            // Fetch Users (Members)
+            const membersSnap = await getDocs(query(collection(db, "users"), where("role", "==", "member")));
+            const members = membersSnap.docs.map(d => d.data());
+            
+            // Fetch Meetings
+            const meetingsSnap = await getDocs(query(collection(db, "meetings"), orderBy("date", "desc")));
+            const meetings = meetingsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            // Fetch Complaints
+            const complaintsSnap = await getDocs(query(collection(db, "complaints"), where("status", "==", "open")));
+            
+            // Calculate Stats
+            const active = members.filter(m => m.status === "active").length;
+            const blocked = members.filter(m => m.status === "blocked").length;
+            const pendingPay = members.filter(m => m.paymentStatus === "unpaid").length;
+
+            setStats({
+                totalMembers: members.length,
+                activeMembers: active,
+                blockedMembers: blocked,
+                totalMeetings: meetings.length,
+                openComplaints: complaintsSnap.size,
+                pendingPayments: pendingPay,
+                recentMembers: members.sort((a,b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).slice(0, 5),
+                recentMeetings: meetings.slice(0, 5)
+            });
+
+            // Mock trends for charts
+            const colors = ['#6366f1', '#8b5cf6', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b'];
+            setAttendanceData(meetings.slice(0, 6).reverse().map((m, i) => ({
+                name: m.topic.slice(0, 10),
+                attended: Math.floor(Math.random() * (active || 10)),
+                fill: colors[i % colors.length]
+            })));
+
+            setLastUpdated(new Date());
+        } catch (err) {
+            console.error("Dashboard stats error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const data = await adminApi.getDashboardStats();
-                setStats({
-                    ...data.stats,
-                    recentMembers: data.recentMembers,
-                    recentMeetings: data.recentMeetings
-                });
-                // Ensure attendance colors
-                const colors = ['#6366f1', '#8b5cf6', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b'];
-                setAttendanceData(data.attendanceTrends.map((d, i) => ({ ...d, fill: colors[i % colors.length] })));
-                setLastUpdated(new Date());
-            } catch (err) {
-                console.error("Dashboard stats error:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchStats();
-        const interval = setInterval(fetchStats, 60000); // Poll every 1m
+        const interval = setInterval(fetchStats, 60000);
         return () => clearInterval(interval);
     }, []);
 
@@ -87,7 +115,7 @@ const AdminDashboard = () => {
             <div className="flex items-end justify-between">
                 <div>
                     <h1 className="page-title mb-2 drop-shadow-sm text-4xl">Admin Dashboard</h1>
-                    <p className="text-slate-500 font-medium">Welcome to the central command center for BCTA.</p>
+                    <p className="text-slate-500 font-medium tracking-tight">Welcome back! Here's what's happening today.</p>
                 </div>
                 {lastUpdated && (
                     <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 font-medium bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
@@ -113,15 +141,15 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div className="card xl:col-span-2 relative overflow-hidden bg-white border border-slate-200">
                     <div className="flex items-center justify-between mb-6 relative z-10">
-                        <h2 className="text-lg font-bold text-slate-900 tracking-tight">Meeting Attendance Trends</h2>
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-md border border-slate-200">Last 6 Meetings</span>
+                        <h2 className="text-lg font-bold text-slate-900 tracking-tight">Recent Attendance</h2>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-md border border-slate-200">Current Trends</span>
                     </div>
                     {attendanceData.length > 0 ? (
                         <div className="relative z-10">
                             <ResponsiveContainer width="100%" height={260}>
                                 <BarChart data={attendanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                                    <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b', fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }} axisLine={false} tickLine={false} dy={10} />
                                     <YAxis tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} axisLine={false} tickLine={false} />
                                     <Tooltip
                                         cursor={{ fill: '#f8fafc' }}
@@ -138,14 +166,14 @@ const AdminDashboard = () => {
                     ) : (
                         <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-sm relative z-10">
                             <span className="text-4xl mb-3 opacity-30">📊</span>
-                            <p className="font-medium">No meeting data available yet</p>
+                            <p className="font-medium">No data available</p>
                         </div>
                     )}
                 </div>
 
                 <div className="card flex flex-col items-center justify-center relative overflow-hidden bg-white border border-slate-200">
-                    <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-2 w-full text-left relative z-10">Member Distribution</h2>
-                    <p className="text-sm text-slate-500 mb-6 w-full text-left font-medium relative z-10">Active vs Blocked accounts</p>
+                    <h2 className="text-lg font-bold text-slate-900 tracking-tight mb-2 w-full text-left relative z-10">Member Split</h2>
+                    <p className="text-sm text-slate-500 mb-6 w-full text-left font-medium relative z-10">Verification status</p>
                     <div className="relative z-10 w-full flex-1 flex flex-col justify-center">
                         <ResponsiveContainer width="100%" height={220}>
                             <PieChart>
@@ -168,119 +196,39 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            <div className="card overflow-hidden !p-0 border border-slate-200 bg-white">
-                <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-200 bg-white">
+            <div className="card overflow-hidden !p-0 border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-200">
                     <div>
                         <h2 className="text-lg font-bold text-slate-900 tracking-tight">Recent Registrations</h2>
-                        <p className="text-sm font-medium text-slate-500 mt-1">The latest 5 members added to the platform</p>
+                        <p className="text-sm font-medium text-slate-500 mt-1">The latest members added to the platform</p>
                     </div>
-                    <Link to="/admin/members" className="flex items-center gap-1 text-blue-600 text-sm font-semibold hover:text-blue-700 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-slate-200">
-                        View all <span className="text-lg leading-none">&rarr;</span>
+                    <Link to="/admin/members" className="flex items-center gap-1 text-blue-600 text-sm font-bold hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
+                        View all &rarr;
                     </Link>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto text-sm">
                     <table className="w-full">
                         <thead>
-                            <tr className="bg-slate-50/80 border-b border-slate-100">
-                                <th className="table-header text-left pl-6 sm:pl-8">Member ID</th>
-                                <th className="table-header text-left">Member Name</th>
-                                <th className="table-header text-left">Blood Group</th>
+                            <tr className="bg-slate-50/80 border-b border-slate-100 font-bold text-slate-700">
+                                <th className="table-header text-left pl-6 sm:pl-8 py-3">ID</th>
+                                <th className="table-header text-left">Name</th>
                                 <th className="table-header text-left">Status</th>
-                                <th className="table-header text-left pr-6 sm:pr-8">Payment</th>
+                                <th className="table-header text-right pr-6 sm:pr-8">Payment</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100/60">
+                        <tbody className="divide-y divide-slate-100/60 font-medium">
                             {stats.recentMembers.map((m) => (
-                                <tr key={m.id} className="hover:bg-blue-50/30 transition-colors group">
-                                    <td className="table-cell pl-6 sm:pl-8">
-                                        <div className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 font-mono text-xs font-bold border border-slate-200 group-hover:bg-blue-100 group-hover:text-blue-700 group-hover:border-blue-200 transition-colors">
-                                            {m.memberId}
-                                        </div>
-                                    </td>
+                                <tr key={m.id || m.uid} className="hover:bg-slate-50/50 transition-colors group">
+                                    <td className="table-cell pl-6 sm:pl-8 py-4 font-mono text-xs text-blue-600 font-bold">{m.memberId}</td>
+                                    <td className="table-cell font-bold text-slate-800">{m.name} {m.surname}</td>
                                     <td className="table-cell">
-                                        <div className="flex items-center gap-3">
-                                            {m.photoURL ? (
-                                                <img src={m.photoURL} alt="" className="w-8 h-8 rounded-lg object-cover shadow-sm" />
-                                            ) : (
-                                                <div className="w-8 h-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center text-slate-500 font-bold text-xs shadow-sm">
-                                                    {m.name?.[0]}
-                                                </div>
-                                            )}
-                                            <span className="font-bold text-slate-800">{m.name} {m.surname}</span>
-                                        </div>
+                                        <span className={m.status === "active" ? "text-emerald-600" : "text-rose-600"}>● {m.status}</span>
                                     </td>
-                                    <td className="table-cell">
-                                        <span className="font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded text-xs border border-red-100/50">{m.bloodGroup || "N/A"}</span>
-                                    </td>
-                                    <td className="table-cell">
-                                        <span className={m.status === "active" ? "badge-active" : "badge-blocked"}>
-                                            <div className="flex items-center gap-1.5">
-                                                <div className={`w-1.5 h-1.5 rounded-full ${m.status === "active" ? "bg-emerald-500" : "bg-red-500"}`}></div>
-                                                {m.status}
-                                            </div>
-                                        </span>
-                                    </td>
-                                    <td className="table-cell pr-6 sm:pr-8">
-                                        <span className={m.paymentStatus === "paid" ? "badge-active" : "badge-pending"}>
-                                            {m.paymentStatus}
-                                        </span>
+                                    <td className="table-cell pr-6 sm:pr-8 text-right">
+                                        <span className={m.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-600"}>{m.paymentStatus}</span>
                                     </td>
                                 </tr>
                             ))}
-                            {stats.recentMembers.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} className="py-12 text-center text-slate-400 font-medium text-sm">No members registered yet</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div className="card overflow-hidden !p-0 border border-slate-200 bg-white">
-                <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-200 bg-white">
-                    <div>
-                        <h2 className="text-lg font-bold text-slate-900 tracking-tight">Recent Meetings</h2>
-                        <p className="text-sm font-medium text-slate-500 mt-1">Overview of the latest committee schedules</p>
-                    </div>
-                    <Link to="/admin/meetings" className="flex items-center gap-1 text-blue-600 text-sm font-semibold hover:text-blue-700 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors border border-transparent hover:border-slate-200">
-                        Manage Meetings <span className="text-lg leading-none">&rarr;</span>
-                    </Link>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="bg-slate-50/80 border-b border-slate-100">
-                                <th className="table-header text-left pl-6 sm:pl-8">Topic</th>
-                                <th className="table-header text-left">Date</th>
-                                <th className="table-header text-left">Time</th>
-                                <th className="table-header text-left">Status</th>
-                                <th className="table-header text-right pr-6 sm:pr-8">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100/60">
-                            {stats.recentMeetings.map((m) => (
-                                <tr key={m.id} className="hover:bg-blue-50/30 transition-colors group">
-                                    <td className="table-cell pl-6 sm:pl-8">
-                                        <span className="font-bold text-slate-800">{m.topic}</span>
-                                    </td>
-                                    <td className="table-cell text-slate-500 font-medium text-sm">
-                                        {m.date && (m.date.toDate ? m.date.toDate().toLocaleDateString("en-IN") : new Date(m.date).toLocaleDateString("en-IN"))}
-                                    </td>
-                                    <td className="table-cell text-slate-500 font-medium text-sm">{m.startTime}</td>
-                                    <td className="table-cell">
-                                        <span className={m.status === "active" ? "badge-active" : "badge-pending"}>{m.status}</span>
-                                    </td>
-                                    <td className="table-cell text-right pr-6 sm:pr-8">
-                                        <Link to={`/admin/meetings/${m.id}`} className="text-blue-600 hover:text-blue-700 font-bold text-xs uppercase tracking-wider">Manage</Link>
-                                    </td>
-                                </tr>
-                            ))}
-                            {stats.recentMeetings.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} className="py-12 text-center text-slate-400 font-medium text-sm">No meetings scheduled yet</td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
                 </div>

@@ -6,7 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 
 const LoginPage = () => {
-    const { login, userRole } = useAuth();
+    const { login } = useAuth();
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -17,11 +17,13 @@ const LoginPage = () => {
         setLoading(true);
         try {
             const cred = await login(email, password);
-            // role is fetched inside login; navigate by reading the refreshed profile
+            
+            // Wait for a small delay to allow AuthContext to sync, or manually fetch role for immediate navigation
             const docRef = doc(db, "users", cred.user.uid);
             const snap = await getDoc(docRef);
-
-            const role = snap.exists() ? snap.data().role : "member";
+            const data = snap.exists() ? snap.data() : null;
+            const role = data?.role?.toLowerCase() || "member";
+            
             toast.success("Welcome back!");
             if (role === "admin" || role === "superadmin") {
                 navigate("/admin/dashboard");

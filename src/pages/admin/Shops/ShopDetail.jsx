@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
-    collection, getDocs, query, where, doc, getDoc,
+    collection, getDocs, query, where, doc, getDoc, addDoc, serverTimestamp, updateDoc
 } from "firebase/firestore";
 import { db } from "../../../firebase/firebase";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ArrowLeft, CheckCircle, Package, CreditCard } from "lucide-react";
-import { shopsApi } from "../../../services/api";
 
 const ShopDetail = () => {
     const { id } = useParams();
@@ -22,13 +21,20 @@ const ShopDetail = () => {
 
     useEffect(() => {
         const fetchShop = async () => {
-            const [shopSnap, prodSnap] = await Promise.all([
-                getDoc(doc(db, "shops", id)),
-                getDocs(query(collection(db, "products"), where("shopId", "==", id))),
-            ]);
-            if (shopSnap.exists()) setShop({ id: shopSnap.id, ...shopSnap.data() });
-            setProducts(prodSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-            setLoading(false);
+            try {
+                const [shopSnap, prodSnap] = await Promise.all([
+                    getDoc(doc(db, "shops", id)),
+                    getDocs(query(collection(db, "products"), where("shopId", "==", id), orderBy("distributedAt", "desc"))),
+                ]);
+                if (shopSnap.exists()) setShop({ id: shopSnap.id, ...shopSnap.data() });
+                setProducts(prodSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+            } catch (err) {
+                // Fallback for missing index during development
+                const prodSnap = await getDocs(query(collection(db, "products"), where("shopId", "==", id)));
+                setProducts(prodSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+            } finally {
+                setLoading(false);
+            }
         };
         fetchShop();
     }, [id]);
@@ -37,11 +43,9 @@ const ShopDetail = () => {
         if (!memberUID.trim()) return toast.error("Enter member UID or ID");
         setVerifying(true);
         try {
-            // Search by memberId field
             const q = query(collection(db, "users"), where("memberId", "==", memberUID.trim()));
             const snap = await getDocs(q);
             if (snap.empty) {
-                // Try by UID
                 const docSnap = await getDoc(doc(db, "users", memberUID.trim()));
                 if (!docSnap.exists()) { toast.error("Member not found"); setVerifying(false); return; }
                 const data = { id: docSnap.id, ...docSnap.data() };
@@ -53,7 +57,7 @@ const ShopDetail = () => {
                 setMemberProfile(data);
             }
             toast.success("Member verified!");
-        } catch (err) { toast.error("Verification failed"); } finally { setVerifying(false); }
+        } catch { toast.error("Verification failed"); } finally { setVerifying(false); }
     };
 
     const handleDistribute = async (e) => {
@@ -61,25 +65,41 @@ const ShopDetail = () => {
         if (!memberProfile) return toast.error("Verify member first");
         const total = parseFloat(form.totalAmount);
         const paid = parseFloat(form.paidAmount) || 0;
+        const due = total - paid;
+        
         setSubmitting(true);
         try {
-            const payload = {
+            // 1. Create product record
+            await addDoc(collection(db, "products"), {
                 shopId: id,
-                memberQuery: memberProfile.id,
+                shopName: shop.shopName,
+                memberId: memberProfile.memberId,
+                memberUID: memberProfile.id,
+                memberName: `${memberProfile.name} ${memberProfile.surname}`,
                 productName: form.productName,
-                quantity: form.quantity,
+                quantity: parseInt(form.quantity),
                 totalAmount: total,
-                paidAmount: paid
-            };
+                paidAmount: paid,
+                remainingAmount: due,
+                distributedAt: serverTimestamp()
+            });
 
-            await shopsApi.distributeProduct(payload);
-            toast.success("Product distributed successfully via API!");
+            // 2. Add notification for member
+            await addDoc(collection(db, "notifications"), {
+                userId: memberProfile.id,
+                title: "Product Distributed",
+                message: `You received ${form.productName} (Qty: ${form.quantity}) from ${shop.shopName}. Due: ₹${due}`,
+                type: "product",
+                read: false,
+                createdAt: serverTimestamp()
+            });
 
+            toast.success("Product distributed successfully!");
             setMemberProfile(null);
             setMemberUID("");
             setForm({ productName: "", quantity: 1, totalAmount: "", paidAmount: "" });
 
-            // Refresh
+            // Refresh list
             const prodSnap = await getDocs(query(collection(db, "products"), where("shopId", "==", id)));
             setProducts(prodSnap.docs.map(d => ({ id: d.id, ...d.data() })));
         } catch (err) { toast.error(err.message || "Failed to record distribution"); }
@@ -92,9 +112,9 @@ const ShopDetail = () => {
         </div>
     );
 
-    const totalRevenue = products.reduce((s, p) => s + (p.totalAmount || 0), 0);
-    const totalPaid = products.reduce((s, p) => s + (p.paidAmount || 0), 0);
-    const totalDue = products.reduce((s, p) => s + (p.remainingAmount || 0), 0);
+    const totalRevenue = products.reduce((s, p) => s + (parseFloat(p.totalAmount) || 0), 0);
+    const totalPaid = products.reduce((s, p) => s + (parseFloat(p.paidAmount) || 0), 0);
+    const totalDue = products.reduce((s, p) => s + (parseFloat(p.remainingAmount) || 0), 0);
 
     return (
         <div className="space-y-5 animate-fade-in">
@@ -108,71 +128,65 @@ const ShopDetail = () => {
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
-                <div className="card text-center">
-                    <p className="text-xl font-bold text-slate-800">₹{totalRevenue}</p>
-                    <p className="text-xs text-slate-500 mt-1">Total Value</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="card text-center bg-white border border-slate-200">
+                    <p className="text-xl font-bold text-slate-800">₹{totalRevenue.toLocaleString()}</p>
+                    <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Total Value</p>
                 </div>
-                <div className="card text-center">
-                    <p className="text-xl font-bold text-emerald-600">₹{totalPaid}</p>
-                    <p className="text-xs text-slate-500 mt-1">Total Paid</p>
+                <div className="card text-center bg-white border border-slate-200">
+                    <p className="text-xl font-bold text-emerald-600">₹{totalPaid.toLocaleString()}</p>
+                    <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Total Paid</p>
                 </div>
-                <div className="card text-center">
-                    <p className="text-xl font-bold text-red-500">₹{totalDue}</p>
-                    <p className="text-xs text-slate-500 mt-1">Total Due</p>
+                <div className="card text-center bg-white border border-slate-200">
+                    <p className="text-xl font-bold text-red-500">₹{totalDue.toLocaleString()}</p>
+                    <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Total Due</p>
                 </div>
             </div>
 
-            {/* Member verification & Product entry */}
-            <div className="card">
-                <h2 className="text-base font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                    <Package size={18} /> Distribute Product
+            <div className="card bg-white border border-slate-200">
+                <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <Package size={18} className="text-blue-600" /> Distribute Product
                 </h2>
 
-                {/* Step 1: Verify Member */}
-                <div className="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                    <p className="text-sm font-semibold text-blue-700 mb-2">Step 1: Verify Member</p>
+                <div className="mb-6 p-5 bg-blue-50/50 rounded-xl border border-blue-100">
+                    <p className="text-sm font-bold text-blue-800 mb-3">Step 1: Verify Member</p>
                     <div className="flex gap-2">
                         <input
                             value={memberUID}
                             onChange={e => setMemberUID(e.target.value)}
-                            placeholder="Enter Member ID (e.g. BCTA-2024-001)"
-                            className="input-field flex-1"
+                            placeholder="Enter Member ID (e.g. BCTA-001)"
+                            className="input-field flex-1 bg-white"
                         />
-                        <button onClick={verifyMember} disabled={verifying} className="btn-primary whitespace-nowrap">
+                        <button onClick={verifyMember} disabled={verifying} className="btn-primary whitespace-nowrap px-6">
                             {verifying ? "Checking..." : "Verify"}
                         </button>
                     </div>
                 </div>
 
-                {/* Member Info */}
                 {memberProfile && (
-                    <div className="mb-4 p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-4 animate-fade-in">
+                    <div className="mb-6 p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-4 animate-slide-up">
                         <div className="flex items-center gap-3 flex-1">
                             {memberProfile.photoURL ? (
-                                <img src={memberProfile.photoURL} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                                <img src={memberProfile.photoURL} alt="" className="w-12 h-12 rounded-xl object-cover shadow-sm" />
                             ) : (
-                                <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold">
+                                <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm">
                                     {memberProfile.name?.[0]}
                                 </div>
                             )}
                             <div>
-                                <p className="font-semibold text-slate-800">{memberProfile.name} {memberProfile.surname}</p>
-                                <p className="text-xs font-mono text-emerald-700">{memberProfile.memberId}</p>
-                                <p className="text-xs text-slate-500">Payment: {memberProfile.paymentStatus}</p>
+                                <p className="font-bold text-slate-800">{memberProfile.name} {memberProfile.surname}</p>
+                                <p className="text-xs font-mono font-bold text-emerald-700">{memberProfile.memberId}</p>
                             </div>
                         </div>
-                        <span className="badge-active flex items-center gap-1">
-                            <CheckCircle size={12} /> Verified
+                        <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                            <CheckCircle size={14} /> Verified
                         </span>
                     </div>
                 )}
 
-                {/* Step 2: Product Form */}
                 {memberProfile && (
-                    <form onSubmit={handleDistribute} className="space-y-4 animate-fade-in">
-                        <p className="text-sm font-semibold text-blue-700">Step 2: Enter Product Details</p>
+                    <form onSubmit={handleDistribute} className="space-y-4 animate-fade-in border-t border-slate-100 pt-6">
+                        <p className="text-sm font-bold text-blue-800">Step 2: Enter Product Details</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="label">Product Name*</label>
@@ -197,65 +211,63 @@ const ShopDetail = () => {
                                     onChange={e => setForm(p => ({ ...p, paidAmount: e.target.value }))}
                                     placeholder="0.00" className="input-field" />
                                 {form.totalAmount && (
-                                    <p className="text-xs text-red-500 mt-1">
-                                        Remaining: ₹{Math.max(0, parseFloat(form.totalAmount || 0) - parseFloat(form.paidAmount || 0)).toFixed(2)}
+                                    <p className="text-xs font-bold text-rose-500 mt-2 bg-rose-50 px-2 py-1 rounded inline-block">
+                                        Remaining Due: ₹{Math.max(0, parseFloat(form.totalAmount || 0) - parseFloat(form.paidAmount || 0)).toFixed(2)}
                                     </p>
                                 )}
                             </div>
                         </div>
-                        <button type="submit" disabled={submitting} className="btn-primary">
-                            {submitting ? "Recording..." : "Record Distribution"}
+                        <button type="submit" disabled={submitting} className="btn-primary w-full md:w-auto px-8">
+                            {submitting ? "Recording..." : "Complete Distribution"}
                         </button>
                     </form>
                 )}
             </div>
 
-            {/* Product History */}
-            <div className="card">
-                <h2 className="text-base font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                    <CreditCard size={16} /> Distribution History ({products.length})
+            <div className="card bg-white border border-slate-200">
+                <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <CreditCard size={18} className="text-violet-600" /> Distribution History ({products.length})
                 </h2>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                <div className="overflow-x-auto text-sm">
+                    <table className="w-full">
                         <thead>
-                            <tr className="border-b border-slate-100">
-                                <th className="table-header text-left">Member</th>
+                            <tr className="bg-slate-50/80 border-b border-slate-100 font-bold text-slate-700">
+                                <th className="table-header text-left pl-4 py-3">Member</th>
                                 <th className="table-header text-left">Product</th>
                                 <th className="table-header text-left">Qty</th>
                                 <th className="table-header text-left">Total</th>
                                 <th className="table-header text-left">Paid</th>
                                 <th className="table-header text-left">Due</th>
-                                <th className="table-header text-left">Date</th>
+                                <th className="table-header text-right pr-4">Date</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-100/60 font-medium">
                             {products.map(p => (
-                                <tr key={p.id} className="hover:bg-slate-50">
-                                    <td className="table-cell">
-                                        <div>
-                                            <p className="font-medium">{p.memberName}</p>
-                                            <p className="text-xs text-slate-400 font-mono">{p.memberId}</p>
-                                        </div>
+                                <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="table-cell pl-4 py-4">
+                                        <p className="font-bold text-slate-800">{p.memberName}</p>
+                                        <p className="text-xs font-mono font-bold text-blue-600">{p.memberId}</p>
                                     </td>
-                                    <td className="table-cell">{p.productName}</td>
+                                    <td className="table-cell font-medium">{p.productName}</td>
                                     <td className="table-cell">{p.quantity}</td>
-                                    <td className="table-cell">₹{p.totalAmount}</td>
-                                    <td className="table-cell text-emerald-600 font-medium">₹{p.paidAmount}</td>
+                                    <td className="table-cell font-bold">₹{p.totalAmount}</td>
+                                    <td className="table-cell text-emerald-600 font-bold">₹{p.paidAmount}</td>
                                     <td className="table-cell">
-                                        <span className={p.remainingAmount > 0 ? "text-red-500 font-medium" : "text-emerald-600"}>
+                                        <span className={`font-bold ${parseFloat(p.remainingAmount) > 0 ? "text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded" : "text-emerald-600"}`}>
                                             ₹{p.remainingAmount}
                                         </span>
                                     </td>
-                                    <td className="table-cell text-xs text-slate-400">
-                                        {p.distributedAt?.toDate?.().toLocaleDateString("en-IN") || "—"}
+                                    <td className="table-cell text-xs text-slate-400 font-medium text-right pr-4">
+                                        {p.distributedAt?.toDate?.().toLocaleDateString("en-IN") || 
+                                         (p.distributedAt ? new Date(p.distributedAt).toLocaleDateString("en-IN") : "—")}
                                     </td>
                                 </tr>
                             ))}
-                            {products.length === 0 && (
-                                <tr><td colSpan={7} className="table-cell text-center text-slate-400 py-10">No distributions yet</td></tr>
-                            )}
                         </tbody>
                     </table>
+                    {products.length === 0 && (
+                        <div className="py-16 text-center text-slate-400 font-medium">No distributions recorded yet</div>
+                    )}
                 </div>
             </div>
         </div>

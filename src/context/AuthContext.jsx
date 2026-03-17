@@ -31,8 +31,9 @@ export const AuthProvider = ({ children }) => {
             if (snap.exists()) {
                 const data = snap.data();
                 setUserProfile(data);
-                setUserRole(data.role);
-                return data;
+                const role = data.role?.toLowerCase().trim() || "";
+                setUserRole(role);
+                return { ...data, role };
             }
             return null;
         } catch (err) {
@@ -42,17 +43,16 @@ export const AuthProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setCurrentUser(user);
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                fetchUserProfile(user.uid).finally(() => {
-                    setLoading(false);
-                });
+                setCurrentUser(user);
+                await fetchUserProfile(user.uid);
             } else {
+                setCurrentUser(null);
                 setUserProfile(null);
                 setUserRole(null);
-                setLoading(false);
             }
+            setLoading(false);
         });
         return unsubscribe;
     }, []);
@@ -88,20 +88,22 @@ export const AuthProvider = ({ children }) => {
     const registerUser = async (email, password, name, role) => {
         const trimmedEmail = email.trim();
         const cred = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
-        await setDoc(doc(db, "users", cred.user.uid), {
+        const userData = {
             uid: cred.user.uid,
             name: name,
-            email: email,
-            role: role, // e.g., 'member' or 'admin'
+            email: trimmedEmail,
+            role: role,
             status: "active",
             createdAt: serverTimestamp(),
-            // Ensure some default member fields if they register as member
             ...(role === 'member' && {
                 memberId: `BCTA-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`,
                 attendanceCount: 0,
                 paymentStatus: "unpaid",
             })
-        });
+        };
+        await setDoc(doc(db, "users", cred.user.uid), userData);
+        setUserProfile(userData);
+        setUserRole(role?.toLowerCase());
         return cred;
     };
 

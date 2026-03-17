@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import {
-    collection, query, where, orderBy, limit,
-    onSnapshot, getDocs, doc
-} from "firebase/firestore";
+import { collection, query, orderBy, limit, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 import { CalendarDays, CreditCard, Package, Bell, Shield, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";

@@ -1,19 +1,15 @@
 import React, { useEffect, useState } from "react";
-import {
-    collection, onSnapshot, query, orderBy, doc, getDoc
-} from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../firebase/firebase";
 import { QRCodeSVG } from "qrcode.react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Plus, Store, QrCode, Download, Eye } from "lucide-react";
-import { shopsApi } from "../../../services/api";
 
 const ShopList = () => {
     const [shops, setShops] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [selectedShop, setSelectedShop] = useState(null);
     const [form, setForm] = useState({ shopName: "", ownerName: "", address: "", phone: "" });
 
     useEffect(() => {
@@ -28,8 +24,12 @@ const ShopList = () => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            await shopsApi.create(form);
-            toast.success("Shop created via API with fixed QR!");
+            const shopsRef = collection(db, "shops");
+            await addDoc(shopsRef, {
+                ...form,
+                createdAt: serverTimestamp(),
+            });
+            toast.success("Shop created successfully!");
             setShowForm(false);
             setForm({ shopName: "", ownerName: "", address: "", phone: "" });
         } catch (err) {

@@ -29,15 +29,21 @@ const memberLinks = [
 ];
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
-    const { userRole, userProfile, logout } = useAuth();
+    const { userRole, userProfile, logout, loading } = useAuth();
     const navigate = useNavigate();
-    const links = userRole === "member" ? memberLinks : adminLinks;
+    
+    // Normalize role and select links
+    const normalizedRole = userRole?.toLowerCase().trim() || "";
+    const links = normalizedRole === "member" ? memberLinks : (normalizedRole ? adminLinks : []);
 
     const handleLogout = async () => {
         await logout();
+        setMobileOpen(false); // Close mobile sidebar on logout
         toast.success("Logged out");
         navigate("/login");
     };
+
+    if (loading) return null; // Let Parent Layout handle loading view
 
     return (
         <>
@@ -45,14 +51,14 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
             <aside
                 className={`hidden lg:flex flex-col h-screen bg-white border-r border-slate-200 transition-all duration-300 flex-shrink-0 sticky top-0 z-30 ${collapsed ? "w-20" : "w-[260px]"}`}
             >
-                <SidebarContent collapsed={collapsed} links={links} userProfile={userProfile} userRole={userRole} handleLogout={handleLogout} setCollapsed={setCollapsed} />
+                <SidebarContent collapsed={collapsed} links={links} userProfile={userProfile} userRole={userRole} handleLogout={handleLogout} setCollapsed={setCollapsed} setMobileOpen={setMobileOpen} />
             </aside>
 
             {mobileOpen && (
                 <div className="lg:hidden fixed inset-0 z-50 flex">
                     <div className="fixed inset-0 bg-slate-900/50 animate-fade-in" onClick={() => setMobileOpen(false)} />
                     <aside className="relative w-[280px] bg-white h-full shadow-lg z-50 animate-fade-in translate-x-0" style={{ animationTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)', animationDuration: '0.4s' }}>
-                        <SidebarContent collapsed={false} links={links} userProfile={userProfile} userRole={userRole} handleLogout={handleLogout} setCollapsed={setCollapsed} />
+                        <SidebarContent collapsed={false} links={links} userProfile={userProfile} userRole={userRole} handleLogout={handleLogout} setCollapsed={setCollapsed} setMobileOpen={setMobileOpen} />
                     </aside>
                 </div>
             )}
@@ -60,7 +66,7 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     );
 };
 
-const SidebarContent = ({ collapsed, links, userProfile, userRole, handleLogout, setCollapsed }) => (
+const SidebarContent = ({ collapsed, links, userProfile, userRole, handleLogout, setCollapsed, setMobileOpen }) => (
     <div className="flex flex-col h-full bg-slate-900 text-slate-300">
         {/* Brand */}
         <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"} px-5 py-6 border-b border-slate-800 relative overflow-hidden group`}>
@@ -77,10 +83,12 @@ const SidebarContent = ({ collapsed, links, userProfile, userRole, handleLogout,
 
         {/* Nav Links */}
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+            {/* eslint-disable-next-line no-unused-vars */}
             {links.map(({ to, icon: Icon, label }) => (
                 <NavLink
                     key={to}
                     to={to}
+                    onClick={() => setMobileOpen?.(false)}
                     className={({ isActive }) =>
                         `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 font-medium text-sm ${isActive ? "bg-slate-800 text-white font-semibold" : "text-slate-400 hover:text-white hover:bg-slate-800"} ${collapsed ? "justify-center" : ""}`
                     }

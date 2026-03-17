@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { doc, deleteDoc } from "firebase/firestore";
-import { db } from "../../../firebase/firebase";
 import toast from "react-hot-toast";
 import { CheckCircle, Trash2, MessageSquareWarning, Image } from "lucide-react";
-import { complaintsApi } from "../../../services/api";
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { db } from "../../../firebase/firebase";
 
 const ComplaintsList = () => {
     const [complaints, setComplaints] = useState([]);
@@ -11,17 +10,15 @@ const ComplaintsList = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchComplaints = async () => {
-            try {
-                const data = await complaintsApi.getAll();
-                setComplaints(data);
-            } catch (err) {
-                console.error("Failed to fetch complaints:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchComplaints();
+        const q = query(collection(db, "complaints"), orderBy("createdAt", "desc"));
+        const unsub = onSnapshot(q, (snap) => {
+            setComplaints(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+            setLoading(false);
+        }, (err) => {
+            console.error("Complaints fetch error:", err);
+            setLoading(false);
+        });
+        return unsub;
     }, []);
 
     const filtered = complaints.filter(c => filter === "all" ? true : c.status === filter);
@@ -31,11 +28,13 @@ const ComplaintsList = () => {
         if (resolution === null) return; // cancelled
 
         try {
-            await complaintsApi.resolve(id, resolution);
-            toast.success("Complaint resolved via API");
-            // Refresh local state or re-fetch
-            const data = await complaintsApi.getAll();
-            setComplaints(data);
+            const docRef = doc(db, "complaints", id);
+            await updateDoc(docRef, { 
+                status: "resolved",
+                resolution: resolution,
+                resolvedAt: new Date()
+            });
+            toast.success("Complaint resolved successfully");
         } catch (err) {
             toast.error(err.message || "Failed to resolve complaint");
         }
@@ -45,9 +44,8 @@ const ComplaintsList = () => {
         if (!window.confirm("Delete this complaint?")) return;
 
         try {
-            await complaintsApi.delete(id);
-            toast.success("Deleted");
-            setComplaints(prev => prev.filter(c => c.id !== id));
+            await deleteDoc(doc(db, "complaints", id));
+            toast.success("Deleted successfully");
         } catch (err) {
             toast.error(err.message || "Failed to delete complaint");
         }

@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
-import {
-    collection, query, orderBy, onSnapshot
-} from "firebase/firestore";
-import { db } from "../../../firebase/firebase";
-import { Plus, CalendarDays, MapPin, Clock, Users, QrCode, ArrowRight } from "lucide-react";
+import { Plus, CalendarDays, MapPin, Clock, Users, QrCode, Loader2, AlertCircle, RefreshCw, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { meetingsApi } from "../../../services/api";
 import { useAuth } from "../../../context/AuthContext";
+import { db } from "../../../firebase/firebase";
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc } from "firebase/firestore";
 
 const MeetingList = () => {
     const { userRole } = useAuth();
-    const isAdmin = userRole === "admin" || userRole === "superadmin";
+    const normalizedRole = userRole?.toLowerCase().trim() || "";
+    const isAdmin = normalizedRole === "admin" || normalizedRole === "superadmin";
+    
     const [meetings, setMeetings] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
     const [form, setForm] = useState({
@@ -23,158 +23,304 @@ const MeetingList = () => {
     });
 
     useEffect(() => {
-        const fetchMeetings = async () => {
-            try {
-                const data = await meetingsApi.getAll();
+        setLoading(true);
+        console.log(`[MeetingList] Subscribing to meetings (Role: ${normalizedRole})`);
+        
+        const meetingsRef = collection(db, "meetings");
+        const q = query(meetingsRef, orderBy("createdAt", "desc"));
+
+        const unsubscribe = onSnapshot(q, 
+            (snapshot) => {
+                const data = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                console.log(`[MeetingList] Fetched ${data.length} meetings`);
                 setMeetings(data);
-            } catch (err) {
-                console.error("Failed to fetch meetings:", err);
-            } finally {
                 setLoading(false);
+                setError(null);
+            }, 
+            (err) => {
+                console.error("[MeetingList] Firestore Subscription Error:", err);
+                setError(err.message || "Failed to load meetings");
+                setLoading(false);
+                if (err.code === 'permission-denied') {
+                    toast.error("Access Denied: Check Firebase Permissions");
+                }
             }
-        };
-        fetchMeetings();
-    }, []);
+        );
+
+        return () => unsubscribe();
+    }, [normalizedRole]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!form.topic || !form.date || !form.startTime) {
+            toast.error("Please fill all required fields");
+            return;
+        }
+
         setSubmitting(true);
         try {
-            await meetingsApi.create(form);
-            toast.success("Meeting created successfully via API!");
+            const meetingData = {
+                topic: form.topic.trim(),
+                description: form.description?.trim() || "",
+                date: form.date,
+                startTime: form.startTime,
+                endTime: form.endTime || "",
+                location: form.location?.trim() || "",
+                gpsLink: form.gpsLink?.trim() || "",
+                qrDuration: parseInt(form.qrDuration || "30"),
+                status: "upcoming",
+                createdAt: serverTimestamp(),
+                attendanceCount: 0,
+                createdBy: "admin"
+            };
+
+            await addDoc(collection(db, "meetings"), meetingData);
+            toast.success("Meeting created successfully!");
             setShowForm(false);
-            setForm({ topic: "", description: "", date: "", startTime: "", endTime: "", location: "", gpsLink: "", qrDuration: "30" });
+            setForm({
+                topic: "", description: "", date: "", startTime: "", endTime: "",
+                location: "", gpsLink: "", qrDuration: "30"
+            });
         } catch (err) {
-            toast.error(err.message || "Failed to create meeting");
+            console.error("[MeetingList] Create Error:", err);
+            const errorMsg = err.code === 'permission-denied' 
+                ? "Permission denied. Check Firestore rules." 
+                : "Failed to create meeting";
+            toast.error(errorMsg);
+        } finally {
+            setSubmitting(false);
         }
-        finally { setSubmitting(false); }
+    };
+
+    const handleDelete = async (id, topic) => {
+        if (!window.confirm(`Are you sure you want to delete the meeting: "${topic}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            await deleteDoc(doc(db, "meetings", id));
+            toast.success("Meeting deleted successfully");
+        } catch (err) {
+            console.error("[MeetingList] Delete Error:", err);
+            toast.error(err.code === 'permission-denied' 
+                ? "Permission denied to delete meeting." 
+                : "Failed to delete meeting");
+        }
     };
 
     const statusColor = (status) => ({
-        active: "badge-active", upcoming: "badge-pending", expired: "badge-blocked"
+        active: "badge-active", 
+        upcoming: "badge-pending", 
+        expired: "badge-blocked"
     })[status] || "badge-pending";
 
-    return (
-        <div className="space-y-5 animate-fade-in">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="page-title mb-0">Committee Meetings</h1>
-                    <p className="text-slate-500 text-sm">{meetings.length} meetings total</p>
-                </div>
-                <button onClick={() => setShowForm(!showForm)} className={`btn-primary flex items-center gap-2 ${isAdmin ? "" : "hidden"}`}>
-                    <Plus size={16} /> Create Meeting
-                </button>
+    if (loading && meetings.length === 0) {
+        return (
+            <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 text-slate-500">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <p className="font-medium animate-pulse">Loading meetings list...</p>
             </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6 animate-fade-in max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Meetings & Sessions</h1>
+                    <p className="text-slate-500 text-sm font-medium">
+                        {isAdmin ? "Manage and create committee meetings" : "View your upcoming BCTA meetings"}
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {isAdmin && (
+                        <Link 
+                            to="/admin/meetings/attendance/all"
+                            className="btn-secondary flex items-center gap-2"
+                        >
+                            <Users size={18} />
+                            <span className="hidden sm:inline">Global Attendance</span>
+                        </Link>
+                    )}
+                    {isAdmin && (
+                        <button 
+                            onClick={() => setShowForm(!showForm)} 
+                            className="btn-primary"
+                        >
+                            <Plus size={18} /> 
+                            <span className="hidden sm:inline">Create Meeting</span>
+                            <span className="sm:hidden">New</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {error && (
+                <div className="bg-rose-50 border border-rose-100 rounded-xl p-6 flex flex-col items-center gap-4 text-center">
+                    <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center">
+                        <AlertCircle className="text-rose-600 w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="text-rose-900 font-bold">Access Issue Detected</h3>
+                        <p className="text-rose-600/80 text-sm mt-1 max-w-md">{error}</p>
+                    </div>
+                    <button 
+                        onClick={() => window.location.reload()} 
+                        className="btn-secondary text-rose-700 border-rose-200 hover:bg-rose-100/50"
+                    >
+                        <RefreshCw size={16} /> Force Reload
+                    </button>
+                </div>
+            )}
 
             {/* Create Form */}
             {showForm && (
-                <div className="card animate-fade-in">
-                    <h2 className="text-base font-semibold text-slate-700 mb-4">New Meeting Details</h2>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <label className="label">Topic*</label>
-                                <input value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))}
-                                    required placeholder="Meeting topic" className="input-field" />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className="label">Description</label>
-                                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                                    rows={2} className="input-field resize-none" placeholder="Agenda / notes..." />
-                            </div>
-                            <div>
-                                <label className="label">Date*</label>
-                                <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-                                    required className="input-field" />
-                            </div>
-                            <div>
-                                <label className="label">QR Active Duration</label>
-                                <select value={form.qrDuration} onChange={e => setForm(p => ({ ...p, qrDuration: e.target.value }))}
-                                    className="input-field">
-                                    <option value="30">30 minutes</option>
-                                    <option value="60">1 hour</option>
-                                    <option value="90">90 minutes</option>
-                                    <option value="120">2 hours</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="label">Start Time*</label>
-                                <input type="time" value={form.startTime} onChange={e => setForm(p => ({ ...p, startTime: e.target.value }))}
-                                    required className="input-field" />
-                            </div>
-                            <div>
-                                <label className="label">End Time</label>
-                                <input type="time" value={form.endTime} onChange={e => setForm(p => ({ ...p, endTime: e.target.value }))}
-                                    className="input-field" />
-                            </div>
-                            <div>
-                                <label className="label">Location</label>
-                                <input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
-                                    placeholder="Venue name" className="input-field" />
-                            </div>
-                            <div>
-                                <label className="label">GPS Map Link</label>
-                                <input value={form.gpsLink} onChange={e => setForm(p => ({ ...p, gpsLink: e.target.value }))}
-                                    placeholder="https://maps.google.com/..." className="input-field" />
-                            </div>
+                <div className="card border-blue-100 bg-blue-50/10 animate-fade-in">
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                            <Plus size={18} />
                         </div>
-                        <div className="flex gap-3">
+                        <h2 className="text-lg font-bold text-slate-900">Create New Meeting</h2>
+                    </div>
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                            <label className="label">Meeting Topic*</label>
+                            <input value={form.topic} onChange={e => setForm(p => ({ ...p, topic: e.target.value }))}
+                                required placeholder="e.g., Monthly General Body Meeting" className="input-field" />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="label">Agenda / Description</label>
+                            <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                                rows={3} className="input-field resize-none" placeholder="What will be discussed?" />
+                        </div>
+                        <div>
+                            <label className="label">Meeting Date*</label>
+                            <input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
+                                required className="input-field" />
+                        </div>
+                        <div>
+                            <label className="label">QR Logic Mode</label>
+                            <select value={form.qrDuration} onChange={e => setForm(p => ({ ...p, qrDuration: e.target.value }))}
+                                className="input-field">
+                                <option value="30">30 minutes auto-expire</option>
+                                <option value="60">1 hour auto-expire</option>
+                                <option value="120">2 hours auto-expire</option>
+                                <option value="0">Manual End Only</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="label">Start Time*</label>
+                            <input type="time" value={form.startTime} onChange={e => setForm(p => ({ ...p, startTime: e.target.value }))}
+                                required className="input-field" />
+                        </div>
+                        <div>
+                            <label className="label">End Time (Estimated)</label>
+                            <input type="time" value={form.endTime} onChange={e => setForm(p => ({ ...p, endTime: e.target.value }))}
+                                className="input-field" />
+                        </div>
+                        <div>
+                            <label className="label">Venue / Location</label>
+                            <input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
+                                placeholder="Meeting hall name" className="input-field" />
+                        </div>
+                        <div>
+                            <label className="label">Google Maps Link</label>
+                            <input value={form.gpsLink} onChange={e => setForm(p => ({ ...p, gpsLink: e.target.value }))}
+                                placeholder="https://maps.google.com/..." className="input-field" />
+                        </div>
+                        <div className="md:col-span-2 flex justify-end gap-3 pt-4">
                             <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
-                            <button type="submit" disabled={submitting} className="btn-primary">
-                                {submitting ? "Creating..." : "Create Meeting"}
+                            <button type="submit" disabled={submitting} className="btn-primary min-w-[140px]">
+                                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Session"}
                             </button>
                         </div>
                     </form>
                 </div>
             )}
 
-            {/* Meetings Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* Meetings List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {meetings.map(m => (
-                    <div key={m.id} className="card hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between gap-2 mb-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                <CalendarDays size={18} className="text-blue-600" />
+                    <div key={m.id} className="card group hover:border-blue-200 hover:shadow-xl hover:shadow-blue-50/50 transition-all duration-300">
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                                <CalendarDays size={24} />
                             </div>
-                            <span className={statusColor(m.status)}>{m.status}</span>
+                            <div className="flex gap-2">
+                                <span className={`${statusColor(m.status)} px-3 py-1 ring-2 ring-white shadow-sm capitalize`}>
+                                    {m.status}
+                                </span>
+                                {isAdmin && (
+                                    <button 
+                                        onClick={(e) => { e.preventDefault(); handleDelete(m.id, m.topic); }}
+                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                        title="Delete Meeting"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        <h3 className="font-semibold text-slate-800 mb-1">{m.topic}</h3>
-                        <p className="text-xs text-slate-500 mb-3 line-clamp-2">{m.description}</p>
-                        <div className="space-y-1.5 text-xs text-slate-500">
-                            <div className="flex items-center gap-1.5">
-                                <CalendarDays size={12} />
-                                {m.date?.toDate ? m.date.toDate().toLocaleDateString("en-IN") : "—"}
+                        
+                        <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors mb-2 leading-tight">
+                            {m.topic}
+                        </h3>
+                        {m.description && (
+                            <p className="text-sm text-slate-500 line-clamp-2 mb-4 font-medium">
+                                {m.description}
+                            </p>
+                        )}
+                        
+                        <div className="space-y-2.5 pt-4 border-t border-slate-100">
+                            <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
+                                <CalendarDays size={16} className="text-slate-400" />
+                                {new Date(m.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </div>
-                            <div className="flex items-center gap-1.5">
-                                <Clock size={12} />
-                                {m.startTime} – {m.endTime || "TBD"}
+                            <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
+                                <Clock size={16} className="text-slate-400" />
+                                {m.startTime} {m.endTime ? `– ${m.endTime}` : '(TBD)'}
                             </div>
-                            {m.location && <div className="flex items-center gap-1.5"><MapPin size={12} />{m.location}</div>}
+                            {m.location && (
+                                <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
+                                    <MapPin size={16} className="text-slate-400" />
+                                    <span className="truncate">{m.location}</span>
+                                </div>
+                            )}
                         </div>
-                        {isAdmin && (
-                            <div className="mt-4 flex gap-2">
+
+                        {isAdmin ? (
+                            <div className="mt-6 flex gap-3">
                                 <Link to={`/admin/meetings/${m.id}`}
-                                    className="flex-1 btn-primary text-xs py-1.5 text-center flex items-center justify-center gap-1">
-                                    <QrCode size={13} /> Manage QR
+                                    className="flex-1 btn-primary text-xs h-10 px-0">
+                                    <QrCode size={14} /> Manage QR
                                 </Link>
                                 <Link to={`/admin/meetings/${m.id}/attendance`}
-                                    className="flex-1 btn-secondary text-xs py-1.5 text-center flex items-center justify-center gap-1">
-                                    <Users size={13} /> Attendance
+                                    className="flex-1 btn-secondary text-xs h-10 px-0">
+                                    <Users size={14} /> Stats
                                 </Link>
                             </div>
-                        )}
-                        {!isAdmin && (
-                            <div className="mt-4 pt-3 border-t border-slate-100">
-                                <Link to="/member/scan" className="btn-primary w-full text-xs py-2 flex items-center justify-center gap-2">
-                                    <QrCode size={14} /> Scan to Attend
+                        ) : (
+                            <div className="mt-6">
+                                <Link to="/member/scan" className="btn-primary w-full h-11 text-sm font-bold shadow-lg shadow-blue-100 active:scale-95 transition-transform">
+                                    <QrCode size={18} /> Mark Attendance
                                 </Link>
                             </div>
                         )}
                     </div>
                 ))}
-                {!loading && meetings.length === 0 && (
-                    <div className="card md:col-span-2 xl:col-span-3 text-center text-slate-400 py-16">
-                        No meetings created yet. Click "Create Meeting" to get started.
+                
+                {!loading && meetings.length === 0 && !error && (
+                    <div className="md:col-span-2 xl:col-span-3 card border-dashed border-2 border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                            <CalendarDays className="text-slate-300 w-8 h-8" />
+                        </div>
+                        <h3 className="text-slate-900 font-bold text-lg">No meetings scheduled</h3>
+                        <p className="text-slate-500 text-sm mt-1 max-w-xs">
+                            {isAdmin ? "Click 'Create Meeting' above to start your first session." : "There are currently no upcoming committee meetings."}
+                        </p>
                     </div>
                 )}
             </div>

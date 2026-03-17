@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+# Environment variables
+.env
+.env.local
+.env.*.local
 serviceAccountKey.json
 
 # Editor directories and files

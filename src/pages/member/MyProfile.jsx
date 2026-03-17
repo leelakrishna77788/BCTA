@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 import { Droplet, MapPin, User, Phone, CreditCard } from "lucide-react";
 
 const MyProfile = () => {
-    const { userProfile } = useAuth();
+    const { userProfile, currentUser } = useAuth();
     const [attendance, setAttendance] = useState([]);
-    const { currentUser } = useAuth();
 
     useEffect(() => {
         if (!currentUser) return;

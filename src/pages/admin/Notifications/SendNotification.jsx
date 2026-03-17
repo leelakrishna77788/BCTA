@@ -1,10 +1,8 @@
-import React, { useState } from "react";
-import { collection, addDoc, serverTimestamp, getDocs, where, query } from "firebase/firestore";
+import React, { useState, useEffect } from "react";
+import { collection, query, addDoc, serverTimestamp, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "../../../firebase/firebase";
-import { useAuth } from "../../../context/AuthContext";
 import toast from "react-hot-toast";
-import { Bell, Send, Users, Megaphone } from "lucide-react";
-import { notificationsApi } from "../../../services/api";
+import { Bell, Send } from "lucide-react";
 
 const NOTIFICATION_TYPES = [
     { value: "meeting", label: "📅 Meeting Alert", color: "bg-blue-100 text-blue-700" },
@@ -15,33 +13,33 @@ const NOTIFICATION_TYPES = [
 ];
 
 const SendNotification = () => {
-    const { currentUser } = useAuth();
     const [form, setForm] = useState({ title: "", body: "", type: "general" });
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState([]);
 
     // Load sent notifications
-    React.useEffect(() => {
-        const fetch = async () => {
-            const { onSnapshot, orderBy } = await import("firebase/firestore");
-            const unsub = onSnapshot(
-                query(collection(db, "notifications"), orderBy("sentAt", "desc")),
-                snap => setSent(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 20))
-            );
-            return unsub;
-        };
-        fetch();
+    useEffect(() => {
+        const q = query(collection(db, "notifications"), orderBy("sentAt", "desc"));
+        const unsub = onSnapshot(q, (snap) => {
+            setSent(snap.docs.map(d => ({ id: d.id, ...d.data() })).slice(0, 20));
+        });
+        return unsub;
     }, []);
 
     const handleSend = async (e) => {
         e.preventDefault();
         setSending(true);
         try {
-            await notificationsApi.send({ ...form });
-            toast.success("Notification sent to all members via API!");
+            await addDoc(collection(db, "notifications"), {
+                ...form,
+                sentAt: serverTimestamp(),
+                target: "all"
+            });
+            toast.success("Notification sent to all members!");
             setForm({ title: "", body: "", type: "general" });
         } catch (err) {
-            toast.error(err.message || "Failed to send notification");
+            console.error("Failed to send notification:", err);
+            toast.error("Failed to send notification");
         }
         finally { setSending(false); }
     };
@@ -112,7 +110,7 @@ const SendNotification = () => {
                                     <p className="font-semibold text-sm">{n.title}</p>
                                     <p className="text-xs mt-0.5 opacity-80">{n.body}</p>
                                     <p className="text-xs opacity-50 mt-1.5">
-                                        {n.sentAt?.toDate?.().toLocaleString("en-IN")}
+                                        {n.sentAt?.toDate?.().toLocaleString("en-IN") || "Just now"}
                                     </p>
                                 </div>
                             );

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { CreditCard, Package, AlertCircle } from "lucide-react";
 
 const MyPayments = () => {
-    const { currentUser, userProfile } = useAuth();
+    const { userProfile, currentUser } = useAuth();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 

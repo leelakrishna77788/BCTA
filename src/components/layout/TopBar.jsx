@@ -1,39 +1,42 @@
 import React, { useState, useEffect } from "react";
-import { Menu, Bell, Search } from "lucide-react";
+import { Menu, Bell } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { notificationsApi } from "../../services/api";
+import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { db } from "../../firebase/firebase";
 
 const TopBar = ({ onMenuClick }) => {
-    const { currentUser } = useAuth();
+    const { currentUser, userProfile, userRole } = useAuth();
     const [notifs, setNotifs] = useState([]);
     const [showNotifs, setShowNotifs] = useState(false);
 
     useEffect(() => {
         if (!currentUser) return;
-        const fetchNotifs = async () => {
-            try {
-                const data = await notificationsApi.getAll();
-                // Take latest 5
-                setNotifs(data.slice(0, 5));
-            } catch (err) {
-                console.log("Notifs fetch error:", err);
-            }
-        };
-        fetchNotifs();
-        const interval = setInterval(fetchNotifs, 30000); // Poll every 30s
-        return () => clearInterval(interval);
+        
+        const q = query(
+            collection(db, "notifications"),
+            orderBy("sentAt", "desc"),
+            limit(5)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setNotifs(data);
+        }, (err) => {
+            console.error("Notifs fetch error:", err);
+        });
+
+        return () => unsubscribe();
     }, [currentUser]);
 
     return (
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 fixed top-0 right-0 left-0 lg:left-64 z-30 px-4 sm:px-8 flex items-center justify-between transition-all duration-300">
+        <header className="h-16 flex-shrink-0 bg-white border-b border-slate-200 z-30 px-4 sm:px-8 flex items-center justify-between transition-all duration-300">
             <div className="flex items-center gap-4">
                 <button onClick={onMenuClick} className="lg:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-600">
                     <Menu size={20} />
                 </button>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg text-slate-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all border border-transparent focus-within:border-blue-200">
-                    <Search size={16} />
-                    <input type="text" placeholder="Search anything..." className="bg-transparent border-none outline-none text-sm text-slate-600 w-48 lg:w-64" />
-                </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
@@ -83,17 +86,17 @@ const TopBar = ({ onMenuClick }) => {
                 <div className="flex items-center gap-3 pl-2 group cursor-pointer">
                     <div className="hidden sm:block text-right">
                         <p className="text-xs font-black text-slate-900 leading-none group-hover:text-blue-600 transition-colors uppercase tracking-wider">
-                            {currentUser?.displayName || "Super Admin"}
+                            {userProfile?.name || currentUser?.displayName || "User"}
                         </p>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                            {currentUser?.role || "Admin"}
+                            {userRole || "Member"}
                         </p>
                     </div>
-                    {currentUser?.photoURL ? (
-                        <img src={currentUser.photoURL} alt="" className="w-10 h-10 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-blue-100 transition-all shadow-sm" />
+                    {userProfile?.photoURL || currentUser?.photoURL ? (
+                        <img src={userProfile?.photoURL || currentUser?.photoURL} alt="" className="w-10 h-10 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-blue-100 transition-all shadow-sm" />
                     ) : (
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-lg shadow-blue-100 group-hover:scale-105 transition-all">
-                            {currentUser?.displayName?.[0] || "A"}
+                            {(userProfile?.name?.[0] || currentUser?.displayName?.[0] || "U").toUpperCase()}
                         </div>
                     )}
                 </div>
