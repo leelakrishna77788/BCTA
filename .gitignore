@@ -27,3 +27,8 @@ serviceAccountKey.json
 *.njsproj
 *.sln
 *.sw?
+node_modules/
+dist/
+.env
+server/.env
+server/node_modules
