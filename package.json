@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "vdev": "npx vercel dev",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -22,7 +23,9 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.13.0",
     "recharts": "^3.7.0",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "firebase-admin": "^12.11.0",
+    "@vercel/node": "^3.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

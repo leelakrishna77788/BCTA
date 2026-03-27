@@ -1,0 +1,166 @@
+import React, { createContext, useContext, useEffect, useState } from "react";
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  type UserCredential,
+} from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../firebase/firebaseConfig";
+import type { AuthContextValue } from "../types/auth.types";
+import type { Member, UserRole } from "../types/member.types";
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAuth = (): AuthContextValue => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+};
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [currentUser, setCurrentUser] = useState<AuthContextValue["currentUser"]>(null);
+  const [userProfile, setUserProfile] = useState<Member | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUserProfile = async (uid: string): Promise<Member | null> => {
+    try {
+      const docRef = doc(db, "users", uid);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data() as Member;
+        setUserProfile(data);
+        const role = (data.role?.toLowerCase().trim() as UserRole) || "member";
+        setUserRole(role);
+        return { ...data, role };
+      }
+      return null;
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        });
+        await fetchUserProfile(user.uid);
+      } else {
+        setCurrentUser(null);
+        setUserProfile(null);
+        setUserRole(null);
+      }
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  const login = async (email: string, password: string): Promise<UserCredential> => {
+    const trimmedEmail = email.trim();
+    const cred = await signInWithEmailAndPassword(auth, trimmedEmail, password);
+    const profile = await fetchUserProfile(cred.user.uid);
+    if (!profile) throw new Error("User profile not found. Contact admin.");
+    if (profile.status === "blocked") throw new Error("Your account is blocked. Contact admin.");
+    return cred;
+  };
+
+  const logout = () => signOut(auth);
+
+  const createMember = async (
+    email: string,
+    password: string,
+    memberData: Partial<Member>
+  ): Promise<UserCredential> => {
+    const trimmedEmail = email.trim();
+    const cred = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
+    await setDoc(doc(db, "users", cred.user.uid), {
+      ...memberData,
+      uid: cred.user.uid,
+      role: "member",
+      status: "active",
+      attendanceCount: 0,
+      paymentStatus: "unpaid",
+      createdAt: serverTimestamp(),
+    });
+    return cred;
+  };
+
+  const registerUser = async (
+    email: string,
+    password: string,
+    name: string,
+    role: UserRole
+  ): Promise<UserCredential> => {
+    const trimmedEmail = email.trim();
+    const cred = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
+    const userData: Partial<Member> = {
+      uid: cred.user.uid,
+      name,
+      email: trimmedEmail,
+      role,
+      status: "active",
+      ...(role === "member" && {
+        memberId: `BCTA-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`,
+        attendanceCount: 0,
+        paymentStatus: "unpaid",
+      }),
+    };
+    await setDoc(doc(db, "users", cred.user.uid), {
+      ...userData,
+      createdAt: serverTimestamp(),
+    });
+    setUserProfile(userData as Member);
+    setUserRole(role?.toLowerCase() as UserRole);
+    return cred;
+  };
+
+  const register = (email: string, password: string) => {
+    const trimmedEmail = email.trim();
+    return createUserWithEmailAndPassword(auth, trimmedEmail, password);
+  };
+
+  const resetPassword = (email: string) => sendPasswordResetEmail(auth, email);
+
+  const refreshProfile = async () => {
+    if (currentUser) await fetchUserProfile(currentUser.uid);
+  };
+
+  const value: AuthContextValue = {
+    currentUser,
+    userProfile,
+    userRole,
+    loading,
+    login,
+    logout,
+    createMember,
+    registerUser,
+    register,
+    resetPassword,
+    refreshProfile,
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 font-medium animate-pulse">Initializing Portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export default AuthContext;

@@ -3,64 +3,119 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAuth() {
+    // ─── Helpers ───────────────────────────────────────────────────────────
+    function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isAdmin() {
-      return isAuth() &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role.matches('(?i)^(admin|superadmin)[\\s]*$');
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // 1. Users collection
+    function isAdmin() {
+      return isAuthenticated() && 
+             (getUserData().get('role', 'member') == 'admin' || 
+              getUserData().get('role', 'member') == 'Admin' ||
+              getUserData().get('role', 'member') == 'superadmin' ||
+              getUserData().get('role', 'member') == 'SuperAdmin');
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+             (getUserData().get('role', 'member') == 'superadmin' ||
+              getUserData().get('role', 'member') == 'SuperAdmin');
+    }
+
+    function isActiveUser() {
+      return isAuthenticated() && getUserData().status == 'active';
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // ─── Users / Members ───────────────────────────────────────────────────
     match /users/{userId} {
-      allow create: if isAuth() && request.auth.uid == userId;
-      allow read, update: if isAuth() && (request.auth.uid == userId || isAdmin());
+      // Any authenticated user can read their own doc; admins can read all
+      allow read:   if isOwner(userId) || isAdmin();
+
+      // User creates their own doc on registration
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+
+      // Members can update their own doc but NOT change role or status
+      allow update: if (isOwner(userId) &&
+                       !request.resource.data.keys().hasAny(['role', 'status', 'attendanceCount']))
+                    || isAdmin();
+
+      // Only admin/superadmin can hard-delete a user doc (soft-delete via status preferred)
       allow delete: if isAdmin();
     }
 
-    // 2. Meetings
-    match /meetings/{id} {
-      allow read: if isAuth();
-      allow create, update, delete: if isAdmin();
+    // ─── Meetings ──────────────────────────────────────────────────────────
+    match /meetings/{meetingId} {
+      allow read:                    if isAdmin() || isActiveUser();
+      allow create, update, delete:  if isAdmin();
     }
 
-    // 3. Attendance
-    match /attendance/{id} {
-      allow read, create: if isAuth();
+    // ─── Attendance ────────────────────────────────────────────────────────
+    match /attendance/{docId} {
+      allow read: if isAdmin() || isActiveUser();
+
+      // Member can only create for themselves; admin can create for anyone
+      allow create: if isActiveUser() && (
+                      request.resource.data.memberUID == request.auth.uid || isAdmin()
+                    );
       allow update, delete: if isAdmin();
     }
 
-    // 4. Notifications
-    match /notifications/{id} {
-      allow read: if isAuth();
-      allow create, update, delete: if isAdmin();
-    }
-
-    // 5. Shops & Products
-    match /shops/{id} {
-      allow read: if isAuth();
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /products/{id} {
-      allow read: if isAuth();
-      allow create, update, delete: if isAdmin();
-    }
-
-    // 6. Complaints
-    match /complaints/{id} {
-      allow read, create: if isAuth();
+    // ─── Complaints ────────────────────────────────────────────────────────
+    match /complaints/{complaintId} {
+      // Member sees their own; admin sees all
+      allow read:   if isActiveUser() && (
+                      resource.data.submittedByUID == request.auth.uid || isAdmin()
+                    );
+      allow create: if isActiveUser();
       allow update, delete: if isAdmin();
     }
 
-    // 7. Payments
-    match /payments/{id} {
-      allow read: if isAuth();
-      allow create, update, delete: if isAdmin();
+    // ─── Notifications ─────────────────────────────────────────────────────
+    match /notifications/{notifId} {
+      allow read:   if isActiveUser();
+      allow create, delete: if isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'Admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'superadmin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'SuperAdmin'
+      );
+      // Any active user can mark notification as read or dismiss it
+      allow update: if isActiveUser() &&
+                    request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['readBy', 'dismissedBy']);
     }
 
-    // Default block for anything else
+    // ─── Shops ─────────────────────────────────────────────────────────────
+    match /shops/{shopId} {
+      allow read:                    if isActiveUser();
+      allow create, update, delete:  if isAdmin();
+    }
+
+    // ─── Payments ──────────────────────────────────────────────────────────
+    match /payments/{paymentId} {
+      // Member sees own payments; admin sees all
+      allow read:   if isActiveUser() && (
+                      resource.data.memberUID == request.auth.uid || isAdmin()
+                    );
+      allow create, update: if isAdmin();
+      allow delete:         if isSuperAdmin();
+    }
+
+    // ─── Products / Inventory ──────────────────────────────────────────────
+    match /products/{productId} {
+      allow read:                    if isAdmin() || isActiveUser();
+      allow create, update, delete:  if isAdmin();
+    }
+
+    // ─── Deny all else ─────────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }
