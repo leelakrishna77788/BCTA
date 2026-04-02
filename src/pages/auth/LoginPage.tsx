@@ -79,7 +79,7 @@ const LoginPage: React.FC = () => {
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         {/* Login Card */}
         <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-xl border border-slate-100 animate-fade-in overflow-hidden">
-          
+
           {/* Header with Logo */}
           <div className="bg-[#000080] p-6 sm:p-8 text-center">
             <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center mx-auto shadow-lg mb-3">
@@ -97,7 +97,7 @@ const LoginPage: React.FC = () => {
           <div className="p-6 sm:p-8">
             <div className="mb-6">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                Welcome Back
+                Welcome Back seikanth
               </h2>
               <p className="text-slate-500 mt-1 text-sm">
                 Sign in to access your account
