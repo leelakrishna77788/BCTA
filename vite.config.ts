@@ -20,27 +20,24 @@ export default defineConfig(({ mode }) => {
           if (req.url && req.url.startsWith('/api/admin')) {
             console.log(`[Vite API Proxy] ${req.method} ${req.url}`);
             
-            // Inject env variables for local dev API
             process.env.FIREBASE_SERVICE_ACCOUNT = env.FIREBASE_SERVICE_ACCOUNT;
             try {
-              // Dynamic import of the Admin API handler
               const { default: handler } = await server.ssrLoadModule('./api/admin.ts');
               
-              // Mock Vercel response object
+              const originalSetHeader = res.setHeader.bind(res);
               const vercelRes = Object.assign(res, {
                 status: (code: number) => { res.statusCode = code; return vercelRes; },
                 json: (data: any) => {
-                  res.setHeader('Content-Type', 'application/json');
+                  originalSetHeader('Content-Type', 'application/json');
                   res.end(JSON.stringify(data));
                   return vercelRes;
                 },
                 setHeader: (name: string, value: string | string[]) => {
-                  res.setHeader(name, value);
+                  originalSetHeader(name, value);
                   return vercelRes;
                 }
               });
 
-              // Parse body for POST requests
               if (req.method === 'POST') {
                 let body = '';
                 req.on('data', chunk => { body += chunk; });
@@ -56,10 +53,10 @@ export default defineConfig(({ mode }) => {
                 await handler(req as any, vercelRes as any);
               }
               return;
-            } catch (err) {
+            } catch (err: any) {
               console.error('API Error:', err);
               res.statusCode = 500;
-              res.end(err.message);
+              res.end(err?.message || 'Internal server error');
               return;
             }
           }
@@ -76,6 +73,25 @@ export default defineConfig(({ mode }) => {
   server: {
     port: 5173,
     strictPort: true,
+  },
+  build: {
+    target: 'es2020',
+    minify: 'esbuild',
+    cssMinify: true,
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'router': ['react-router-dom'],
+          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+          'ui': ['lucide-react', 'recharts', 'react-hot-toast'],
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'firebase/app', 'firebase/auth', 'firebase/firestore']
   }
   };
 })

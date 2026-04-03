@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Menu, Bell, Trash2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { collection, query, orderBy, limit, onSnapshot, Timestamp, deleteDoc, doc } from "firebase/firestore";
@@ -17,7 +17,7 @@ interface NotificationDoc {
   [key: string]: any;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
+const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   const { currentUser, userProfile, userRole } = useAuth();
   const [notifs, setNotifs] = useState<NotificationDoc[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -48,7 +48,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
     return () => unsubscribe();
   }, [currentUser]);
 
-  const deleteNotification = async (id: string) => {
+  const deleteNotification = useCallback(async (id: string) => {
     if (!window.confirm("Delete this notification?")) return;
     try {
       await deleteDoc(doc(db, "notifications", id));
@@ -56,7 +56,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
     } catch (err: any) {
       toast.error("Failed to delete notification");
     }
-  };
+  }, []);
 
   return (
     <header className="h-16 flex-shrink-0 bg-white border-b border-slate-200 z-30 px-4 sm:px-8 flex items-center justify-between transition-all duration-300">
@@ -165,6 +165,6 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
       </div>
     </header>
   );
-};
+});
 
 export default TopBar;

@@ -7,6 +7,8 @@ import { db } from "../../../firebase/firebaseConfig";
 interface Complaint {
     id: string;
     memberId?: string;
+    submittedByUID?: string;
+    submittedByName?: string;
     status: string;
     createdAt: any;
     description: string;
@@ -87,25 +89,31 @@ const ComplaintsList: React.FC = () => {
 
             <div className="space-y-3">
                 {filtered.map(c => (
-                    <div key={c.id} className="card animate-fade-in">
+                    <div key={c.id} className="card animate-fade-in border-none shadow-sm hover:shadow-md transition-all">
                         <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3 flex-1">
-                                <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                    <MessageSquareWarning size={18} className="text-orange-500" />
+                            <div className="flex items-start gap-4 flex-1">
+                                <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center shrink-0 border border-orange-100">
+                                    <MessageSquareWarning size={20} className="text-orange-600" />
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-mono text-xs text-[#000080]">{c.memberId || "Unknown"}</span>
-                                        <span className={c.status === "open" ? "badge-pending" : "badge-active"}>{c.status}</span>
-                                        <span className="text-xs text-slate-400 ml-auto">
+                                <div className="flex-1 min-w-0">
+                                    {c.title && (
+                                        <h3 className="font-black text-slate-900 text-sm mb-1">{c.title}</h3>
+                                    )}
+                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                        <span className="font-black text-slate-900 text-sm">{c.submittedByName || "Anonymous Member"}</span>
+                                        <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase">{c.memberId || "No ID"}</span>
+                                        <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-full ${c.status === "open" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                                            {c.status}
+                                        </span>
+                                        <span className="text-[11px] text-slate-400 font-medium ml-auto">
                                             {formatDate(c.createdAt)}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-slate-700">{c.description}</p>
+                                    <p className="text-slate-600 leading-relaxed text-sm bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50 mb-3">{c.description}</p>
                                     {c.imageURL && (
                                         <a href={c.imageURL} target="_blank" rel="noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs text-[#000080] hover:underline mt-1.5">
-                                            <Image size={12} /> View attached image
+                                            className="inline-flex items-center gap-2 text-xs font-bold text-[#000080] bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors">
+                                            <Image size={14} /> View Evidence Image
                                         </a>
                                     )}
                                 </div>

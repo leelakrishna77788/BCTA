@@ -112,7 +112,39 @@ export async function deleteAuthUserREST(projectId: string, accessToken: string,
 
   const data = await response.json();
   if (!response.ok) {
+    if (data.error && data.error.message === 'USER_NOT_FOUND') {
+      console.warn(`Auth user ${uid} not found, skipping auth deletion.`);
+      return { skipped: true };
+    }
     throw new Error(`REST deleteAuthUser failed: ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+
+/**
+ * Revokes tokens for a user via REST API.
+ */
+export async function revokeTokensREST(projectId: string, accessToken: string, uid: string) {
+  const url = `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:update`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      localId: uid,
+      validSince: String(Math.floor(Date.now() / 1000))
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    if (data.error && data.error.message === 'USER_NOT_FOUND') {
+      console.warn(`Auth user ${uid} not found, skipping token revocation.`);
+      return { skipped: true };
+    }
+    throw new Error(`REST revokeTokens failed: ${JSON.stringify(data)}`);
   }
   return data;
 }

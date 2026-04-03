@@ -8,6 +8,7 @@ import {
   deleteDoc,
   query,
   orderBy,
+  limit,
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
@@ -15,8 +16,10 @@ import { db } from "../firebase/firebaseConfig";
 import type { Meeting, CreateMeetingInput } from "../types/meeting.types";
 
 /** Fetch all meetings ordered by newest first */
-export async function getMeetings(): Promise<Meeting[]> {
-  const snap = await getDocs(query(collection(db, "meetings"), orderBy("createdAt", "desc")));
+export async function getMeetings(maxLimit = 100): Promise<Meeting[]> {
+  const snap = await getDocs(
+    query(collection(db, "meetings"), orderBy("createdAt", "desc"), limit(maxLimit))
+  );
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Meeting));
 }
 

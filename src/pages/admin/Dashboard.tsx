@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Users, CalendarDays, CreditCard, MessageSquareWarning, TrendingUp, UserCheck, UserX, AlertCircle, RefreshCw, LucideIcon } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { Link } from "react-router-dom";
@@ -14,7 +14,7 @@ interface StatCardProps {
     sub?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ icon: Icon, label, value, color, sub }) => {
+const StatCard: React.FC<StatCardProps> = React.memo(({ icon: Icon, label, value, color, sub }) => {
     const textColorClass = color.includes('emerald') ? 'text-emerald-600' :
         color.includes('rose') || color.includes('red') ? 'text-rose-600' :
             color.includes('amber') || color.includes('orange') ? 'text-amber-600' :
@@ -38,7 +38,7 @@ const StatCard: React.FC<StatCardProps> = ({ icon: Icon, label, value, color, su
             </div>
         </div>
     );
-};
+});
 
 interface MemberStat {
     id?: string;
@@ -81,23 +81,26 @@ const AdminDashboard: React.FC = () => {
     const [attendanceData, setAttendanceData] = useState<any[]>([]);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
             // Fetch Users (Members)
             const membersSnap = await getDocs(query(collection(db, "users"), where("role", "==", "member")));
             const members = membersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as MemberStat));
-            
+
             // Fetch Meetings
             const meetingsSnap = await getDocs(query(collection(db, "meetings"), orderBy("date", "desc")));
             const meetings = meetingsSnap.docs.map(d => ({ id: d.id, ...d.data() } as MeetingStat));
 
             // Fetch Complaints
             const complaintsSnap = await getDocs(query(collection(db, "complaints"), where("status", "==", "open")));
-            
-            // Calculate Stats
-            const active = members.filter(m => m.status === "active").length;
-            const blocked = members.filter(m => m.status === "blocked").length;
-            const pendingPay = members.filter(m => m.paymentStatus === "unpaid").length;
+
+            // Calculate Stats - single pass
+            let active = 0, blocked = 0, pendingPay = 0;
+            members.forEach(m => {
+                if (m.status === "active") active++;
+                else if (m.status === "blocked") blocked++;
+                if (m.paymentStatus === "unpaid") pendingPay++;
+            });
 
             setStats({
                 totalMembers: members.length,
@@ -124,7 +127,7 @@ const AdminDashboard: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchStats();
@@ -132,12 +135,19 @@ const AdminDashboard: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const pieData = [
+    const pieData = useMemo(() => [
         { name: "Active", value: stats.activeMembers, color: "#10b981" },
         { name: "Blocked", value: stats.blockedMembers, color: "#f43f5e" },
-    ];
+    ], [stats.activeMembers, stats.blockedMembers]);
 
-    // Removed full page loading for better perceived performance
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const fetchStatsCallback = useCallback(fetchStats, []);
+
+    useEffect(() => {
+        fetchStatsCallback();
+        const interval = setInterval(fetchStatsCallback, 60000);
+        return () => clearInterval(interval);
+    }, [fetchStatsCallback]);
 
     return (
         <div className="space-y-8 animate-fade-in pb-8">

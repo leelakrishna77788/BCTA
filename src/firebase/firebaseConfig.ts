@@ -1,9 +1,7 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-
-console.log('[BCTA] firebaseConfig loading...');
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -15,15 +13,7 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-console.log('[BCTA] firebaseConfig:', JSON.stringify(firebaseConfig, null, 2));
-
-let app;
-try {
-  app = initializeApp(firebaseConfig);
-  console.log('[BCTA] Firebase app initialized successfully');
-} catch (e) {
-  console.error('[BCTA] Firebase init ERROR:', e);
-}
+const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);

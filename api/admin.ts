@@ -4,7 +4,8 @@ import {
   getGoogleAccessToken, 
   deleteAuthUserREST, 
   deleteFirestoreDocREST, 
-  getFirestoreDocREST 
+  getFirestoreDocREST,
+  revokeTokensREST
 } from "./adminUtils";
 
 // Define local types if @vercel/node is missing
@@ -54,6 +55,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       saJson = saJson.slice(1, -1);
     }
     const serviceAccount = JSON.parse(saJson);
+    if (serviceAccount.private_key) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
     const projectId = serviceAccount.project_id;
 
     // A. Verify client token
@@ -107,6 +111,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await deleteFirestoreDocREST(projectId, accessToken, "users", uid);
         
         return res.status(200).json({ message: `User ${uid} deleted successfully` });
+      }
+
+      case "revokeTokens": {
+        if (!uid) return res.status(400).json({ error: "Missing uid for revokeTokens action" });
+        console.log(`[api/admin] Revoking tokens for user: ${uid}`);
+        await revokeTokensREST(projectId, accessToken, uid);
+        return res.status(200).json({ message: `Tokens revoked successfully for user ${uid}` });
+      }
+
+      case "bulkDeleteUsers": {
+        const { uids } = req.body as { uids?: string[] };
+        if (!uids || !Array.isArray(uids)) return res.status(400).json({ error: "Missing or invalid uids for bulkDeleteUsers" });
+        console.log(`[api/admin] Bulk deleting users: ${uids.length}`);
+        
+        for (const userId of uids) {
+          try {
+            await deleteAuthUserREST(projectId, accessToken, userId);
+            await deleteFirestoreDocREST(projectId, accessToken, "users", userId);
+          } catch (e: any) {
+            console.error(`[api/admin] Failed to delete user ${userId}:`, e.message);
+            // continue with others
+          }
+        }
+        return res.status(200).json({ message: `${uids.length} users processed for deletion` });
       }
 
       default:

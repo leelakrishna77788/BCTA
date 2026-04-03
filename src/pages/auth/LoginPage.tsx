@@ -74,7 +74,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF5B] flex flex-col">
+    <div className="min-h-screen bg-[#FFF5B7] flex flex-col">
       {/* Main Container */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         {/* Login Card */}

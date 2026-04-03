@@ -5,6 +5,8 @@ import {
   getDocs,
   query,
   where,
+  orderBy,
+  limit,
   serverTimestamp,
   Timestamp,
   updateDoc,
@@ -130,10 +132,12 @@ export async function getMemberAttendance(memberUID: string): Promise<Attendance
 }
 
 /** Get the global attendance matrix (all meetings × all members) — used by admin dashboard */
-export async function getGlobalAttendance(): Promise<{
+export async function getGlobalAttendance(maxLimit = 1000): Promise<{
   attendance: AttendanceRecord[];
 }> {
-  const snap = await getDocs(collection(db, "attendance"));
+  const snap = await getDocs(
+    query(collection(db, "attendance"), orderBy("scannedAt", "desc"), limit(maxLimit))
+  );
   return {
     attendance: snap.docs.map((d) => ({ id: d.id, ...d.data() } as AttendanceRecord)),
   };

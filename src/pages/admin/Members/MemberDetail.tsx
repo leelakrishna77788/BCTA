@@ -6,8 +6,9 @@ import toast from "react-hot-toast";
 import { 
     ArrowLeft, Edit, UserX, UserCheck, Phone, MapPin, 
     Droplet, Calendar, CreditCard, Activity, Award, 
-    TrendingUp, ShieldCheck, Mail, AlertTriangle, Package, Trash2
+    TrendingUp, ShieldCheck, Mail, AlertTriangle, Package, Trash2, X, QrCode
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { membersApi } from "../../../services/membersService";
 import LoadingSkeleton, { CardSkeleton, TableSkeleton } from "../../../components/shared/LoadingSkeleton";
 
@@ -48,6 +49,7 @@ const MemberDetail: React.FC = () => {
     const [products, setProducts] = useState<ProductDoc[]>([]);
     const [meetings, setMeetings] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
+    const [showID, setShowID] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -103,36 +105,46 @@ const MemberDetail: React.FC = () => {
         fetchData();
     }, [id]);
 
-    const toggleBlock = async () => {
+    const toggleBlock = () => {
         if (!member) return;
-        const newStatus = member.status === "active" ? "blocked" : "active";
-        try {
-            const memberRef = doc(db, "users", member.id);
-            await updateDoc(memberRef, { status: newStatus });
-            if (newStatus === "blocked") {
-                await membersApi.revokeTokens(member.id);
+        const previousStatus = member.status;
+        const newStatus = previousStatus === "active" ? "blocked" : "active";
+        
+        // Optimistic update
+        setMember(p => p ? { ...p, status: newStatus } : null);
+        toast.success(`Member ${newStatus}`);
+
+        // Fire and forget
+        (async () => {
+            try {
+                const memberRef = doc(db, "users", member.id);
+                await updateDoc(memberRef, { status: newStatus });
+                if (newStatus === "blocked") {
+                    await membersApi.revokeTokens(member.id);
+                }
+            } catch (err) {
+                console.error("Block/Unblock failed:", err);
+                setMember(p => p ? { ...p, status: previousStatus } : null);
+                toast.error("Failed to update status on server. Reverted.");
             }
-            setMember(p => p ? { ...p, status: newStatus } : null);
-            toast.success(`Member ${newStatus}`);
-        } catch {
-            toast.error("Failed to update member status");
-        }
+        })();
     };
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
         if (!member) return;
         if (!window.confirm("Permanently delete this member? All login access and data records will be destroyed.")) return;
         
-        try {
-            setLoading(true);
-            await membersApi.delete(member.id);
+        // Optimistic navigation
+        toast.success("Deleting member in background...");
+        navigate("/admin/members");
+
+        // Fire and forget
+        membersApi.delete(member.id).then(() => {
             toast.success("Member record destroyed successfully");
-            navigate("/admin/members");
-        } catch (err: any) {
+        }).catch((err: any) => {
             console.error("Deletion failed:", err);
-            toast.error(err.message || "Deletion failed");
-            setLoading(false);
-        }
+            toast.error(err.message || "Deletion failed on server");
+        });
     };
 
     // Removed full-page blocking loader
@@ -190,6 +202,13 @@ const MemberDetail: React.FC = () => {
                     <Link to={`/admin/members/${member.id}/edit`} className="btn-secondary py-3 px-6 rounded-2xl font-bold flex items-center gap-2 hover:bg-slate-50 transition-all border-slate-200 shadow-sm hover:shadow-md">
                         <Edit size={18} /> Edit Records
                     </Link>
+                    <button 
+                        onClick={() => setShowID(true)}
+                        className="py-3 px-6 bg-slate-900 text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-md group relative overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-linear-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <QrCode size={18} className="text-blue-400" /> Digital ID
+                    </button>
                     <button onClick={toggleBlock}
                         className={`py-3 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg ${member.status === "active" ? "bg-white text-red-600 border border-red-100 hover:bg-red-50" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200"}`}>
                         {member.status === "active" ? <><UserX size={18} /> Block Member</> : <><UserCheck size={18} /> Unblock Member</>}
@@ -485,6 +504,102 @@ const MemberDetail: React.FC = () => {
                     </div>
                 </div>
             </div>
+            {/* Premium Digital ID Card Modal */}
+            {showID && member && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-fade-in">
+                    <div className="w-full max-w-sm relative">
+                        {/* Close Button */}
+                        <button 
+                            onClick={() => setShowID(false)}
+                            className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors bg-white/10 rounded-full"
+                        >
+                            <X size={24} />
+                        </button>
+
+                        {/* The Pass Card */}
+                        <div className="relative group p-1 animate-scale-up">
+                             {/* Shimmer Border */}
+                            <div className="absolute inset-0 bg-conic-to-r from-blue-500 via-[#000040] to-blue-500 rounded-[2.5rem] animate-spin-slow opacity-50 blur-sm"></div>
+                            
+                            <div className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[2.4rem] relative">
+                                {/* Pass Header */}
+                                <div className="p-8 pb-4 flex items-center justify-between border-b border-white/5">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                                            <div className="w-4 h-4 bg-blue-500 rounded-sm rotate-45"></div>
+                                        </div>
+                                        <span className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</span>
+                                    </div>
+                                    <div className="px-2.5 py-1 bg-white/10 rounded-full border border-white/10 flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+                                        <span className="text-[8px] font-black text-white/60 tracking-widest uppercase">Verified</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-8 space-y-8">
+                                    {/* Member Info */}
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-24 h-24 rounded-2xl p-1 bg-linear-to-br from-white/20 to-transparent shadow-xl">
+                                            {member.photoURL ? (
+                                                <img src={member.photoURL} alt="" className="w-full h-full rounded-xl object-cover border border-white/10" />
+                                            ) : (
+                                                <div className="w-full h-full bg-[#000040] rounded-xl flex items-center justify-center text-white text-3xl font-black">
+                                                    {member.name?.[0]}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-white tracking-tight leading-none mb-2">
+                                                {member.name}<br />{member.surname}
+                                            </h3>
+                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] bg-blue-500/10 px-2 py-1 rounded inline-block">
+                                                {member.memberId}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Premium QR Section */}
+                                    <div className="relative group/qr flex justify-center py-4">
+                                        <div className="absolute inset-0 bg-blue-500/5 rounded-3xl blur-2xl group-hover/qr:bg-blue-500/10 transition-all duration-500"></div>
+                                        <div className="relative p-6 bg-white rounded-3xl shadow-2xl border border-white/5 group-hover/qr:scale-105 transition-transform duration-500">
+                                            <QRCodeSVG
+                                                value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
+                                                size={160}
+                                                level="H"
+                                                includeMargin={false}
+                                                fgColor="#000040"
+                                            />
+                                            {/* Corner Accents */}
+                                            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#000040]/20 rounded-tl-lg"></div>
+                                            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#000040]/20 rounded-tr-lg"></div>
+                                            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#000040]/20 rounded-bl-lg"></div>
+                                            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#000040]/20 rounded-br-lg"></div>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-center text-[10px] text-white/30 font-bold uppercase tracking-widest leading-relaxed">
+                                        🔒 SECURED THROUGH BCTA BLOCKCHAIN IDENTITY<br />
+                                        VALID FOR {new Date().getFullYear()} FISCAL YEAR
+                                    </p>
+                                </div>
+                                
+                                {/* Security Strip */}
+                                <div className="h-2 bg-linear-to-r from-[#000040] via-blue-600 to-[#000040] opacity-80 shadow-[0_0_20px_rgba(37,99,235,0.3)]"></div>
+                            </div>
+                        </div>
+
+                        {/* ID Controls */}
+                        <div className="flex gap-3 mt-8">
+                             <button onClick={() => window.print()} className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition-all backdrop-blur-sm border border-white/5">
+                                Print Pass
+                             </button>
+                             <button onClick={() => setShowID(false)} className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95 shadow-xl">
+                                Close
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

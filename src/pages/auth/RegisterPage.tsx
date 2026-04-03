@@ -10,7 +10,13 @@ import { db } from "../../firebase/firebaseConfig";
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
-  
+
+  const generateMemberId = () => {
+    const year = new Date().getFullYear();
+    const num = Math.floor(Math.random() * 900) + 100;
+    return `BCTA-${year}-${num}`;
+  };
+
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -52,6 +58,7 @@ const RegisterPage: React.FC = () => {
       // 2. Add profile data to Firestore
       // Note: By default, new users register as "member" with "pending" status.
       // An Admin must approve them to change status to "active".
+      const memberId = generateMemberId();
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         name: formData.name,
@@ -59,6 +66,7 @@ const RegisterPage: React.FC = () => {
         phone: formData.phone,
         role: "member",
         status: "pending", // Requires admin approval
+        memberId: memberId, // Auto-generated member ID
         joinDate: Timestamp.now(),
         lastActive: Timestamp.now(),
         aadhaarLast4: formData.aadhaar,
@@ -67,7 +75,8 @@ const RegisterPage: React.FC = () => {
         address: "",
         emergencyContact: "",
         bloodGroup: "",
-        attendanceCount: 0
+        attendanceCount: 0,
+        paymentStatus: "unpaid"
       });
 
       toast.success("Registration successful! Please wait for admin approval.");

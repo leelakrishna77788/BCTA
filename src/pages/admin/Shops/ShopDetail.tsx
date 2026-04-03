@@ -4,8 +4,10 @@ import {
 } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { useParams, useNavigate } from "react-router-dom";
+import { Scanner, IDetectedBarcode } from "@yudiel/react-qr-scanner";
+import { QRCodeSVG } from "qrcode.react";
 import toast from "react-hot-toast";
-import { ArrowLeft, CheckCircle, Package, CreditCard } from "lucide-react";
+import { ArrowLeft, CheckCircle, Package, CreditCard, ScanLine, Camera, X, Zap, ZapOff } from "lucide-react";
 
 interface Shop {
     id: string;
@@ -52,36 +54,96 @@ const ShopDetail: React.FC = () => {
     const [verifying, setVerifying] = useState<boolean>(false);
     const [submitting, setSubmitting] = useState<boolean>(false);
     const [form, setForm] = useState<DistributionForm>({ productName: "", quantity: 1, totalAmount: "", paidAmount: "" });
+    const [isScanning, setIsScanning] = useState<boolean>(false);
+    const [torchOn, setTorchOn] = useState(false);
+    const [torchSupported, setTorchSupported] = useState(false);
+
+    // Direct Torch manipulation
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    useEffect(() => {
+        if (!isScanning) {
+            setTorchSupported(false);
+            setTorchOn(false);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            try {
+                const video = document.querySelector('video');
+                if (!video || !video.srcObject) return;
+                
+                const stream = video.srcObject as MediaStream;
+                const track = stream.getVideoTracks()[0];
+                if (!track) return;
+
+                const caps = track.getCapabilities() as any;
+                if (caps.torch) {
+                    setTorchSupported(true);
+                }
+                
+                if (torchOn) {
+                    await track.applyConstraints({
+                        advanced: [{ torch: true }]
+                    } as any);
+                }
+            } catch (e) {
+                console.warn("Torch interaction error:", e);
+            }
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, [isScanning, torchOn]);
 
     useEffect(() => {
-        const fetchShop = async () => {
+        const fetchData = async () => {
             if (!id) return;
+            setLoading(true);
+            
+            // 1. Fetch Shop Data (Crucial)
             try {
-                const [shopSnap, prodSnap] = await Promise.all([
-                    getDoc(doc(db, "shops", id)),
-                    getDocs(query(collection(db, "products"), where("shopId", "==", id), orderBy("distributedAt", "desc"))),
-                ]);
-                if (shopSnap.exists()) setShop({ id: shopSnap.id, ...shopSnap.data() } as Shop);
+                const shopSnap = await getDoc(doc(db, "shops", id));
+                if (shopSnap.exists()) {
+                    setShop({ id: shopSnap.id, ...shopSnap.data() } as Shop);
+                } else {
+                    toast.error("Shop not found in database");
+                    navigate("/admin/shops");
+                }
+            } catch (err: any) {
+                console.error("Shop Fetch Error:", err);
+                toast.error("Cloud connection error. Retrying shop data...");
+            }
+
+            // 2. Fetch Products Data (Non-blocking fallback)
+            try {
+                const q = query(collection(db, "products"), where("shopId", "==", id), orderBy("distributedAt", "desc"));
+                const prodSnap = await getDocs(q);
                 setProducts(prodSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
-            } catch (err) {
-                // Fallback for missing index during development
-                const prodSnap = await getDocs(query(collection(db, "products"), where("shopId", "==", id)));
-                setProducts(prodSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+            } catch (err: any) {
+                console.warn("Product list failed (likely missing index), trying fallback...", err);
+                try {
+                    const fallbackQ = query(collection(db, "products"), where("shopId", "==", id));
+                    const prodSnap = await getDocs(fallbackQ);
+                    setProducts(prodSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+                } catch (fallbackErr) {
+                    console.error("All product fetch attempts failed:", fallbackErr);
+                }
             } finally {
                 setLoading(false);
             }
         };
-        fetchShop();
-    }, [id]);
 
-    const verifyMember = async () => {
-        if (!memberUID.trim()) return toast.error("Enter member UID or ID");
+        fetchData();
+    }, [id, navigate]);
+
+    const verifyMember = async (idToVerify?: string) => {
+        const targetId = idToVerify || memberUID.trim();
+        if (!targetId) return toast.error("Enter or scan member ID");
         setVerifying(true);
         try {
-            const q = query(collection(db, "users"), where("memberId", "==", memberUID.trim()));
+            const q = query(collection(db, "users"), where("memberId", "==", targetId));
             const snap = await getDocs(q);
             if (snap.empty) {
-                const docSnap = await getDoc(doc(db, "users", memberUID.trim()));
+                const docSnap = await getDoc(doc(db, "users", targetId));
                 if (!docSnap.exists()) { toast.error("Member not found"); setVerifying(false); return; }
                 const data = { id: docSnap.id, ...docSnap.data() } as MemberProfile;
                 if (data.status === "blocked") { toast.error("Member is blocked!"); setVerifying(false); return; }
@@ -93,6 +155,27 @@ const ShopDetail: React.FC = () => {
             }
             toast.success("Member verified!");
         } catch { toast.error("Verification failed"); } finally { setVerifying(false); }
+    };
+
+    const handleScan = (data: IDetectedBarcode[]) => {
+        if (data?.[0]?.rawValue) {
+            try {
+                const result = JSON.parse(data[0].rawValue);
+                if (result.type === "member" && (result.uid || result.memberId)) {
+                    const id = result.memberId || result.uid;
+                    setMemberUID(id);
+                    setIsScanning(false);
+                    verifyMember(id);
+                } else {
+                    toast.error("Invalid Member QR Code");
+                }
+            } catch (e) {
+                // If not JSON, try as raw ID
+                setMemberUID(data[0].rawValue);
+                setIsScanning(false);
+                verifyMember(data[0].rawValue);
+            }
+        }
     };
 
     const handleDistribute = async (e: React.FormEvent) => {
@@ -124,7 +207,7 @@ const ShopDetail: React.FC = () => {
             await addDoc(collection(db, "notifications"), {
                 userId: memberProfile.id,
                 title: "Product Distributed",
-                message: `You received ${form.productName} (Qty: ${form.quantity}) from ${shop.shopName}. Due: ₹${due}`,
+                body: `You received ${form.productName} (Qty: ${form.quantity}) from ${shop.shopName}. Due: ₹${due}`,
                 type: "product",
                 read: false,
                 createdAt: serverTimestamp()
@@ -192,7 +275,17 @@ const ShopDetail: React.FC = () => {
                 </h2>
 
                 <div className="mb-6 p-5 bg-slate-50 rounded-xl border border-slate-200">
-                    <p className="text-sm font-bold text-[#000080] mb-3">Step 1: Verify Member</p>
+                    <div className="flex items-center justify-between mb-4">
+                        <p className="text-sm font-bold text-[#000080]">Step 1: Identify Member</p>
+                        <button 
+                            onClick={() => setIsScanning(true)}
+                            className="text-xs font-bold bg-white border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-2 hover:bg-slate-100 transition-colors shadow-sm"
+                        >
+                            <Camera size={14} className="text-blue-600" />
+                            Scan QR Code
+                        </button>
+                    </div>
+                    
                     <div className="flex gap-2">
                         <input
                             value={memberUID}
@@ -200,11 +293,79 @@ const ShopDetail: React.FC = () => {
                             placeholder="Enter Member ID (e.g. BCTA-001)"
                             className="input-field flex-1 bg-white"
                         />
-                        <button onClick={verifyMember} disabled={verifying} className="btn-primary whitespace-nowrap px-6">
+                        <button onClick={() => verifyMember()} disabled={verifying} className="btn-primary whitespace-nowrap px-6">
                             {verifying ? "Checking..." : "Verify"}
                         </button>
                     </div>
                 </div>
+
+                {/* Premium Scanner Modal/Overlay */}
+                {isScanning && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fade-in">
+                        <div className="w-full max-w-md bg-slate-900 rounded-[40px] p-8 border border-white/10 shadow-2xl relative overflow-hidden">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400">
+                                        <ScanLine size={20} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white tracking-tight">Member Scanner</h3>
+                                </div>
+                                <button onClick={() => setIsScanning(false)} className="p-2 text-slate-400 hover:text-white transition-colors bg-white/5 rounded-full">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                             <div className="relative aspect-square rounded-[36px] overflow-hidden border-4 border-slate-800 shadow-2xl group">
+                                 {/* Premium Scanner Container */}
+                                <div className="absolute inset-0 z-10 pointer-events-none border-12 border-slate-900">
+                                    {/* Glowing Corners */}
+                                    <div className="absolute top-2 left-2 w-16 h-16 border-t-5 border-l-5 border-blue-500 rounded-tl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                    <div className="absolute top-2 right-2 w-16 h-16 border-t-5 border-r-5 border-blue-500 rounded-tr-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                    <div className="absolute bottom-2 left-2 w-16 h-16 border-b-5 border-l-5 border-blue-500 rounded-bl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                    <div className="absolute bottom-2 right-2 w-16 h-16 border-b-5 border-r-5 border-blue-500 rounded-br-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                    
+                                    {/* Scanning Laser Line */}
+                                    <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-scan-laser"></div>
+                                </div>
+
+                                <Scanner
+                                    onScan={handleScan}
+                                    onError={(e) => toast.error("Camera error")}
+                                    styles={{ container: { height: '100%', width: '100%', backgroundColor: '#0f172a' } }}
+                                    constraints={{ facingMode: 'environment' }}
+                                />
+
+                                {/* Torch Toggle Button - Visible on Mobile or if detected */}
+                                {(torchSupported || isMobile) && (
+                                    <button 
+                                        onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            const newState = !torchOn;
+                                            setTorchOn(newState);
+                                            toast.success(newState ? "Flashlight On" : "Flashlight Off", { duration: 1000 });
+                                        }}
+                                        className={`absolute bottom-6 right-6 z-20 p-5 rounded-full transition-all duration-300 transform active:scale-95 ${torchOn ? 'bg-yellow-400 text-black shadow-[0_0_25px_rgba(250,204,21,0.6)] scale-110' : 'bg-white/10 text-white backdrop-blur-md border border-white/20'}`}
+                                    >
+                                        {torchOn ? <Zap size={28} fill="currentColor" /> : <ZapOff size={28} />}
+                                    </button>
+                                )}
+
+                                <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-2.5 py-1 bg-black/40 backdrop-blur-md rounded-full border border-white/5">
+                                    <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                                    <span className="text-[8px] font-black text-white/90 uppercase tracking-[2px]">Terminal Active</span>
+                                </div>
+                            </div>
+
+                            <p className="text-center text-slate-400 text-sm font-medium px-4 mb-2 mt-8">Align the member's QR code within the frame for instant verification.</p>
+                            <button onClick={() => setIsScanning(false)} className="w-full py-4 text-xs font-black text-white/40 uppercase tracking-[3px] hover:text-white/60 transition-colors">
+                                Cancel Scan
+                            </button>
+
+                            {/* Background Glow */}
+                            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+                        </div>
+                    </div>
+                )}
 
                 {memberProfile && (
                     <div className="mb-6 p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-4 animate-slide-up">
@@ -271,6 +432,16 @@ const ShopDetail: React.FC = () => {
                 <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <CreditCard size={18} className="text-violet-600" /> Distribution History ({products.length})
                 </h2>
+                <div className="flex justify-center p-5 bg-white border border-slate-100 rounded-2xl mb-4 shadow-sm animate-fade-in">
+                    <QRCodeSVG
+                        id={`shop-qr-${shop?.id}`}
+                        value={JSON.stringify({ type: "shop", shopId: shop?.id, shopName: shop?.shopName })}
+                        size={140}
+                        level="H"
+                        includeMargin={false}
+                        fgColor="#000040"
+                    />
+                </div>
                 <div className="overflow-x-auto text-sm">
                     <table className="w-full">
                         <thead>

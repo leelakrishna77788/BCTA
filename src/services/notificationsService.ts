@@ -18,6 +18,7 @@ export async function sendNotification(data: CreateNotificationInput): Promise<s
   const ref = await addDoc(collection(db, "notifications"), {
     ...data,
     readBy: [],
+    sentAt: serverTimestamp(),
     createdAt: serverTimestamp(),
   });
   return ref.id;

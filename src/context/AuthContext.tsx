@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = async (uid: string): Promise<Member | null> => {
+  const fetchUserProfile = useCallback(async (uid: string): Promise<Member | null> => {
     try {
       const docRef = doc(db, "users", uid);
       const snap = await getDoc(docRef);
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Error fetching user profile:", err);
       return null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -70,7 +70,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const cred = await signInWithEmailAndPassword(auth, trimmedEmail, password);
     const profile = await fetchUserProfile(cred.user.uid);
     if (!profile) throw new Error("User profile not found. Contact admin.");
-    if (profile.status === "blocked") throw new Error("Your account is blocked. Contact admin.");
+    if (profile.status === "blocked") {
+      await signOut(auth);
+      throw new Error("Your account is blocked. Contact admin.");
+    }
+    if (profile.status === "pending") {
+      await signOut(auth);
+      throw new Error("Your account is pending approval. Contact admin.");
+    }
     return cred;
   };
 
@@ -135,7 +142,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (currentUser) await fetchUserProfile(currentUser.uid);
   };
 
-  const value: AuthContextValue = {
+  const value = useMemo(() => ({
     currentUser,
     userProfile,
     userRole,
@@ -147,18 +154,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     register,
     resetPassword,
     refreshProfile,
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-500 font-medium animate-pulse">Initializing Portal...</p>
-        </div>
-      </div>
-    );
-  }
+  }), [currentUser, userProfile, userRole, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

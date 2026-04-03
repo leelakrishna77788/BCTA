@@ -39,9 +39,9 @@ export async function getMembers(lastDoc?: DocumentSnapshot): Promise<{ members:
 }
 
 /** Fetch ALL members (admin use — for stats, dropdowns, full lists) */
-export async function getAllMembers(): Promise<Member[]> {
+export async function getAllMembers(maxLimit = 500): Promise<Member[]> {
   const snap = await getDocs(
-    query(collection(db, "users"), where("role", "==", "member"), orderBy("createdAt", "desc"))
+    query(collection(db, "users"), where("role", "==", "member"), orderBy("createdAt", "desc"), limit(maxLimit))
   );
   return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as Member));
 }
@@ -111,8 +111,9 @@ export async function deleteMemberDoc(uid: string): Promise<void> {
 
 /** Get aggregated member stats without loading all member documents */
 export async function getMemberStats(): Promise<MemberStats> {
-  const q = query(collection(db, "users"), where("role", "==", "member"));
-  const snap = await getDocs(q);
+  const snap = await getDocs(
+    query(collection(db, "users"), where("role", "==", "member"), limit(1000))
+  );
   let active = 0;
   let blocked = 0;
   snap.forEach((d) => {

@@ -2,9 +2,9 @@ export type ComplaintStatus = "open" | "in-progress" | "resolved";
 
 export interface Complaint {
   id?: string;
-  title: string;
+  title?: string;
   description: string;
-  category: string;
+  category?: string;
   submittedByUID: string;
   submittedByName: string;
   status: ComplaintStatus;
@@ -15,9 +15,11 @@ export interface Complaint {
 }
 
 export interface CreateComplaintInput {
-  title: string;
+  title?: string;
   description: string;
-  category: string;
+  category?: string;
   submittedByUID: string;
   submittedByName: string;
+  memberId?: string;
+  imageURL?: string;
 }

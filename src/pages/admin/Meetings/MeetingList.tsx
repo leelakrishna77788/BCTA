@@ -138,13 +138,41 @@ const MeetingList: React.FC = () => {
         }
     };
 
+    const getMeetingTimeStatus = (m: Meeting) => {
+        if (!m.date || !m.startTime) return "unknown";
+        
+        const now = new Date();
+        const [year, month, day] = m.date.split('-').map(Number);
+        const [startH, startM] = m.startTime.split(':').map(Number);
+        
+        const meetingStart = new Date(year, month - 1, day, startH, startM);
+        const bufferStart = new Date(meetingStart.getTime() - 30 * 60 * 1000); // 30m early
+        
+        let meetingEnd: Date;
+        if (m.endTime) {
+            const [endH, endM] = m.endTime.split(':').map(Number);
+            meetingEnd = new Date(year, month - 1, day, endH, endM);
+        } else {
+            meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
+        }
+
+        if (m.status === "active") return "live";
+        if (now < bufferStart) return m.status === "expired" ? "expired" : "scheduled";
+        if (now >= bufferStart && now <= meetingEnd) return m.status === "expired" ? "expired" : "ready";
+        return "past";
+    };
+
     const statusColor = (status: string) => {
         const colors: Record<string, string> = {
-            active: "badge-active", 
-            upcoming: "badge-pending", 
-            expired: "badge-blocked"
+            live: "bg-emerald-100 text-emerald-700 border-emerald-200",
+            ready: "bg-blue-100 text-blue-700 border-blue-200 animate-pulse",
+            scheduled: "bg-slate-100 text-slate-600 border-slate-200",
+            past: "bg-amber-100 text-amber-700 border-amber-200",
+            expired: "bg-rose-100 text-rose-700 border-rose-200",
+            active: "bg-emerald-100 text-emerald-700 border-emerald-200",
+            upcoming: "bg-slate-100 text-slate-600 border-slate-200"
         };
-        return colors[status] || "badge-pending";
+        return `px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${colors[status] || "bg-slate-100 text-slate-600 border-slate-200"}`;
     };
 
     if (loading && meetings.length === 0) {
@@ -280,8 +308,8 @@ const MeetingList: React.FC = () => {
                                 <CalendarDays size={24} />
                             </div>
                             <div className="flex gap-2">
-                                <span className={`${statusColor(m.status)} px-3 py-1 ring-2 ring-white shadow-sm capitalize`}>
-                                    {m.status}
+                                <span className={statusColor(getMeetingTimeStatus(m))}>
+                                    {getMeetingTimeStatus(m)}
                                 </span>
                                 {isAdmin && (
                                     <button 

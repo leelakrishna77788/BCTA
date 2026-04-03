@@ -131,14 +131,14 @@ const ShopList: React.FC = () => {
                             <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-0.5 rounded-full">Fixed QR</span>
                         </div>
 
-                        {/* Fixed QR Code */}
-                        <div className="flex justify-center p-3 bg-white border border-slate-100 rounded-xl mb-3">
+                        <div className="flex justify-center p-5 bg-white border border-slate-100 rounded-2xl mb-4 shadow-sm animate-fade-in">
                             <QRCodeSVG
                                 id={`shop-qr-${shop.id}`}
                                 value={JSON.stringify({ type: "shop", shopId: shop.id, shopName: shop.shopName })}
-                                size={120}
+                                size={140}
                                 level="H"
-                                includeMargin
+                                includeMargin={false}
+                                fgColor="#000040"
                             />
                         </div>
 

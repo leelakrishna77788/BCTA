@@ -14,15 +14,28 @@ import type { Complaint, CreateComplaintInput } from "../types/complaint.types";
 
 /** Submit a new complaint */
 export async function submitComplaint(data: CreateComplaintInput): Promise<string> {
-  const ref = await addDoc(collection(db, "complaints"), {
-    ...data,
-    status: "open",
-    resolution: "",
-    resolvedByUID: null,
-    resolvedAt: null,
-    createdAt: serverTimestamp(),
-  });
-  return ref.id;
+  const title = data.title || (data.description.length > 50 ? data.description.substring(0, 50) + "..." : data.description);
+  console.log("[ComplaintService] Starting submission...");
+  console.log("[ComplaintService] db:", db);
+  console.log("[ComplaintService] Data:", { ...data, title });
+  
+  try {
+    console.log("[ComplaintService] Calling addDoc...");
+    const ref = await addDoc(collection(db, "complaints"), {
+      ...data,
+      title,
+      status: "open",
+      resolution: "",
+      resolvedByUID: null,
+      resolvedAt: null,
+      createdAt: serverTimestamp(),
+    });
+    console.log("[ComplaintService] Success, doc ID:", ref.id);
+    return ref.id;
+  } catch (err: any) {
+    console.error("[ComplaintService] Firestore error:", err?.code, err?.message, err);
+    throw err;
+  }
 }
 
 /** Fetch all complaints ordered by newest first (admin view) */

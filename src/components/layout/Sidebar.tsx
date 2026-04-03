@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
@@ -18,7 +18,7 @@ import {
   User,
   ShieldPlus,
 } from "lucide-react";
-import type { UserProfile, UserRole } from "../../types/member.types";
+import type { Member, UserRole } from "../../types/member.types";
 
 const adminLinks = [
   { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -63,12 +63,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   const links =
     normalizedRole === "member" ? memberLinks : normalizedRole ? adminLinks : [];
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logout();
-    setMobileOpen(false); // Close mobile sidebar on logout
+    setMobileOpen(false);
     toast.success("Logged out");
     navigate("/login");
-  };
+  }, [logout, navigate, setMobileOpen]);
 
   if (loading) return null; // Let Parent Layout handle loading view
 
@@ -123,14 +123,14 @@ const Sidebar: React.FC<SidebarProps> = ({
 interface SidebarContentProps {
   collapsed: boolean;
   links: typeof adminLinks;
-  userProfile: UserProfile | null;
+  userProfile: Member | null;
   userRole: UserRole | null;
   handleLogout: () => void;
   setCollapsed: (collapsed: boolean) => void;
   setMobileOpen: (open: boolean) => void;
 }
 
-const SidebarContent: React.FC<SidebarContentProps> = ({
+const SidebarContent: React.FC<SidebarContentProps> = React.memo(({
   collapsed,
   links,
   userProfile,
@@ -247,6 +247,6 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       </div>
     </div>
   </div>
-);
+));
 
 export default Sidebar;

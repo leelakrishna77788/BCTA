@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Scanner } from "@yudiel/react-qr-scanner";
+import { Scanner, IDetectedBarcode } from "@yudiel/react-qr-scanner";
 import { doc, getDoc, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
-import { CheckCircle, QrCode, RefreshCw, ScanLine, User } from "lucide-react";
+import { CheckCircle, QrCode, RefreshCw, ScanLine, User, Zap, ZapOff, ShieldCheck, CreditCard } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 const TABS = [
     { id: "scan", label: "Scan Meeting QR", icon: ScanLine },
@@ -28,12 +29,59 @@ const ScanQR: React.FC = () => {
     const [result, setResult] = useState<ScanResult | null>(null);
     const [processing, setProcessing] = useState<boolean>(false);
     const [permissionError, setPermissionError] = useState<string | null>(null);
+    const [torchOn, setTorchOn] = useState<boolean>(false);
 
     const handleScanError = (error: any) => {
         console.error("QR Scan Error:", error);
         if (error?.name === "NotAllowedError") {
             setPermissionError("Camera access denied. Please allow permissions.");
             setScanning(false);
+        }
+    };
+
+    // Direct Torch manipulation
+    const [torchSupported, setTorchSupported] = useState<boolean>(false);
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    React.useEffect(() => {
+        if (!scanning) {
+            setTorchSupported(false);
+            setTorchOn(false);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            try {
+                const video = document.querySelector('video');
+                if (!video || !video.srcObject) return;
+                
+                const stream = video.srcObject as MediaStream;
+                const track = stream.getVideoTracks()[0];
+                if (!track) return;
+
+                const caps = track.getCapabilities() as any;
+                if (caps.torch) {
+                    setTorchSupported(true);
+                }
+                
+                // Always try applying if torchOn is true, regardless of caps check success
+                if (torchOn) {
+                    await track.applyConstraints({
+                        advanced: [{ torch: true }]
+                    } as any);
+                }
+            } catch (e) {
+                console.warn("Torch interaction error:", e);
+            }
+        }, 1500); // Increased delay for slower camera initialization
+
+        return () => clearTimeout(timer);
+    }, [scanning, torchOn]);
+
+    const handleScan = (data: IDetectedBarcode[]) => {
+        if (data && data.length > 0) {
+            setScanning(false);
+            processQR(data[0].rawValue);
         }
     };
 
@@ -163,19 +211,28 @@ const ScanQR: React.FC = () => {
                 </div>
             )}
 
-            {/* Tab switcher */}
-            <div className="flex gap-1 p-1 bg-slate-100 rounded-2xl">
+            {/* Premium Tab switcher */}
+            <div className="relative flex p-1.5 bg-slate-100/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-inner">
+                {/* Sliding indicator */}
+                <div 
+                    className="absolute h-[calc(100%-12px)] top-[6px] rounded-xl bg-white shadow-md transition-all duration-300 ease-out z-0"
+                    style={{ 
+                        width: 'calc(50% - 6px)', 
+                        left: activeTab === 'scan' ? '6px' : 'calc(50% + 0px)' 
+                    }}
+                />
+                
                 {TABS.map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => { setActiveTab(tab.id); setResult(null); setScanning(false); setPermissionError(null); }}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                        className={`relative flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-colors duration-200 z-10 ${
                             activeTab === tab.id
-                                ? "bg-white shadow text-[#000080]"
-                                : "text-slate-500 hover:text-slate-700"
+                                ? "text-[#000080]"
+                                : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
                         }`}
                     >
-                        <tab.icon size={16} />
+                        <tab.icon size={18} className={activeTab === tab.id ? "animate-pulse" : ""} />
                         {tab.label}
                     </button>
                 ))}
@@ -209,33 +266,111 @@ const ScanQR: React.FC = () => {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="space-y-4 animate-fade-in relative">
-                                    <div className="overflow-hidden rounded-xl border-2 border-slate-200 aspect-square relative bg-slate-900">
+                                    <div className="space-y-4 animate-fade-in relative">
+                                        <style>{`
+                                            @keyframes scanLaser {
+                                                0%, 100% { transform: translateY(0); opacity: 0.8; }
+                                                50% { transform: translateY(240px); opacity: 1; }
+                                            }
+                                            .animate-scan-laser-paytm {
+                                                animation: scanLaser 2s infinite ease-in-out;
+                                            }
+                                            .pulse-ring {
+                                                animation: pulseRing 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+                                            }
+                                            @keyframes pulseRing {
+                                                0% { transform: scale(0.95); opacity: 0.5; }
+                                                50% { transform: scale(1.05); opacity: 0.2; }
+                                                100% { transform: scale(0.95); opacity: 0.5; }
+                                            }
+                                            @keyframes rotateConic {
+                                                from { transform: rotate(0deg); }
+                                                to { transform: rotate(360deg); }
+                                            }
+                                            .shimmering-border::before {
+                                                content: "";
+                                                position: absolute;
+                                                inset: -4px;
+                                                background: conic-gradient(from 0deg, transparent, #3b82f6, transparent, #8b5cf6, transparent);
+                                                border-radius: 44px;
+                                                animation: rotateConic 4s linear infinite;
+                                            }
+                                        `}</style>
+                                    <div className="overflow-hidden rounded-[32px] relative bg-black h-[400px] sm:h-[450px] w-full shadow-2xl flex items-center justify-center border-4 border-slate-900/10">
                                         <Scanner
-                                            onScan={(data) => {
-                                                if (data && data.length > 0) {
-                                                    setScanning(false);
-                                                    processQR(data[0].rawValue);
-                                                }
-                                            }}
+                                            onScan={handleScan}
                                             onError={handleScanError}
+                                            styles={{ container: { height: '100%', width: '100%', backgroundColor: '#0f172a' } }}
                                             components={{
-                                                audio: false,
-                                                onOff: true,
-                                                torch: true,
+                                                onOff: false,
+                                                torch: false,
                                                 zoom: true,
-                                                finder: true,
+                                                finder: false,
                                             }}
-                                            styles={{
-                                                container: { width: "100%", height: "100%" }
+                                            constraints={{
+                                                facingMode: "environment",
+                                                aspectRatio: { ideal: 1 }
                                             }}
+                                            allowMultiple={false}
+                                            paused={!scanning}
                                         />
-                                        {/* Scanning Overlay Animation */}
-                                        <div className="absolute inset-0 pointer-events-none">
-                                            <div className="w-full h-1 bg-[#000080]/50 shadow-[0_0_15px_rgba(0,0,128,0.5)] animate-scanner-beam absolute top-1/2 -translate-y-1/2"></div>
+                                        
+                                        {/* Paytm-style Overlay */}
+                                        <div className="absolute inset-0 z-10 pointer-events-none flex flex-col">
+                                            {/* Top Overlay */}
+                                            <div className="flex-1 bg-black/70 w-full transition-all" />
+                                            
+                                            {/* Middle Row with Scanner Box */}
+                                            <div className="flex w-full shrink-0" style={{ height: '240px' }}>
+                                                <div className="flex-1 bg-black/70 h-full transition-all" />
+                                                <div className="w-[240px] h-[240px] relative shrink-0">
+                                                    {/* Outer pulse effect */}
+                                                    <div className="absolute -inset-4 border-2 border-blue-400/20 rounded-[40px] pulse-ring" />
+                                                    
+                                                    {/* Corner brackets - sharp and thick */}
+                                                    <div className="absolute top-0 left-0 w-12 h-12 border-t-[5px] border-l-[5px] border-white rounded-tl-3xl shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+                                                    <div className="absolute top-0 right-0 w-12 h-12 border-t-[5px] border-r-[5px] border-white rounded-tr-3xl shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+                                                    <div className="absolute bottom-0 left-0 w-12 h-12 border-b-[5px] border-l-[5px] border-white rounded-bl-3xl shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+                                                    <div className="absolute bottom-0 right-0 w-12 h-12 border-b-[5px] border-r-[5px] border-white rounded-br-3xl shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
+                                                    
+                                                    {/* Scanning laser animation with glow gradient */}
+                                                    <div className="absolute top-0 left-0 w-full h-[3px] bg-linear-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_25px_8px_rgba(59,130,246,0.6)] animate-scan-laser-paytm" />
+                                                </div>
+                                                <div className="flex-1 bg-black/70 h-full transition-all" />
+                                            </div>
+                                            
+                                            {/* Bottom Overlay */}
+                                            <div className="flex-[1.2] bg-black/70 w-full flex flex-col items-center justify-start pt-8 transition-all px-6">
+                                                <div className="bg-white/10 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-2xl flex flex-col items-center gap-2 max-w-[200px] text-center">
+                                                    <div className="flex items-center gap-2 text-white">
+                                                        <QrCode size={18} className="text-blue-400" />
+                                                        <span className="font-bold text-sm">SCANNING MODE</span>
+                                                    </div>
+                                                    <span className="text-white/60 text-[10px] leading-tight">Keep the QR code within the frame for instant detection</span>
+                                                </div>
+                                                
+                                                {/* Torch Toggle Button - Visible on Mobile or if detected */}
+                                                {(torchSupported || isMobile) && (
+                                                    <button 
+                                                        onClick={(e) => { 
+                                                            e.stopPropagation(); 
+                                                            const newState = !torchOn;
+                                                            setTorchOn(newState);
+                                                            toast.success(newState ? "Flashlight On" : "Flashlight Off", { duration: 1000 });
+                                                        }}
+                                                        className={`mt-6 pointer-events-auto p-5 rounded-full transition-all duration-300 transform active:scale-90 ${torchOn ? 'bg-yellow-400 text-black shadow-[0_0_25px_rgba(250,204,21,0.6)] scale-110' : 'bg-white/10 text-white backdrop-blur-md border border-white/20'}`}
+                                                        style={{ zIndex: 100 }}
+                                                    >
+                                                        {torchOn ? <Zap size={28} fill="currentColor" /> : <ZapOff size={28} />}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                    <button onClick={() => setScanning(false)} className="btn-secondary w-full">
+                                    <button 
+                                        onClick={() => setScanning(false)} 
+                                        className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-black/20"
+                                    >
                                         Cancel Scan
                                     </button>
                                 </div>
@@ -292,59 +427,82 @@ const ScanQR: React.FC = () => {
                 </>
             )}
 
-            {/* ── TAB: SHOW MY QR ── */}
+            {/* ── TAB: SHOW MY QR (High Level Member Card) ── */}
             {activeTab === "myqr" && (
-                <div className="space-y-4">
-                    <div className="card flex flex-col items-center text-center p-8 space-y-5">
-                        <div>
-                            <h2 className="text-lg font-bold text-slate-800">Your Personal QR Code</h2>
-                            <p className="text-sm text-slate-500 mt-1">Show this QR to the admin so they can mark your attendance</p>
-                        </div>
-
-                        {memberQRData ? (
-                            <div className="relative inline-block">
-                                <div className="bg-white p-4 rounded-2xl shadow-xl border-2 border-slate-100">
-                                    <img
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(memberQRData)}`}
-                                        alt="My Member QR"
-                                        className="rounded-xl"
-                                    />
-                                </div>
-                                {/* Live badge */}
-                                <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse inline-block" />
-                                    LIVE
-                                </div>
+                <div className="space-y-6 animate-fade-in">
+                    <div className="relative overflow-hidden bg-linear-to-br from-[#000040] via-[#000080] to-[#003366] rounded-[32px] p-8 shadow-2xl text-white border-4 border-white/10">
+                        {/* Decorative background patterns */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+                        
+                        <div className="relative z-10 flex flex-col items-center text-center space-y-6">
+                            <div className="bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 flex items-center gap-2">
+                                <ShieldCheck size={14} className="text-emerald-400" />
+                                <span className="text-[10px] uppercase tracking-widest font-bold">Official Membership Card</span>
                             </div>
-                        ) : (
-                            <div className="w-[220px] h-[220px] bg-slate-100 animate-pulse rounded-2xl" />
-                        )}
 
-                        {/* Member details */}
-                        <div className="bg-slate-50 rounded-xl px-6 py-4 w-full text-left space-y-1.5">
-                            <div className="flex justify-between text-xs">
-                                <span className="text-slate-400 font-medium">Name</span>
-                                <span className="text-slate-700 font-bold">
+                            <div className="bg-white p-5 rounded-[40px] shadow-2xl relative shimmering-border overflow-hidden">
+                                <div className="absolute inset-0 bg-white rounded-[40px] z-0" />
+                                <div className="absolute -inset-2 border border-white/20 rounded-[48px] scale-105 opacity-30 z-0" />
+                                {memberQRData ? (
+                                    <div className="p-3 bg-white rounded-3xl relative z-10 flex items-center justify-center">
+                                        <QRCodeSVG
+                                            value={memberQRData}
+                                            size={200}
+                                            level="H"
+                                            includeMargin={false}
+                                            fgColor="#000040"
+                                        />
+                                        {/* Verified Floating Badge */}
+                                        <div className="absolute -bottom-2 -right-2 bg-white/40 backdrop-blur-xl border border-white/60 p-1.5 rounded-2xl shadow-lg transform rotate-6 scale-90">
+                                            <div className="bg-emerald-500 text-white rounded-xl p-1 shadow-sm">
+                                                <ShieldCheck size={20} strokeWidth={3} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="w-[200px] h-[200px] bg-slate-100 animate-pulse rounded-3xl relative z-10" />
+                                )}
+                            </div>
+
+                            <div className="space-y-1">
+                                <h2 className="text-2xl font-black tracking-tight uppercase">
                                     {userProfile?.name} {userProfile?.surname}
-                                </span>
+                                </h2>
+                                <p className="text-blue-300 text-xs font-semibold tracking-widest uppercase">Member Profile</p>
                             </div>
-                            {userProfile?.memberId && (
-                                <div className="flex justify-between text-xs">
-                                    <span className="text-slate-400 font-medium">Member ID</span>
-                                    <span className="text-slate-700 font-mono font-bold">{userProfile.memberId}</span>
+
+                            <div className="w-full flex gap-3 pt-2">
+                                <div className="flex-1 bg-white/10 backdrop-blur-lg rounded-2xl p-4 text-left border border-white/10">
+                                    <span className="text-[10px] text-blue-200/60 uppercase font-bold block mb-1">ID Status</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                                        <span className="font-mono text-sm font-bold tracking-wider">ACTIVE</span>
+                                    </div>
                                 </div>
-                            )}
+                                <div className="flex-1 bg-white/10 backdrop-blur-lg rounded-2xl p-4 text-left border border-white/10">
+                                    <span className="text-[10px] text-blue-200/60 uppercase font-bold block mb-1">Member ID</span>
+                                    <span className="font-mono text-sm font-bold tracking-widest overflow-hidden text-ellipsis block">
+                                        {userProfile?.memberId || "GS1-992"}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
+
+                        {/* Bottom card logo/stripe */}
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-blue-400 to-transparent opacity-30" />
                     </div>
 
-                    <div className="card">
-                        <h3 className="text-sm font-semibold text-slate-700 mb-2">How this works</h3>
-                        <ol className="text-xs text-slate-500 space-y-1.5 list-decimal list-inside">
-                            <li>Show this QR code to the admin or on the scanning device</li>
-                            <li>Admin scans it using their "Scan Member QR" option</li>
-                            <li>Your attendance will be automatically marked and updated</li>
-                            <li>Use this when your camera can't scan the meeting QR</li>
-                        </ol>
+                    <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 flex items-start gap-4">
+                        <div className="bg-[#000080]/10 p-3 rounded-2xl">
+                            <CreditCard className="text-[#000080]" size={20} />
+                        </div>
+                        <div>
+                            <h4 className="text-sm font-bold text-slate-800">Swift Check-in</h4>
+                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                Present this card to the scanning station or admin. Your credentials will be verified instantly without touch.
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}

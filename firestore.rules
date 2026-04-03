@@ -27,7 +27,7 @@ service cloud.firestore {
     }
 
     function isActiveUser() {
-      return isAuthenticated() && getUserData().status == 'active';
+      return isAuthenticated() && getUserData().get('status', 'active') == 'active';
     }
 
     function isOwner(uid) {
@@ -81,12 +81,13 @@ service cloud.firestore {
     // ─── Notifications ─────────────────────────────────────────────────────
     match /notifications/{notifId} {
       allow read:   if isActiveUser();
-      allow create, delete: if isAuthenticated() && (
+      allow create: if isAuthenticated() && (
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'admin' ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'Admin' ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'superadmin' ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'none') == 'SuperAdmin'
       );
+      allow delete: if isActiveUser();
       // Any active user can mark notification as read or dismiss it
       allow update: if isActiveUser() &&
                     request.resource.data.diff(resource.data).affectedKeys()

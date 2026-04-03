@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { collection, query, orderBy, limit, where, onSnapshot, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
@@ -33,6 +33,65 @@ interface MeetingData {
     endTime: string;
     [key: string]: any;
 }
+
+const MemoizedStatCards = React.memo(({ myAttendanceCount, userProfile, totalDue, totalPaid, myProductsLength }: {
+    myAttendanceCount: number;
+    userProfile: any;
+    totalDue: number;
+    totalPaid: number;
+    myProductsLength: number;
+}) => (
+    <>
+        <div className="relative overflow-hidden rounded-xl p-5 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 group">
+            <div className="flex items-start justify-between">
+                <div>
+                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-1">Meetings Attended</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{myAttendanceCount}</p>
+                    <p className="text-xs font-medium text-slate-400 mt-1">Attendance logged</p>
+                </div>
+                <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
+                    <CalendarDays size={22} className="text-[#000080]" />
+                </div>
+            </div>
+        </div>
+        <div className="relative overflow-hidden rounded-xl p-5 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 group">
+            <div className="flex items-start justify-between">
+                <div>
+                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-1">Payment Status</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{userProfile?.paymentStatus || "unpaid"}</p>
+                    <p className="text-xs font-medium text-slate-400 mt-1">{totalPaid > 0 ? `₹${totalPaid.toLocaleString()} paid` : undefined}</p>
+                </div>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3 ${userProfile?.paymentStatus === "paid" ? "bg-emerald-50" : "bg-amber-50"}`}>
+                    <CreditCard size={22} className={userProfile?.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-600"} />
+                </div>
+            </div>
+        </div>
+        <div className="relative overflow-hidden rounded-xl p-5 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 group">
+            <div className="flex items-start justify-between">
+                <div>
+                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-1">Products Taken</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{myProductsLength}</p>
+                    <p className="text-xs font-medium text-slate-400 mt-1">{myProductsLength > 0 ? `${myProductsLength} item${myProductsLength > 1 ? "s" : ""}` : undefined}</p>
+                </div>
+                <div className="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
+                    <Package size={22} className="text-purple-600" />
+                </div>
+            </div>
+        </div>
+        <div className="relative overflow-hidden rounded-xl p-5 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 group">
+            <div className="flex items-start justify-between">
+                <div>
+                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-1">Total Due</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">₹{totalDue.toLocaleString()}</p>
+                    <p className="text-xs font-medium text-slate-400 mt-1">{totalDue === 0 ? "All clear!" : "Outstanding"}</p>
+                </div>
+                <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3 ${totalDue > 0 ? "bg-rose-50" : "bg-emerald-50"}`}>
+                    <Shield size={22} className={totalDue > 0 ? "text-rose-600" : "text-emerald-600"} />
+                </div>
+            </div>
+        </div>
+    </>
+));
 
 const MemberDashboard: React.FC = () => {
     const { userProfile, currentUser } = useAuth();
@@ -86,7 +145,7 @@ const MemberDashboard: React.FC = () => {
         return () => unsubs.forEach(u => u());
     }, [currentUser]);
 
-    const deleteNotification = async (id: string) => {
+    const deleteNotification = useCallback(async (id: string) => {
         if (!window.confirm("Delete this notification?")) return;
         try {
             await deleteDoc(doc(db, "notifications", id));
@@ -94,10 +153,10 @@ const MemberDashboard: React.FC = () => {
         } catch (err: any) {
             toast.error("Failed to delete notification");
         }
-    };
+    }, []);
 
-    const totalDue = myProducts.reduce((s, p) => s + (p.remainingAmount || 0), 0);
-    const totalPaid = myProducts.reduce((s, p) => s + (p.paidAmount || 0), 0);
+    const totalDue = useMemo(() => myProducts.reduce((s, p) => s + (p.remainingAmount || 0), 0), [myProducts]);
+    const totalPaid = useMemo(() => myProducts.reduce((s, p) => s + (p.paidAmount || 0), 0), [myProducts]);
 
     // Removed full page loading for better perceived performance
 
@@ -138,53 +197,13 @@ const MemberDashboard: React.FC = () => {
                 {loading ? (
                     Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
                 ) : (
-                    [
-                        {
-                            label: "Meetings Attended",
-                            value: myAttendanceCount,
-                            icon: CalendarDays,
-                            iconColor: "text-[#000080]",
-                            iconBg: "bg-slate-100",
-                            sub: "Attendance logged"
-                        },
-                        {
-                            label: "Payment Status",
-                            value: userProfile?.paymentStatus || "unpaid",
-                            icon: CreditCard,
-                            iconColor: userProfile?.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-600",
-                            iconBg: userProfile?.paymentStatus === "paid" ? "bg-emerald-50" : "bg-amber-50",
-                            sub: totalPaid > 0 ? `₹${totalPaid.toLocaleString()} paid` : undefined
-                        },
-                        {
-                            label: "Products Taken",
-                            value: myProducts.length,
-                            icon: Package,
-                            iconColor: "text-purple-600",
-                            iconBg: "bg-purple-50",
-                            sub: myProducts.length > 0 ? `${myProducts.length} item${myProducts.length > 1 ? "s" : ""}` : undefined
-                        },
-                        {
-                            label: "Total Due",
-                            value: `₹${totalDue.toLocaleString()}`,
-                            icon: Shield,
-                            iconColor: totalDue > 0 ? "text-rose-600" : "text-emerald-600",
-                            iconBg: totalDue > 0 ? "bg-rose-50" : "bg-emerald-50",
-                            sub: totalDue === 0 ? "All clear!" : "Outstanding"
-                        },
-                    ].map((s) => (
-                        <div key={s.label} className="relative overflow-hidden rounded-xl p-5 sm:p-6 bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 group">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
-                                    <p className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{s.value}</p>
-                                    {s.sub && <p className="text-xs font-medium text-slate-400 mt-1">{s.sub}</p>}
-                                </div>
-                                <div className={`w-12 h-12 rounded-lg ${s.iconBg} flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}>
-                                    <s.icon size={22} className={s.iconColor} />
-                                </div>
-                            </div>
-                        </div>
-                    ))
+                    <MemoizedStatCards
+                        myAttendanceCount={myAttendanceCount}
+                        userProfile={userProfile}
+                        totalDue={totalDue}
+                        totalPaid={totalPaid}
+                        myProductsLength={myProducts.length}
+                    />
                 )}
             </div>
 
