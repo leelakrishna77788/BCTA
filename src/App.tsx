@@ -1,5 +1,5 @@
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
@@ -7,10 +7,24 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 
 console.log('[BCTA] App.tsx loading...')
 
+// Scroll to top on route change
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 // Auth
 const LoginPage = React.lazy(() => import("./pages/auth/LoginPage"));
 const RegisterPage = React.lazy(() => import("./pages/auth/RegisterPage"));
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
+const ServicesPage = React.lazy(() => import("./pages/ServicesPage"));
+const AboutPage = React.lazy(() => import("./pages/AboutPage"));
+const MemberToolsPage = React.lazy(() => import("./pages/MemberToolsPage"));
+const ContactPage = React.lazy(() => import("./pages/ContactPage"));
+const PresidentsPage = React.lazy(() => import("./pages/PresidentsPage"));
 
 // Admin pages
 const AdminDashboard = React.lazy(() => import("./pages/admin/Dashboard"));
@@ -44,8 +58,27 @@ function TestPage() { return <div style={{padding: 20, fontSize: 24}}>BCTA is wo
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error?: Error}> {
   constructor(props: any) { super(props); this.state = { hasError: false }; }
   static getDerivedStateFromError(e: Error) { return { hasError: true, error: e }; }
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+  }
   render() {
-    if (this.state.hasError) return <div style={{padding:20, color:'red'}}><h2>LandingPage Crashed!</h2><pre>{this.state.error?.message}</pre></div>;
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-300 via-blue-150 to-yellow-400 p-4">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 max-w-lg w-full border-2 border-red-200">
+            <h2 className="text-2xl font-black text-red-600 mb-4">Oops! Something went wrong</h2>
+            <p className="text-slate-700 mb-4">We encountered an error while loading this page.</p>
+            <pre className="bg-red-50 p-4 rounded-lg text-xs text-red-800 overflow-auto mb-4">{this.state.error?.message}</pre>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition"
+            >
+              Go to Home
+            </button>
+          </div>
+        </div>
+      );
+    }
     return this.props.children;
   }
 }
@@ -53,6 +86,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <Toaster
           position="top-right"
@@ -71,6 +105,11 @@ function App() {
           <Routes>
             {/* Public */}
             <Route path="/" element={<ErrorBoundary><LandingPage /></ErrorBoundary>} />
+            <Route path="/services" element={<ErrorBoundary><ServicesPage /></ErrorBoundary>} />
+            <Route path="/about" element={<ErrorBoundary><AboutPage /></ErrorBoundary>} />
+            <Route path="/member-tools" element={<ErrorBoundary><MemberToolsPage /></ErrorBoundary>} />
+            <Route path="/presidents" element={<ErrorBoundary><PresidentsPage /></ErrorBoundary>} />
+            <Route path="/contact" element={<ErrorBoundary><ContactPage /></ErrorBoundary>} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 

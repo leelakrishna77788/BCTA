@@ -141,6 +141,16 @@
   @apply bg-slate-400;
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* QR Scanner overlay styling overrides */
 #reader {
   width: 100% !important;
