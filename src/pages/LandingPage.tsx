@@ -21,11 +21,14 @@ import {
   Menu,
   X,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { assets, presidents } from "../assets/assets";
 
 /* ─── Intersection Observer reveal ─── */
-function useReveal(threshold = 0.1): [React.RefObject<HTMLDivElement>, boolean] {
-  const ref = useRef<HTMLDivElement>(null);
+function useReveal<T extends HTMLElement = HTMLDivElement>(threshold = 0.1): [React.RefObject<T>, boolean] {
+  const ref = useRef<T>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
@@ -52,7 +55,7 @@ interface CounterProps {
 }
 function Counter({ end, suffix = "" }: CounterProps) {
   const [count, setCount] = useState(0);
-  const [ref, visible] = useReveal();
+  const [ref, visible] = useReveal<HTMLSpanElement>();
   
   useEffect(() => {
     if (!visible) return;
@@ -66,7 +69,7 @@ function Counter({ end, suffix = "" }: CounterProps) {
     return () => clearInterval(t);
   }, [visible, end]);
 
-  return <span ref={ref as React.RefObject<HTMLSpanElement>}>{count.toLocaleString()}{suffix}</span>;
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
 }
 
 /* ─── Generic reveal wrapper ─── */
@@ -100,144 +103,39 @@ function Reveal({
   );
 }
 
-/* ─── Marquee ticker ─── */
-function Marquee({ items }: { items: string[] }) {
-  const doubled = [...items, ...items];
-  return (
-    <div className="overflow-hidden relative">
-      <div
-        style={{
-          display: "flex",
-          animation: "marquee 30s linear infinite",
-          width: "max-content",
-        }}
-      >
-        {doubled.map((item, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-2 text-slate-400 text-sm font-medium mr-10 whitespace-nowrap"
-          >
-            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full flex-shrink-0" />
-            {item}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Process step ─── */
-interface StepCardProps {
-  num: number;
-  title: string;
-  desc: string;
-  delay: number;
-}
-function StepCard({ num, title, desc, delay }: StepCardProps) {
-  const [ref, visible] = useReveal();
-  return (
-    <div
-      ref={ref}
-      className="flex gap-5 items-start"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateX(0)" : "translateX(-30px)",
-        transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
-      }}
-    >
-      <div className="relative flex-shrink-0">
-        <div className="w-11 h-11 rounded-full bg-slate-900 text-white font-bold flex items-center justify-center text-sm shadow-lg">
-          {num}
-        </div>
-        {num < 4 && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-full w-px h-8 bg-slate-200 mt-1" />
-        )}
-      </div>
-      <div className="pt-1.5">
-        <h4 className="font-bold text-slate-900 mb-1.5 text-base">{title}</h4>
-        <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
-      </div>
-    </div>
-  );
-}
-
-/* ════ DATA ════ */
-const TICKER_ITEMS = [
-  "QR Code Attendance",
-  "Member Profiles",
-  "Payment Tracking",
-  "Shop Distribution",
-  "Emergency Contacts",
-  "Blood Group Search",
-  "Complaint Management",
-  "Instant Notifications",
-  "Role-based Access",
-  "Firestore Real-time",
-  "Mobile-first Portal",
-  "Admin Dashboard",
-];
-
-const ADMIN_FEATURES = [
+const SERVICES = [
   {
-    num: "01",
-    icon: Users,
-    color: "bg-blue-600",
-    textColor: "text-blue-600",
-    lightBg: "bg-blue-50",
-    tag: "Member Management",
-    title: "Full Member Lifecycle Control",
-    desc: "Register members with photos, Aadhaar last-4, blood group, shop address and nominee details. Block or unblock with a single click — access revoked system-wide instantly.",
-    points: [
-      "Add, view & edit member profiles",
-      "Block/Unblock with instant effect",
-      "Search, filter by status & payment",
-    ],
+    id: 1,
+    title: "Mobile Screen Replacement",
+    description: "Expert screen replacement services for all smartphone brands. We use high-quality original and compatible displays with warranty coverage.",
+    features: ["LCD/OLED Replacement", "Touch Digitizer Repair", "Gorilla Glass Installation", "Same Day Service"],
+    color: "from-blue-500 to-blue-700",
+    icon: "📱"
   },
   {
-    num: "02",
-    icon: QrCode,
-    color: "bg-violet-600",
-    textColor: "text-violet-600",
-    lightBg: "bg-violet-50",
-    tag: "Attendance",
-    title: "Dynamic QR Code Attendance",
-    desc: "Launch attendance and generate a secure QR that rotates every 30 seconds. A live dashboard tracks who scanned in real time — no manual roll calls, ever again.",
-    points: [
-      "Token rotates every 30 seconds",
-      "Blocked members auto-rejected",
-      "Duplicate scan prevention built-in",
-    ],
+    id: 2,
+    title: "Battery Replacement & Repair",
+    description: "Professional battery replacement for all mobile devices. Restore your phone's battery life with genuine and high-capacity batteries.",
+    features: ["Original Batteries", "Fast Charging Support", "Battery Health Check", "Instant Replacement"],
+    color: "from-emerald-500 to-teal-700",
+    icon: "🔋"
   },
   {
-    num: "03",
-    icon: Package,
-    color: "bg-emerald-600",
-    textColor: "text-emerald-600",
-    lightBg: "bg-emerald-50",
-    tag: "Shops & Products",
-    title: "Shop Registration & Distribution",
-    desc: "Register technician shops and log product distributions per member. Track total amount vs. paid amount, and the member's payment status updates automatically.",
-    points: [
-      "Register shops with unique QR",
-      "Log product distributions per member",
-      "Auto-update member payment status",
-    ],
+    id: 3,
+    title: "Motherboard & IC Repair",
+    description: "Advanced motherboard-level repairs including IC replacement, reballing, and circuit repair. We fix charging issues, network problems, and boot failures.",
+    features: ["IC Replacement", "BGA Reballing", "Circuit Repair", "Water Damage Recovery"],
+    color: "from-violet-500 to-purple-700",
+    icon: "🔧"
   },
   {
-    num: "04",
-    icon: Bell,
-    color: "bg-amber-500",
-    textColor: "text-amber-600",
-    lightBg: "bg-amber-50",
-    tag: "Communications",
-    title: "Broadcast Notifications",
-    desc: "Push meeting alerts, payment reminders, emergency notices or general announcements to all members instantly. Choose from 5 types with colour-coded previews.",
-    points: [
-      "5 notification types (meeting, urgent, etc.)",
-      "Real-time delivery to all members",
-      "Full history of sent notifications",
-    ],
-  },
+    id: 4,
+    title: "Software & Unlocking Services",
+    description: "Complete software solutions including OS installation, unlocking, data recovery, and virus removal. Keep your device running smoothly.",
+    features: ["OS Installation", "Pattern/FRP Unlock", "Data Recovery", "Software Updates"],
+    color: "from-amber-500 to-orange-700",
+    icon: "💻"
+  }
 ];
 
 const MEMBER_FEATURES = [
@@ -279,29 +177,6 @@ const MEMBER_FEATURES = [
   },
 ];
 
-const STEPS = [
-  {
-    num: 1,
-    title: "Admin registers a member",
-    desc: "Upload photo, enter details, generate a Member ID. Secure Firebase credentials created automatically.",
-  },
-  {
-    num: 2,
-    title: "Meeting is scheduled & QR activated",
-    desc: "Admin creates a meeting and starts attendance — a secure QR token rotates every 30 seconds.",
-  },
-  {
-    num: 3,
-    title: "Members scan to attend",
-    desc: "Members open the app on their phone, tap 'Start Camera', point at the screen — done.",
-  },
-  {
-    num: 4,
-    title: "Payments tracked automatically",
-    desc: "Product distributions from shops flow into member profiles with outstanding dues in real time.",
-  },
-];
-
 /* ── Live Stats Hook ── */
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
@@ -320,44 +195,60 @@ function usePlatformStats() {
       console.warn(`[LandingPage] Could not load stats for ${collectionName}:`, err.message);
     };
 
-    // Members count
-    unsubs.push(
-      onSnapshot(
-        query(
-          collection(db, "users"),
-          where("role", "==", "member"),
-          where("status", "==", "active")
-        ),
-        (snap) => setStats((s) => ({ ...s, members: snap.size })),
-        handleError("users")
-      )
-    );
+    try {
+      // Members count
+      const membersQuery = query(
+        collection(db, "users"),
+        where("role", "==", "member"),
+        where("status", "==", "active")
+      );
+      unsubs.push(
+        onSnapshot(
+          membersQuery,
+          (snap) => setStats((s) => ({ ...s, members: snap.size })),
+          handleError("users")
+        )
+      );
 
-    // Meetings count
-    unsubs.push(
-      onSnapshot(collection(db, "meetings"), 
-        (snap) => setStats((s) => ({ ...s, meetings: snap.size })),
-        handleError("meetings")
-      )
-    );
+      // Meetings count
+      unsubs.push(
+        onSnapshot(
+          collection(db, "meetings"),
+          (snap) => setStats((s) => ({ ...s, meetings: snap.size })),
+          handleError("meetings")
+        )
+      );
 
-    // Total Attendance Scans
-    unsubs.push(
-      onSnapshot(collection(db, "attendance"), 
-        (snap) => setStats((s) => ({ ...s, scans: snap.size })),
-        handleError("attendance")
-      )
-    );
+      // Total Attendance Scans
+      unsubs.push(
+        onSnapshot(
+          collection(db, "attendance"),
+          (snap) => setStats((s) => ({ ...s, scans: snap.size })),
+          handleError("attendance")
+        )
+      );
 
-    // Total Payments/Distribution Records
-    unsubs.push(
-      onSnapshot(collection(db, "payments"), 
-        (snap) => setStats((s) => ({ ...s, payments: snap.size })),
-        handleError("payments")
-      )
-    );
+      // Total Payments/Distribution Records
+      unsubs.push(
+        onSnapshot(
+          collection(db, "payments"),
+          (snap) => setStats((s) => ({ ...s, payments: snap.size })),
+          handleError("payments")
+        )
+      );
+    } catch (error) {
+      console.error('[LandingPage] Error setting up Firestore listeners:', error);
+    }
 
-    return () => unsubs.forEach((u) => u());
+    return () => {
+      unsubs.forEach((unsub) => {
+        try {
+          unsub();
+        } catch (err) {
+          console.warn('[LandingPage] Error unsubscribing:', err);
+        }
+      });
+    };
   }, []);
 
   return stats;
@@ -367,7 +258,9 @@ function usePlatformStats() {
 const LandingPage: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [activeFeature, setActiveFeature] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [direction, setDirection] = useState("next");
   const platformStats = usePlatformStats();
 
   useEffect(() => {
@@ -376,447 +269,394 @@ const LandingPage: React.FC = () => {
     return () => window.removeEventListener("scroll", h);
   }, []);
 
-  // Auto-cycle hero feature highlight
+  // Auto-slide services with 3D effect
   useEffect(() => {
-    const t = setInterval(() => setActiveFeature((p) => (p + 1) % 4), 2800);
-    return () => clearInterval(t);
+    const interval = setInterval(() => {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setDirection("next");
+        setCurrentSlide((prev) => (prev + 1) % SERVICES.length);
+        setIsTransitioning(false);
+      }, 1500);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
-  const heroHighlights = [
-    { icon: QrCode, label: "QR Attendance", color: "text-blue-400" },
-    { icon: Users, label: "Member Profiles", color: "text-emerald-400" },
-    { icon: CreditCard, label: "Payment Tracking", color: "text-violet-400" },
-    { icon: Bell, label: "Notifications", color: "text-amber-400" },
-  ];
+  const nextSlide = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setDirection("next");
+      setCurrentSlide((prev) => (prev + 1) % SERVICES.length);
+      setIsTransitioning(false);
+    }, 1500);
+  };
+
+  const prevSlide = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setDirection("prev");
+      setCurrentSlide((prev) => (prev - 1 + SERVICES.length) % SERVICES.length);
+      setIsTransitioning(false);
+    }, 1500);
+  };
+
+  const goToSlide = (index: number) => {
+    if (index !== currentSlide) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setDirection(index > currentSlide ? "next" : "prev");
+        setCurrentSlide(index);
+        setIsTransitioning(false);
+      }, 1500);
+    }
+  };
+
+  const nextIndex = (currentSlide + 1) % SERVICES.length;
 
   return (
     <>
       <style>{`
-          @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-          @keyframes heroGlow { 0%,100% { opacity: 0.15; transform: scale(1); } 50% { opacity: 0.25; transform: scale(1.08); } }
-          @keyframes borderGlow { 0%,100% { box-shadow: 0 0 0 1px rgba(99,102,241,0.3); } 50% { box-shadow: 0 0 0 3px rgba(99,102,241,0.15), 0 0 20px rgba(99,102,241,0.1); } }
-          @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-          @keyframes ripple { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
-          @keyframes scanLine { 0%,100% { top: 8px; } 50% { top: calc(100% - 8px); } }
-          .shimmer-text {
-              background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 40%, #f472b6 70%, #60a5fa 100%);
-              background-size: 300% auto;
-              -webkit-background-clip: text;
-              -webkit-text-fill-color: transparent;
-              animation: shimmer 5s linear infinite;
+          @keyframes slideIn {
+            from {
+              transform: translate3d(-100%, 0, -400px) rotateY(90deg) scale(0.8);
+              opacity: 0;
+            }
+            to {
+              transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
+              opacity: 1;
+            }
           }
-          .card-glow:hover { animation: borderGlow 2s ease-in-out infinite; }
+          @keyframes slideOut {
+            from {
+              transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
+              opacity: 1;
+            }
+            to {
+              transform: translate3d(100%, 0, -400px) rotateY(-90deg) scale(0.8);
+              opacity: 0;
+            }
+          }
+          .animate-slideIn {
+            animation: slideIn 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          }
+          .animate-slideOut {
+            animation: slideOut 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          }
+          .preserve-3d {
+            transform-style: preserve-3d;
+          }
+          .backface-hidden {
+            backface-visibility: hidden;
+          }
+          .animate-marquee {
+            animation: marqueeScroll 30s linear infinite;
+          }
+          @keyframes marqueeScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
       `}</style>
 
-      <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-blue-300 via-blue-150 to-yellow-400 text-slate-900 overflow-x-hidden">
         {/* ── NAVBAR ── */}
         <header
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-            scrolled
-              ? "bg-white/95 backdrop-blur-xl shadow-sm border-b border-slate-100"
-              : "bg-transparent"
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+            scrolled ? "bg-white shadow-md" : "bg-white/90 backdrop-blur"
           }`}
         >
-          <div className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-gradient-to-br from-slate-800 to-slate-950 rounded-lg flex items-center justify-center shadow-md">
-                <span className="text-white font-black text-xs tracking-tight">
-                  BC
-                </span>
-              </div>
-              <div>
-                <span
-                  className={`font-bold tracking-tight text-sm transition-colors duration-300 ${
-                    scrolled ? "text-slate-900" : "text-white"
-                  }`}
-                >
-                  BCTA Portal
-                </span>
+          <div className="w-full px-4 sm:px-6 h-16 flex items-center justify-between relative">
+            {/* LOGO */}
+            <div className="relative flex items-center">
+              {/* Floating Logo */}
+              <div className="fixed top-2 left-2 sm:top-4 sm:left-4 z-[60] rounded-xl border-2 border-blue-200 shadow-2xl hover:shadow-blue-200/50 transition-all duration-700 ease-in-out hover:scale-105 overflow-hidden p-0 w-16 sm:w-20 md:w-24">
+                <Link to="/" className="block">
+                  <img
+                    src={assets.logo}
+                    alt="BCTA Logo"
+                    className="w-full h-auto transition-all duration-700 ease-in-out"
+                  />
+                </Link>
               </div>
             </div>
-            <nav className="hidden md:flex items-center gap-1">
-              {[
-                ["#admin-features", "Admin Tools"],
-                ["#member-features", "Member Tools"],
-                ["#how-it-works", "How It Works"],
-                ["#stats", "Stats"],
-              ].map(([href, label]) => (
-                <a
-                  key={href}
-                  href={href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    scrolled
-                      ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      : "text-white/75 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  {label}
-                </a>
-              ))}
+
+            {/* MENU */}
+            <nav className="hidden md:flex gap-6 lg:gap-10 font-medium text-blue-900 absolute left-1/2 -translate-x-1/2">
+              <Link to="/" className="hover:text-blue-600 transition text-sm lg:text-base">
+                Home
+              </Link>
+              <Link to="/about" className="hover:text-blue-600 transition text-sm lg:text-base">
+                About
+              </Link>
+              <Link to="/services" className="hover:text-blue-600 transition text-sm lg:text-base">
+                Services
+              </Link>
+              <Link to="/presidents" className="hover:text-blue-600 transition text-sm lg:text-base">
+                Presidents
+              </Link>
+              <Link to="/contact" className="hover:text-blue-600 transition text-sm lg:text-base">
+                Contact
+              </Link>
             </nav>
-            <div className="flex items-center gap-2.5">
+
+            {/* MOBILE MENU & LOGIN */}
+            <div className="flex items-center gap-3">
               <Link
                 to="/login"
-                className={`hidden md:inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200 ${
-                  scrolled
-                    ? "border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
-                    : "border-white/25 text-white hover:bg-white/10"
-                }`}
+                className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 transition text-sm sm:text-base"
               >
-                Log in
+                Login
               </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-200 shadow-md shadow-blue-600/30 hover:shadow-lg hover:shadow-blue-600/40 hover:-translate-y-px"
-              >
-                Get Started <ArrowRight size={14} />
-              </Link>
+
+              {/* Mobile Menu Button */}
               <button
-                className={`md:hidden p-2 rounded-lg transition-colors ${
-                  scrolled
-                    ? "text-slate-700 hover:bg-slate-100"
-                    : "text-white hover:bg-white/10"
-                }`}
                 onClick={() => setMenuOpen(!menuOpen)}
+                className="md:hidden p-2 text-blue-900 hover:bg-blue-50 rounded-lg transition"
               >
-                {menuOpen ? <X size={20} /> : <Menu size={20} />}
+                {menuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
             </div>
           </div>
+
+          {/* Mobile Menu Dropdown */}
           {menuOpen && (
-            <div className="md:hidden bg-white/98 backdrop-blur-xl border-t border-slate-100 px-6 py-5 space-y-1 animate-slide-up shadow-xl">
-              {[
-                ["#admin-features", "Admin Tools"],
-                ["#member-features", "Member Tools"],
-                ["#how-it-works", "How It Works"],
-                ["#stats", "Stats"],
-              ].map(([href, label]) => (
-                <a
-                  key={href}
-                  href={href}
-                  className="block px-3 py-2.5 text-sm font-medium text-slate-700 rounded-lg hover:bg-slate-50"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {label}
-                </a>
-              ))}
-              <div className="pt-3 border-t border-slate-100">
-                <Link
-                  to="/login"
-                  className="block w-full bg-blue-600 text-white text-center text-sm font-semibold py-3 rounded-xl"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Log in to Portal →
+            <div className="md:hidden bg-white border-t border-blue-100 shadow-lg">
+              <nav className="flex flex-col px-4 py-4 space-y-2">
+                <Link to="/" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
+                  Home
                 </Link>
-              </div>
+                <Link to="/about" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
+                  About
+                </Link>
+                <Link to="/services" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
+                  Services
+                </Link>
+                <Link to="/presidents" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
+                  Presidents
+                </Link>
+                <Link to="/contact" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
+                  Contact
+                </Link>
+              </nav>
             </div>
           )}
         </header>
 
-        {/* ══════════════════════════════════════════════════════════ */}
-        {/*  HERO                                                      */}
-        {/* ══════════════════════════════════════════════════════════ */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center bg-slate-950 text-white overflow-hidden px-6 pt-16">
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage:
-                "linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)",
-              backgroundSize: "48px 48px",
-            }}
+        {/* ================= HERO ================= */}
+        <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 pt-24 sm:pt-32 overflow-hidden">
+          <img
+            src={assets.herologo}
+            alt="watermark"
+            className="absolute w-[400px] sm:w-[650px] md:w-[800px] opacity-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ mixBlendMode: 'multiply' }}
           />
 
-          <div
-            className="absolute top-1/4 -left-32 w-[600px] h-[600px] rounded-full pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%)",
-              animation: "heroGlow 8s ease-in-out infinite",
-            }}
-          />
-          <div
-            className="absolute bottom-1/4 -right-32 w-[500px] h-[500px] rounded-full pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%)",
-              animation: "heroGlow 10s ease-in-out infinite reverse",
-            }}
-          />
-          <div
-            className="absolute top-2/3 left-1/4 w-[400px] h-[400px] rounded-full pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)",
-              animation: "heroGlow 12s ease-in-out infinite 2s",
-            }}
-          />
-
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-1 h-1 bg-white/20 rounded-full pointer-events-none"
-              style={{
-                left: `${(i * 137.5) % 100}%`,
-                top: `${(i * 97.3) % 100}%`,
-                animation: `floatUp ${4 + (i % 4)}s ease-in-out infinite ${
-                  (i * 0.4) % 3
-                }s`,
-                opacity: 0.1 + (i % 5) * 0.06,
-              }}
-            />
-          ))}
-
-          <div className="relative z-10 max-w-5xl mx-auto text-center">
-            <div
-              className="inline-flex items-center gap-2.5 bg-white/8 border border-white/15 rounded-full px-5 py-2 text-sm font-medium mb-8 animate-fade-in"
-              style={{ backdropFilter: "blur(8px)" }}
-            >
-              <div className="relative">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full" />
-                <div
-                  className="absolute inset-0 w-2 h-2 bg-emerald-400 rounded-full"
-                  style={{ animation: "ripple 2s ease-out infinite" }}
-                />
-              </div>
-              <span className="text-white/90">
-                Bhimavaram Cellphone Technicians Association
+          <div className="text-center max-w-5xl relative z-10">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-blue-900 mb-4 sm:mb-6 leading-tight px-2">
+              Welcome to
+              <br/>
+              <span className="text-blue-600">
+                Bhimavaram Cell Technician Association
               </span>
-            </div>
-
-            <h1 className="text-5xl sm:text-6xl lg:text-8xl font-black tracking-[-0.03em] leading-[1] mb-6 animate-slide-up">
-              <span className="block text-white mb-1">The Modern</span>
-              <span className="shimmer-text">Association</span>
-              <span className="block text-white mt-1">Platform</span>
             </h1>
 
-            <p
-              className="text-slate-400 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-10 animate-slide-up"
-              style={{ animationDelay: "0.15s" }}
-            >
-              QR attendance, member management, payments, complaints, and
-              real-time notifications — everything BCTA needs, in one unified
-              portal.
+            <p className="text-blue-800/70 max-w-2xl mx-auto mb-8 sm:mb-10 text-base sm:text-lg px-4">
+              A digital platform to manage members, meetings, attendance,
+              payments and communication for BCTA members.
             </p>
 
-            <div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up"
-              style={{ animationDelay: "0.3s" }}
-            >
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
               <Link
                 to="/login"
-                className="group inline-flex items-center gap-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-4 rounded-2xl transition-all text-base shadow-2xl shadow-blue-600/40 hover:shadow-blue-500/50 hover:-translate-y-1"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 sm:px-7 py-3 rounded-lg hover:bg-blue-700 transition"
               >
-                Open the Portal
-                <ArrowRight
-                  size={18}
-                  className="transition-transform group-hover:translate-x-1"
-                />
+                Open Portal <ArrowRight size={18}/>
               </Link>
+
               <a
-                href="#admin-features"
-                className="inline-flex items-center gap-2.5 border border-white/20 text-white/80 hover:text-white hover:border-white/40 hover:bg-white/5 font-medium px-8 py-4 rounded-2xl transition-all text-base"
-                style={{ backdropFilter: "blur(8px)" }}
+                href="#services"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-600 px-6 sm:px-7 py-3 rounded-lg hover:bg-blue-50 transition"
               >
-                Explore Features <ChevronDown size={18} />
+                Learn More
               </a>
             </div>
-
-            <div
-              className="flex justify-center gap-3 flex-wrap animate-fade-in"
-              style={{ animationDelay: "0.45s" }}
-            >
-              {heroHighlights.map((h, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all duration-500 ${
-                    activeFeature === i
-                      ? "bg-white/12 border-white/30 text-white scale-105"
-                      : "bg-white/5 border-white/10 text-white/50"
-                  }`}
-                  style={{ backdropFilter: "blur(8px)" }}
-                >
-                  <h.icon size={15} className={h.color} />
-                  {h.label}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="absolute bottom-32 right-6 sm:right-16 hidden lg:block animate-float">
-            <div className="bg-white/8 border border-white/12 rounded-2xl px-5 py-3.5 text-right backdrop-blur-md shadow-2xl">
-              <p className="text-2xl font-black text-white">260+</p>
-              <p className="text-xs text-white/50 font-medium mt-0.5">
-                Active Members
-              </p>
-            </div>
-          </div>
-          <div
-            className="absolute bottom-52 left-6 sm:left-16 hidden lg:block animate-float"
-            style={{ animationDelay: "1.4s" }}
-          >
-            <div className="bg-white/8 border border-white/12 rounded-2xl px-5 py-3.5 backdrop-blur-md shadow-2xl">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                <p className="text-xs text-white/60 font-medium">QR Active Now</p>
-              </div>
-              <p className="text-sm font-bold text-white">
-                Rotating every 30s
-              </p>
-            </div>
-          </div>
-          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 animate-bounce">
-            <ChevronDown size={22} className="text-white/25" />
           </div>
         </section>
 
-        {/* ── TICKER MARQUEE ── */}
-        <div className="bg-slate-100 border-y border-slate-200/80 py-4">
-          <Marquee items={TICKER_ITEMS} />
-        </div>
+        {/* ================= PRESIDENTS ================= */}
+        <section id="presidents" className="py-16 sm:py-24 overflow-hidden">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <h2 className="text-3xl sm:text-4xl font-black text-blue-900 text-center mb-12 sm:mb-16">
+              BCTA Presidents
+            </h2>
 
-        {/* ══════════════════════════════════════════════════════════ */}
-        {/*  ADMIN TOOLS                                               */}
-        {/* ══════════════════════════════════════════════════════════ */}
-        <section id="admin-features" className="py-28 bg-white">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <Reveal className="mb-16 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
-              <div>
-                <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-                  <Shield size={12} /> For Administrators
-                </div>
-                <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none">
-                  Admin<br />
-                  <span
-                    style={{
-                      background: "linear-gradient(135deg,#1e40af,#7c3aed)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    Tools
-                  </span>
-                </h2>
-                <p className="text-slate-500 mt-4 max-w-md text-base">
-                  Four core modules that give the BCTA committee full control
-                  over the association.
-                </p>
-              </div>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all shadow-md self-start sm:self-auto"
-              >
-                Admin Login <ArrowRight size={15} />
-              </Link>
-            </Reveal>
+            <div className="flex gap-6 sm:gap-8 animate-marquee">
+              {[...presidents, ...presidents].map((p, i) => (
+                <Link
+                  key={i}
+                  to="/presidents"
+                  className="min-w-[200px] sm:min-w-[250px] bg-white/80 backdrop-blur-sm rounded-xl shadow hover:shadow-xl hover:-translate-y-2 transition p-4 sm:p-6 text-center border border-blue-100 cursor-pointer"
+                >
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    className="w-20 h-20 sm:w-28 sm:h-28 mx-auto rounded-full object-cover mb-3 sm:mb-4"
+                  />
 
-            <div className="space-y-5">
-              {ADMIN_FEATURES.map((f, i) => (
-                <Reveal key={f.num} delay={i * 0.06}>
-                  <div className="group relative bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-7 sm:p-9 flex flex-col sm:flex-row gap-7 hover:shadow-xl transition-all duration-300 card-glow overflow-hidden">
+                  <h3 className="font-bold text-base sm:text-lg text-blue-900">
+                    {p.name}
+                  </h3>
+
+                  <p className="text-xs sm:text-sm text-blue-800/70">
+                    {p.year}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+       
+
+        {/* ================= SERVICES SECTION ================= */}
+        <section id="services" className="py-16 sm:py-24">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-3xl sm:text-5xl font-black text-blue-900 mb-3 sm:mb-4">
+                Our <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Services</span>
+              </h2>
+              <p className="text-blue-800/70 text-base sm:text-lg max-w-2xl mx-auto px-4">
+                Professional mobile repair services by expert technicians
+              </p>
+            </div>
+
+            {/* Slider Container */}
+            <div className="relative" style={{ perspective: "1500px" }}>
+              {/* Slides */}
+              <div className="relative h-[450px] sm:h-[500px]">
+                {isTransitioning ? (
+                  <>
                     <div
-                      className={`absolute inset-0 opacity-0 group-hover:opacity-[0.025] transition-opacity duration-500 ${f.color}`}
-                    />
+                      key={currentSlide}
+                      className="absolute inset-0 animate-slideOut preserve-3d backface-hidden"
+                    >
+                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-blue-100 p-6 sm:p-10 md:p-14 h-full flex flex-col">
+                        {/* Icon */}
+                        <div className="flex items-center justify-center mb-6 sm:mb-8">
+                          <div className="text-4xl sm:text-6xl">{SERVICES[currentSlide].icon}</div>
+                        </div>
 
-                    <div className="flex flex-row sm:flex-col items-center gap-4 sm:gap-3 sm:w-20 flex-shrink-0">
-                      <span className="text-[11px] font-black text-slate-300 tracking-[0.2em]">
-                        {f.num}
-                      </span>
-                      <div
-                        className={`w-13 h-13 ${f.color} w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-3deg]`}
-                      >
-                        <f.icon size={22} className="text-white" />
+                        {/* Title */}
+                        <h3 className="text-2xl sm:text-4xl font-black text-blue-900 mb-3 sm:mb-4 text-center">
+                          {SERVICES[currentSlide].title}
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-blue-800/70 text-sm sm:text-lg mb-6 sm:mb-8 leading-relaxed text-center">
+                          {SERVICES[currentSlide].description}
+                        </p>
+
+                        {/* Features */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-auto">
+                          {SERVICES[currentSlide].features.map((feature, i) => (
+                            <div key={i} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 sm:py-3">
+                              <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${SERVICES[currentSlide].color}`}></div>
+                              <span className="text-xs sm:text-sm font-semibold text-blue-900">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
+                    <div
+                      key={nextIndex}
+                      className="absolute inset-0 animate-slideIn preserve-3d backface-hidden"
+                    >
+                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-blue-100 p-6 sm:p-10 md:p-14 h-full flex flex-col">
+                        {/* Icon */}
+                        <div className="flex items-center justify-center mb-6 sm:mb-8">
+                          <div className="text-4xl sm:text-6xl">{SERVICES[nextIndex].icon}</div>
+                        </div>
 
-                    <div className="hidden sm:block w-px bg-slate-100 self-stretch flex-shrink-0" />
+                        {/* Title */}
+                        <h3 className="text-2xl sm:text-4xl font-black text-blue-900 mb-3 sm:mb-4 text-center">
+                          {SERVICES[nextIndex].title}
+                        </h3>
 
-                    <div className="flex-1">
-                      <span
-                        className={`inline-flex items-center text-[10px] font-black uppercase tracking-[0.18em] px-2.5 py-1 rounded-lg ${f.lightBg} ${f.textColor} mb-3`}
-                      >
-                        {f.tag}
-                      </span>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2.5 leading-snug">
-                        {f.title}
+                        {/* Description */}
+                        <p className="text-blue-800/70 text-sm sm:text-lg mb-6 sm:mb-8 leading-relaxed text-center">
+                          {SERVICES[nextIndex].description}
+                        </p>
+
+                        {/* Features */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-auto">
+                          {SERVICES[nextIndex].features.map((feature, i) => (
+                            <div key={i} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 sm:py-3">
+                              <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${SERVICES[nextIndex].color}`}></div>
+                              <span className="text-xs sm:text-sm font-semibold text-blue-900">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    key={currentSlide}
+                    className="absolute inset-0 preserve-3d backface-hidden transition-shadow duration-500 hover:shadow-2xl"
+                  >
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-blue-100 p-6 sm:p-10 md:p-14 h-full flex flex-col">
+                      {/* Icon */}
+                      <div className="flex items-center justify-center mb-6 sm:mb-8">
+                        <div className="text-4xl sm:text-6xl">{SERVICES[currentSlide].icon}</div>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-2xl sm:text-4xl font-black text-blue-900 mb-3 sm:mb-4 text-center">
+                        {SERVICES[currentSlide].title}
                       </h3>
-                      <p className="text-slate-500 text-sm leading-relaxed mb-5 max-w-xl">
-                        {f.desc}
+
+                      {/* Description */}
+                      <p className="text-blue-800/70 text-sm sm:text-lg mb-6 sm:mb-8 leading-relaxed text-center">
+                        {SERVICES[currentSlide].description}
                       </p>
-                      <div className="flex flex-wrap gap-x-8 gap-y-2">
-                        {f.points.map((p) => (
-                          <div
-                            key={p}
-                            className="flex items-center gap-2 text-sm text-slate-700"
-                          >
-                            <CheckCircle
-                              size={15}
-                              className="text-emerald-500 flex-shrink-0"
-                            />
-                            {p}
+
+                      {/* Features */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-auto">
+                        {SERVICES[currentSlide].features.map((feature, i) => (
+                          <div key={i} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 sm:py-3">
+                            <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${SERVICES[currentSlide].color}`}></div>
+                            <span className="text-xs sm:text-sm font-semibold text-blue-900">{feature}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
-                </Reveal>
+                )}
+              </div>
+            </div>
+
+            {/* Dots Navigation */}
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mt-8 sm:mt-12">
+              {SERVICES.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToSlide(index)}
+                  className={`transition-all duration-300 rounded-full ${
+                    index === currentSlide
+                      ? "w-8 sm:w-12 h-2.5 sm:h-3 bg-blue-600"
+                      : "w-2.5 sm:w-3 h-2.5 sm:h-3 bg-blue-200 hover:bg-blue-400"
+                  }`}
+                />
               ))}
             </div>
-          </div>
-        </section>
 
-        {/* ══════════════════════════════════════════════════════════ */}
-        {/*  MEMBER TOOLS                                              */}
-        {/* ══════════════════════════════════════════════════════════ */}
-        <section id="member-features" className="py-28 bg-slate-50">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <Reveal className="mb-16 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
-              <div>
-                <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-                  <Smartphone size={12} /> For Members
-                </div>
-                <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-none">
-                  Member<br />
-                  <span
-                    style={{
-                      background: "linear-gradient(135deg,#059669,#0284c7)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    Tools
-                  </span>
-                </h2>
-                <p className="text-slate-500 mt-4 max-w-md text-base">
-                  All the features a member needs, optimised for use on a mobile
-                  phone.
-                </p>
-              </div>
+            {/* View All Services Button */}
+            <div className="text-center mt-8">
               <Link
-                to="/login"
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all shadow-md self-start sm:self-auto"
+                to="/services"
+                className="inline-flex items-center gap-2 bg-blue-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg"
               >
-                Member Login <ArrowRight size={15} />
+                View All Services <ArrowRight size={18} />
               </Link>
-            </Reveal>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {MEMBER_FEATURES.map((f, i) => (
-                <Reveal key={f.title} delay={i * 0.07}>
-                  <div className="group bg-white border border-slate-200 rounded-2xl p-7 hover:shadow-xl hover:border-slate-300 hover:-translate-y-1 transition-all duration-300 h-full">
-                    <div
-                      className={`w-12 h-12 ${f.color} rounded-2xl flex items-center justify-center mb-5 shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-3deg]`}
-                    >
-                      <f.icon size={20} className="text-white" />
-                    </div>
-                    <h3 className="font-bold text-slate-900 text-base mb-2">
-                      {f.title}
-                    </h3>
-                    <p className="text-slate-500 text-sm leading-relaxed">
-                      {f.desc}
-                    </p>
-                  </div>
-                </Reveal>
-              ))}
             </div>
           </div>
         </section>
@@ -827,21 +667,17 @@ const LandingPage: React.FC = () => {
         <section
           id="stats"
           className="py-28 px-5 sm:px-8"
-          style={{
-            background:
-              "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
-          }}
         >
           <div className="max-w-5xl mx-auto">
             <Reveal className="text-center mb-16">
-              <p className="text-blue-400 font-semibold text-[11px] uppercase tracking-[0.2em] mb-4">
+              <p className="text-blue-900 font-semibold text-[11px] uppercase tracking-[0.2em] mb-4">
                 By the numbers
               </p>
-              <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+              <h2 className="text-4xl sm:text-5xl font-black text-blue-900 tracking-tight">
                 BCTA's growing impact
               </h2>
             </Reveal>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
               {[
                 {
                   label: "Active Members",
@@ -853,23 +689,13 @@ const LandingPage: React.FC = () => {
                   end: Math.max(platformStats.meetings, 0),
                   suffix: "",
                 },
-                {
-                  label: "QR Scans Logged",
-                  end: Math.max(platformStats.scans, 0),
-                  suffix: "",
-                },
-                {
-                  label: "Payment Records",
-                  end: Math.max(platformStats.payments, 0),
-                  suffix: "",
-                },
               ].map((s, i) => (
                 <Reveal key={s.label} delay={i * 0.1}>
-                  <div className="text-center bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8 hover:bg-white/8 transition-colors">
-                    <div className="text-4xl sm:text-5xl font-black text-white mb-2.5 tracking-tight tabular-nums">
+                  <div className="text-center bg-white/40 backdrop-blur-sm border border-blue-200 rounded-2xl p-8 sm:p-10 hover:bg-white/50 transition-colors">
+                    <div className="text-5xl sm:text-6xl font-black text-blue-900 mb-3 tracking-tight tabular-nums">
                       <Counter end={s.end} suffix={s.suffix} />
                     </div>
-                    <p className="text-slate-400 text-sm font-medium">
+                    <p className="text-blue-800 text-base font-medium">
                       {s.label}
                     </p>
                   </div>
@@ -880,200 +706,27 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* ══════════════════════════════════════════════════════════ */}
-        {/*  HOW IT WORKS                                              */}
-        {/* ══════════════════════════════════════════════════════════ */}
-        <section id="how-it-works" className="py-28 px-5 sm:px-8 bg-white">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-16 items-start">
-              <div>
-                <Reveal className="mb-12">
-                  <div className="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
-                    <Clock size={12} /> Process
-                  </div>
-                  <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-                    How it<br />works
-                  </h2>
-                  <p className="text-slate-500 mt-4 text-base leading-relaxed">
-                    From registration to real-time tracking in four seamless
-                    steps.
-                  </p>
-                </Reveal>
-                <div className="space-y-10">
-                  {STEPS.map((s, i) => (
-                    <StepCard key={s.num} {...s} delay={i * 0.1} />
-                  ))}
-                </div>
-                <Reveal delay={0.45} className="mt-12">
-                  <Link
-                    to="/login"
-                    className="group inline-flex items-center gap-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold px-7 py-3.5 rounded-2xl transition-all shadow-lg shadow-blue-600/30 hover:shadow-blue-500/40 hover:-translate-y-0.5"
-                  >
-                    Get Started{" "}
-                    <ArrowRight
-                      size={17}
-                      className="transition-transform group-hover:translate-x-1"
-                    />
-                  </Link>
-                </Reveal>
-              </div>
-
-              {/* Dashboard preview */}
-              <Reveal dx={40} dy={0} delay={0.2}>
-                <div className="relative">
-                  <div className="absolute -inset-4 bg-gradient-to-br from-blue-500/15 via-violet-500/10 to-emerald-500/10 rounded-3xl blur-2xl" />
-                  <div className="relative bg-slate-950 rounded-3xl p-7 text-white shadow-2xl border border-white/8">
-                    <div className="flex items-center justify-between mb-7 pb-5 border-b border-white/10">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center shadow-md">
-                          <span className="text-white font-black text-[10px]">
-                            BC
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm">BCTA Admin</p>
-                          <p className="text-[10px] text-slate-500">
-                            Dashboard
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                        <span className="text-[11px] text-emerald-400 font-medium">
-                          Live
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 mb-5">
-                      {[
-                        {
-                          label: "Members",
-                          value: "260+",
-                          color: "from-blue-500 to-blue-700",
-                        },
-                        {
-                          label: "Meetings",
-                          value: "48",
-                          color: "from-violet-500 to-purple-700",
-                        },
-                        {
-                          label: "Pending Dues",
-                          value: "₹12.4K",
-                          color: "from-rose-500 to-red-700",
-                        },
-                        {
-                          label: "Attendance",
-                          value: "86%",
-                          color: "from-emerald-500 to-teal-700",
-                        },
-                      ].map((card) => (
-                        <div
-                          key={card.label}
-                          className="bg-white/5 rounded-2xl p-4 border border-white/8"
-                        >
-                          <p className="text-xs text-slate-400 mb-2">
-                            {card.label}
-                          </p>
-                          <p
-                            className={`text-xl font-black bg-gradient-to-r ${card.color} bg-clip-text`}
-                            style={{
-                              WebkitBackgroundClip: "text",
-                              WebkitTextFillColor: "transparent",
-                            }}
-                          >
-                            {card.value}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-3 bg-blue-600/20 border border-blue-500/20 rounded-2xl px-4 py-3.5 mb-4">
-                      <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <QrCode size={18} className="text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs text-blue-300 font-medium">
-                          QR Active
-                        </p>
-                        <p className="text-sm font-bold text-white leading-tight">
-                          Monthly Meeting — Mar 2026
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] text-slate-400">
-                          Expires in
-                        </p>
-                        <p className="text-sm font-bold text-emerald-400">
-                          28:43
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                        Recent Scans
-                      </p>
-                      {["Ravi Sharma", "Suresh Kumar", "Anil Reddy"].map(
-                        (name) => (
-                          <div
-                            key={name}
-                            className="flex items-center gap-3 bg-white/3 rounded-xl px-3.5 py-2.5 border border-white/5"
-                          >
-                            <div className="w-8 h-8 bg-gradient-to-br from-slate-700 to-slate-800 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-                              {name[0]}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-white">
-                                {name}
-                              </p>
-                              <p className="text-[10px] text-slate-500">
-                                Just scanned in
-                              </p>
-                            </div>
-                            <CheckCircle
-                              size={15}
-                              className="text-emerald-500"
-                            />
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
-            </div>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════ */}
         {/*  CTA BANNER                                                */}
         {/* ══════════════════════════════════════════════════════════ */}
         <section
           className="py-28 px-5 sm:px-8 relative overflow-hidden"
-          style={{
-            background:
-              "linear-gradient(135deg, #1e40af 0%, #7c3aed 50%, #1d4ed8 100%)",
-            backgroundSize: "200% 200%",
-          }}
         >
-          <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-black/10 rounded-full blur-3xl pointer-events-none" />
-          <Reveal className="relative z-10 max-w-3xl mx-auto text-center text-white">
-            <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-7">
-              <Zap size={13} className="text-yellow-300" /> Ready to transform
+          <Reveal className="relative z-10 max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 bg-white/40 backdrop-blur-sm border border-blue-300 rounded-full px-4 py-1.5 text-sm font-medium mb-7">
+              <Zap size={13} className="text-blue-900" /> Ready to transform
               your association?
             </div>
-            <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight mb-5">
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight mb-5 text-blue-900">
               Go digital with BCTA
             </h2>
-            <p className="text-blue-100 text-lg leading-relaxed mb-10 max-w-xl mx-auto">
+            <p className="text-blue-800 text-lg leading-relaxed mb-10 max-w-xl mx-auto">
               Log in to the BCTA Portal and start managing your association with
               real-time data, QR attendance, and instant notifications.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 to="/login"
-                className="group inline-flex items-center gap-2.5 bg-white text-blue-700 font-bold px-8 py-4 rounded-2xl hover:bg-blue-50 transition-all shadow-2xl shadow-black/30 text-base hover:-translate-y-1"
+                className="group inline-flex items-center gap-2.5 bg-blue-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-blue-700 transition-all shadow-2xl text-base hover:-translate-y-1"
               >
                 Open the Portal{" "}
                 <ArrowRight
@@ -1083,7 +736,7 @@ const LandingPage: React.FC = () => {
               </Link>
               <Link
                 to="/register"
-                className="inline-flex items-center gap-2 border border-white/30 text-white font-medium px-8 py-4 rounded-2xl hover:bg-white/10 transition-all text-base"
+                className="inline-flex items-center gap-2 border-2 border-blue-600 text-blue-900 bg-white/40 backdrop-blur-sm font-medium px-8 py-4 rounded-2xl hover:bg-white/60 transition-all text-base"
               >
                 Register as Member
               </Link>
@@ -1092,7 +745,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* ── FOOTER ── */}
-        <footer className="bg-slate-950 text-white px-5 sm:px-8 py-14">
+        <footer id="footer" className="bg-slate-950 text-white px-5 sm:px-8 py-14">
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row items-start justify-between gap-10 pb-10 border-b border-white/8">
               <div className="max-w-xs">
@@ -1111,30 +764,24 @@ const LandingPage: React.FC = () => {
                 <div>
                   <p className="font-semibold text-white mb-3">Platform</p>
                   <div className="space-y-2.5">
-                    <a
-                      href="#admin-features"
+                    <Link
+                      to="/services"
                       className="block text-slate-400 hover:text-white transition-colors"
                     >
-                      Admin Tools
-                    </a>
-                    <a
-                      href="#member-features"
+                      Services
+                    </Link>
+                    <Link
+                      to="/about"
                       className="block text-slate-400 hover:text-white transition-colors"
                     >
-                      Member Tools
-                    </a>
-                    <a
-                      href="#how-it-works"
+                      About Us
+                    </Link>
+                    <Link
+                      to="/presidents"
                       className="block text-slate-400 hover:text-white transition-colors"
                     >
-                      How It Works
-                    </a>
-                    <a
-                      href="#stats"
-                      className="block text-slate-400 hover:text-white transition-colors"
-                    >
-                      Stats
-                    </a>
+                      Presidents
+                    </Link>
                   </div>
                 </div>
                 <div>
