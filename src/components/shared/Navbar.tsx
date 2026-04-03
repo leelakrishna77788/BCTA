@@ -47,20 +47,25 @@ const Navbar: React.FC = () => {
 
         {/* MENU */}
         <nav className="hidden md:flex gap-6 lg:gap-10 font-medium text-blue-900 absolute left-1/2 -translate-x-1/2">
-          <Link to="/" className="hover:text-blue-600 transition text-sm lg:text-base">
+          <Link to="/" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
             Home
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/about" className="hover:text-blue-600 transition text-sm lg:text-base">
+          <Link to="/about" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
             About
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/services" className="hover:text-blue-600 transition text-sm lg:text-base">
+          <Link to="/services" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
             Services
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/presidents" className="hover:text-blue-600 transition text-sm lg:text-base">
+          <Link to="/presidents" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
             Presidents
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
           </Link>
-          <Link to="/contact" className="hover:text-blue-600 transition text-sm lg:text-base">
+          <Link to="/contact" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
             Contact
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
           </Link>
         </nav>
 

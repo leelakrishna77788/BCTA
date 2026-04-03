@@ -18,13 +18,13 @@ import {
   ScanLine,
   Package,
   Zap,
-  Menu,
-  X,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { assets, presidents } from "../assets/assets";
+import Navbar from "../components/shared/Navbar";
+import Footer from "../components/shared/Footer";
 
 /* ─── Intersection Observer reveal ─── */
 function useReveal<T extends HTMLElement = HTMLDivElement>(threshold = 0.1): [React.RefObject<T>, boolean] {
@@ -256,18 +256,10 @@ function usePlatformStats() {
 
 /* ═══════════════════════════════════════════════════ */
 const LandingPage: React.FC = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [direction, setDirection] = useState("next");
   const platformStats = usePlatformStats();
-
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 30);
-    window.addEventListener("scroll", h, { passive: true });
-    return () => window.removeEventListener("scroll", h);
-  }, []);
 
   // Auto-slide services with 3D effect
   useEffect(() => {
@@ -358,91 +350,10 @@ const LandingPage: React.FC = () => {
       `}</style>
 
       <div className="min-h-screen bg-gradient-to-br from-blue-300 via-blue-150 to-yellow-400 text-slate-900 overflow-x-hidden">
-        {/* ── NAVBAR ── */}
-        <header
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-            scrolled ? "bg-white shadow-md" : "bg-white/90 backdrop-blur"
-          }`}
-        >
-          <div className="w-full px-4 sm:px-6 h-16 flex items-center justify-between relative">
-            {/* LOGO */}
-            <div className="relative flex items-center">
-              {/* Floating Logo */}
-              <div className="fixed top-2 left-2 sm:top-4 sm:left-4 z-[60] rounded-xl border-2 border-blue-200 shadow-2xl hover:shadow-blue-200/50 transition-all duration-700 ease-in-out hover:scale-105 overflow-hidden p-0 w-16 sm:w-20 md:w-24">
-                <Link to="/" className="block">
-                  <img
-                    src={assets.logo}
-                    alt="BCTA Logo"
-                    className="w-full h-auto transition-all duration-700 ease-in-out"
-                  />
-                </Link>
-              </div>
-            </div>
-
-            {/* MENU */}
-            <nav className="hidden md:flex gap-6 lg:gap-10 font-medium text-blue-900 absolute left-1/2 -translate-x-1/2">
-              <Link to="/" className="hover:text-blue-600 transition text-sm lg:text-base">
-                Home
-              </Link>
-              <Link to="/about" className="hover:text-blue-600 transition text-sm lg:text-base">
-                About
-              </Link>
-              <Link to="/services" className="hover:text-blue-600 transition text-sm lg:text-base">
-                Services
-              </Link>
-              <Link to="/presidents" className="hover:text-blue-600 transition text-sm lg:text-base">
-                Presidents
-              </Link>
-              <Link to="/contact" className="hover:text-blue-600 transition text-sm lg:text-base">
-                Contact
-              </Link>
-            </nav>
-
-            {/* MOBILE MENU & LOGIN */}
-            <div className="flex items-center gap-3">
-              <Link
-                to="/login"
-                className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 transition text-sm sm:text-base"
-              >
-                Login
-              </Link>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="md:hidden p-2 text-blue-900 hover:bg-blue-50 rounded-lg transition"
-              >
-                {menuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu Dropdown */}
-          {menuOpen && (
-            <div className="md:hidden bg-white border-t border-blue-100 shadow-lg">
-              <nav className="flex flex-col px-4 py-4 space-y-2">
-                <Link to="/" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-                  Home
-                </Link>
-                <Link to="/about" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-                  About
-                </Link>
-                <Link to="/services" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-                  Services
-                </Link>
-                <Link to="/presidents" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-                  Presidents
-                </Link>
-                <Link to="/contact" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-                  Contact
-                </Link>
-              </nav>
-            </div>
-          )}
-        </header>
+        <Navbar />
 
         {/* ================= HERO ================= */}
-        <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 pt-24 sm:pt-32 overflow-hidden">
+        <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 pt-24 sm:pt-32 pb-8 sm:pb-12 overflow-hidden">
           <img
             src={assets.herologo}
             alt="watermark"
@@ -455,7 +366,7 @@ const LandingPage: React.FC = () => {
               Welcome to
               <br/>
               <span className="text-blue-600">
-                Bhimavaram Cell Technician Association
+                Bhimavaram Cell Phone Technicians Association
               </span>
             </h1>
 
@@ -483,13 +394,41 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* ================= PRESIDENTS ================= */}
-        <section id="presidents" className="py-16 sm:py-24 overflow-hidden">
+        <section id="presidents" className="py-8 sm:py-12 overflow-hidden">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <h2 className="text-3xl sm:text-4xl font-black text-blue-900 text-center mb-12 sm:mb-16">
               BCTA Presidents
             </h2>
 
-            <div className="flex gap-6 sm:gap-8 animate-marquee">
+            {/* Mobile: Horizontal Scroll */}
+            <div className="md:hidden overflow-x-auto scrollbar-hide pb-4">
+              <div className="flex gap-4 px-2">
+                {presidents.map((p, i) => (
+                  <Link
+                    key={i}
+                    to="/presidents"
+                    className="min-w-[200px] bg-white/80 backdrop-blur-sm rounded-xl shadow hover:shadow-xl transition p-4 text-center border border-blue-100 flex-shrink-0"
+                  >
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      className="w-20 h-20 mx-auto rounded-full object-cover mb-3"
+                    />
+
+                    <h3 className="font-bold text-base text-blue-900">
+                      {p.name}
+                    </h3>
+
+                    <p className="text-xs text-blue-800/70">
+                      {p.year}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop: Marquee Animation */}
+            <div className="hidden md:flex gap-6 sm:gap-8 animate-marquee">
               {[...presidents, ...presidents].map((p, i) => (
                 <Link
                   key={i}
@@ -518,7 +457,7 @@ const LandingPage: React.FC = () => {
        
 
         {/* ================= SERVICES SECTION ================= */}
-        <section id="services" className="py-16 sm:py-24">
+        <section id="services" className="py-8 sm:py-12">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="text-center mb-12 sm:mb-16">
               <h2 className="text-3xl sm:text-5xl font-black text-blue-900 mb-3 sm:mb-4">
@@ -666,7 +605,7 @@ const LandingPage: React.FC = () => {
         {/* ══════════════════════════════════════════════════════════ */}
         <section
           id="stats"
-          className="py-28 px-5 sm:px-8"
+          className="py-8 sm:py-12 px-5 sm:px-8"
         >
           <div className="max-w-5xl mx-auto">
             <Reveal className="text-center mb-16">
@@ -709,7 +648,7 @@ const LandingPage: React.FC = () => {
         {/*  CTA BANNER                                                */}
         {/* ══════════════════════════════════════════════════════════ */}
         <section
-          className="py-28 px-5 sm:px-8 relative overflow-hidden"
+          className="py-8 sm:py-12 px-5 sm:px-8 relative overflow-hidden"
         >
           <Reveal className="relative z-10 max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 bg-white/40 backdrop-blur-sm border border-blue-300 rounded-full px-4 py-1.5 text-sm font-medium mb-7">
@@ -744,89 +683,7 @@ const LandingPage: React.FC = () => {
           </Reveal>
         </section>
 
-        {/* ── FOOTER ── */}
-        <footer id="footer" className="bg-slate-950 text-white px-5 sm:px-8 py-14">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row items-start justify-between gap-10 pb-10 border-b border-white/8">
-              <div className="max-w-xs">
-                <div className="flex items-center gap-2.5 mb-4">
-                  <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="text-white font-black text-xs">BC</span>
-                  </div>
-                  <span className="font-bold text-base">BCTA Portal</span>
-                </div>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  The official management portal for BCTA — Bhimavaram Cellphone
-                  Technicians Association.
-                </p>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-sm">
-                <div>
-                  <p className="font-semibold text-white mb-3">Platform</p>
-                  <div className="space-y-2.5">
-                    <Link
-                      to="/services"
-                      className="block text-slate-400 hover:text-white transition-colors"
-                    >
-                      Services
-                    </Link>
-                    <Link
-                      to="/about"
-                      className="block text-slate-400 hover:text-white transition-colors"
-                    >
-                      About Us
-                    </Link>
-                    <Link
-                      to="/presidents"
-                      className="block text-slate-400 hover:text-white transition-colors"
-                    >
-                      Presidents
-                    </Link>
-                  </div>
-                </div>
-                <div>
-                  <p className="font-semibold text-white mb-3">Access</p>
-                  <div className="space-y-2.5">
-                    <Link
-                      to="/login"
-                      className="block text-slate-400 hover:text-white transition-colors"
-                    >
-                      Admin Login
-                    </Link>
-                    <Link
-                      to="/login"
-                      className="block text-slate-400 hover:text-white transition-colors"
-                    >
-                      Member Login
-                    </Link>
-                    <Link
-                      to="/register"
-                      className="block text-slate-400 hover:text-white transition-colors"
-                    >
-                      Register
-                    </Link>
-                  </div>
-                </div>
-                <div>
-                  <p className="font-semibold text-white mb-3">Association</p>
-                  <div className="space-y-2.5">
-                    <p className="text-slate-500 text-xs flex items-start gap-1.5">
-                      <MapPin size={12} className="mt-0.5 flex-shrink-0" />{" "}
-                      Bhimavaram, Andhra Pradesh
-                    </p>
-                    <p className="text-slate-500 text-xs flex items-start gap-1.5">
-                      <Star size={12} className="mt-0.5 flex-shrink-0" /> Est. 2018
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 text-xs text-slate-600">
-              <p>© 2026 BCTA Management Portal. All rights reserved.</p>
-              <p>Built for Bhimavaram Cellphone Technicians Association</p>
-            </div>
-          </div>
-        </footer>
+        <Footer />
       </div>
     </>
   );
