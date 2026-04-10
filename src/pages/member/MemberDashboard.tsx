@@ -140,19 +140,99 @@ const MemberDashboard: React.FC = () => {
     if (hour < 17) return "Good afternoon";
     return "Good evening";
   };
+  const getDeadlineInfo = () => {
+    const today = new Date();
+
+    // Get last day of current month
+    const lastDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    const diffDays = Math.ceil(
+      (lastDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    return {
+      date: lastDate,
+      isUrgent: diffDays <= 5,
+      daysLeft: diffDays,
+    };
+  };
+
+  const deadline = getDeadlineInfo();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 pb-12">
+    <div className="min-h-screen bg-slate-50">
       {/* Ambient background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-violet-200/40 to-indigo-200/40 rounded-full blur-3xl animate-pulse" />
         <div className="absolute top-1/2 -left-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-cyan-200/30 rounded-full blur-3xl" />
         <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-gradient-to-br from-rose-200/20 to-orange-200/20 rounded-full blur-3xl" />
       </div>
+      <div className="relative z-10 w-full">
+        {" "}
+        {/* Hero Section - Clean */}
+        <div className=" p-4 sm:p-5">
+          <div className="flex items-center gap-4">
+            {/* Left Image */}
+            <div>
+              {userProfile?.photoURL ? (
+                <img
+                  src={userProfile.photoURL}
+                  alt="User"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border border-slate-200"
+                />
+              ) : (
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-slate-100 flex items-center justify-center text-base font-bold text-slate-700">
+                  {userProfile?.name?.[0]}
+                </div>
+              )}
+            </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-8">
+            {/* Right Content */}
+            <div className="flex flex-col">
+              <p className="text-sm text-slate-500 font-medium">
+                {getGreeting()}
+              </p>
+
+              <h1 className="text-lg sm:text-xl font-semibold text-slate-800">
+                {userProfile?.name} {userProfile?.surname}
+              </h1>
+            </div>
+          </div>
+        </div>
+        {/* Deadline Alert */}
+        <div
+          className={`mx-3 sm:mx-4 flex items-center justify-between rounded-xl px-4 py-3 sm:py-4
+  ${deadline.isUrgent ? "bg-red-100 text-red-700 border border-red-200" : "bg-green-100 text-green-700 border border-green-200"}`}
+        >
+          {/* Left Content */}
+          <div>
+            <p className="font-semibold text-base sm:text-3xl">
+              Monthly Deadline
+            </p>
+
+            <p className="text-xs sm:text-sm">
+              Due by{" "}
+              {deadline.date.toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+              })}
+            </p>
+
+            <div className="text-xs sm:text-sm font-medium mt-1">
+              Amount: <span className="text-blue-700 font-bold">₹100/-</span>
+            </div>
+          </div>
+
+          {/* Right Content (always right) */}
+          <div className="text-right">
+            <p className="text-lg sm:text-2xl font-bold whitespace-nowrap">
+              {deadline.daysLeft} days left
+            </p>
+          </div>
+        </div>
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 px-3 sm:px-4 py-3">
+          {" "}
           {loading
             ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
             : [
@@ -222,36 +302,47 @@ const MemberDashboard: React.FC = () => {
               ].map((stat, idx) => (
                 <div
                   key={stat.label}
-                  className="group relative bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 border border-slate-100 overflow-hidden"
+                  className="group relative bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm hover:shadow-md transition-all duration-300 border border-slate-100 overflow-hidden"
                 >
+                  {/* Background Hover */}
                   <div
-                    className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                    className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
                   />
+
+                  {/* Top Gradient Line */}
                   <div
-                    className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.gradient} transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500`}
+                    className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${stat.gradient} transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300`}
                   />
 
                   <div className="relative z-10">
-                    <div className="flex items-start justify-between mb-4">
+                    {/* Icon Row */}
+                    <div className="flex items-center justify-between mb-2">
                       <div
-                        className={`w-12 h-12 ${stat.iconBg} rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3`}
+                        className={`w-9 h-9 ${stat.iconBg} rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-105`}
                       >
-                        <stat.icon size={22} className={stat.iconColor} />
+                        <stat.icon size={18} className={stat.iconColor} />
                       </div>
+
                       <ArrowUpRight
-                        size={18}
-                        className="text-slate-300 group-hover:text-slate-500 transition-colors opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 duration-300"
+                        size={14}
+                        className="text-slate-300 group-hover:text-slate-500 opacity-0 group-hover:opacity-100 transition-all duration-300"
                       />
                     </div>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+
+                    {/* Label */}
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase mb-0.5">
                       {stat.label}
                     </p>
-                    <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+
+                    {/* Value */}
+                    <p className="text-lg sm:text-xl font-bold text-slate-900 leading-tight">
                       {stat.value}
                     </p>
-                    <p className="text-xs text-slate-500 mt-2 font-medium flex items-center gap-1.5">
+
+                    {/* Trend */}
+                    <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
                       <span
-                        className={`w-1.5 h-1.5 rounded-full bg-gradient-to-r ${stat.gradient}`}
+                        className={`w-1 h-1 rounded-full bg-gradient-to-r ${stat.gradient}`}
                       />
                       {stat.trend}
                     </p>
@@ -259,7 +350,6 @@ const MemberDashboard: React.FC = () => {
                 </div>
               ))}
         </div>
-
         {/* Main Content - Scanner & Notifications Side by Side */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
           {/* Left Column - Actions & Meetings */}
@@ -310,7 +400,7 @@ const MemberDashboard: React.FC = () => {
               </div>
             </div>
             {/* Secondary Actions Grid */}
-            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 gap-2">
               {[
                 {
                   to: "/member/complaint",
@@ -644,7 +734,6 @@ const MemberDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* Custom CSS */}
       <style>{`
                 @keyframes spin-slow {
