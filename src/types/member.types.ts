@@ -1,5 +1,5 @@
 export type UserRole = "member" | "admin" | "superadmin";
-export type UserStatus = "active" | "blocked";
+export type UserStatus = "active" | "blocked" | "pending";
 export type PaymentStatus = "paid" | "unpaid";
 export type BloodGroup = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | "";
 export type Gender = "male" | "female" | "other" | "";

@@ -7,11 +7,11 @@ interface LocationData {
 }
 
 const EMERGENCY_CONTACTS = [
-    { label: "Police", number: "100", color: "bg-[#000080]", icon: ShieldCheck, emoji: "🚓" },
-    { label: "Ambulance", number: "108", color: "bg-red-500", icon: Heart, emoji: "🚑" },
-    { label: "Fire", number: "101", color: "bg-orange-500", icon: Siren, emoji: "🚒" },
-    { label: "Women Helpline", number: "1091", color: "bg-pink-500", icon: Phone, emoji: "👩" },
-    { label: "Disaster", number: "1078", color: "bg-amber-600", icon: Siren, emoji: "⚠️" },
+    { label: "Police", number: "100", gradient: "linear-gradient(135deg, #1e1b4b, #4338ca)", icon: ShieldCheck, emoji: "🚓" },
+    { label: "Ambulance", number: "108", gradient: "linear-gradient(135deg, #dc2626, #ef4444)", icon: Heart, emoji: "🚑" },
+    { label: "Fire", number: "101", gradient: "linear-gradient(135deg, #ea580c, #f97316)", icon: Siren, emoji: "🚒" },
+    { label: "Women Helpline", number: "1091", gradient: "linear-gradient(135deg, #db2777, #f472b6)", icon: Phone, emoji: "👩" },
+    { label: "Disaster", number: "1078", gradient: "linear-gradient(135deg, #d97706, #fbbf24)", icon: Siren, emoji: "⚠️" },
 ];
 
 const HOSPITAL_DATA = [
@@ -45,34 +45,38 @@ const Emergency: React.FC = () => {
         <div className="space-y-5 animate-fade-in">
             <div>
                 <h1 className="page-title mb-0">Emergency Services</h1>
-                <p className="text-slate-500 text-sm">Quick access to emergency contacts and nearby help</p>
+                <p className="text-slate-500 text-sm font-medium">Quick access to emergency contacts and nearby help</p>
             </div>
 
             {/* Location banner */}
             {location ? (
-                <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-200/60">
                     <MapPin size={16} className="text-emerald-600" />
                     <p className="text-sm text-emerald-700 font-medium">
                         Location detected: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
                     </p>
                 </div>
             ) : locationError ? (
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
-                    <p className="text-xs text-amber-700">{locationError} — showing Bhimavaram area results</p>
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/60">
+                    <p className="text-xs text-amber-700 font-medium">{locationError} — showing Bhimavaram area results</p>
                 </div>
             ) : (
-                <div className="p-3 bg-slate-100 rounded-xl border border-slate-200">
-                    <p className="text-xs text-[#000080]">Detecting your location...</p>
+                <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200/60">
+                    <p className="text-xs text-indigo-700 font-medium">Detecting your location...</p>
                 </div>
             )}
 
             {/* Emergency Quick Dial */}
-            <div className="card">
-                <h2 className="text-sm font-semibold text-slate-700 mb-3">🆘 Emergency Quick Dial</h2>
+            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
+              style={{ boxShadow: "var(--shadow-sm)" }}
+            >
+                <h2 className="text-sm font-bold text-slate-800 mb-4">🆘 Emergency Quick Dial</h2>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {EMERGENCY_CONTACTS.map(c => (
                         <a key={c.label} href={`tel:${c.number}`}
-                            className={`${c.color} rounded-2xl p-3 text-white text-center hover:opacity-90 active:scale-95 transition-all`}>
+                            className="rounded-2xl p-3 text-white text-center active:scale-95 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                            style={{ background: c.gradient }}
+                        >
                             <div className="text-2xl mb-1">{c.emoji}</div>
                             <p className="font-bold text-sm">{c.number}</p>
                             <p className="text-xs opacity-80 mt-0.5">{c.label}</p>
@@ -82,23 +86,25 @@ const Emergency: React.FC = () => {
             </div>
 
             {/* Nearby Hospitals */}
-            <div className="card">
-                <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-semibold text-slate-700">🏥 Nearby Hospitals</h2>
+            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
+              style={{ boxShadow: "var(--shadow-sm)" }}
+            >
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm font-bold text-slate-800">🏥 Nearby Hospitals</h2>
                     <button onClick={() => openMaps("hospitals+near+me")}
-                        className="text-xs text-[#000080] hover:underline flex items-center gap-0.5">
+                        className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5 font-semibold">
                         Open in Maps <MapPin size={11} />
                     </button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 stagger-children">
                     {HOSPITAL_DATA.map(h => (
-                            <div key={h.name} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-                            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🏥</div>
+                        <div key={h.name} className="flex items-center gap-3 p-3 bg-slate-50/80 rounded-xl hover:bg-indigo-50/50 transition-all duration-200 border border-transparent hover:border-indigo-100 group">
+                            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform">🏥</div>
                             <div className="flex-1">
-                                <p className="font-medium text-slate-800 text-sm">{h.name}</p>
-                                <p className="text-xs text-slate-500">{h.type} • {h.distance}</p>
+                                <p className="font-semibold text-slate-800 text-sm">{h.name}</p>
+                                <p className="text-xs text-slate-500 font-medium">{h.type} • {h.distance}</p>
                             </div>
-                            <a href={`tel:${h.phone}`} className="p-2 bg-slate-100 hover:bg-slate-200 text-[#000080] rounded-lg transition-colors">
+                            <a href={`tel:${h.phone}`} className="p-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl transition-all duration-200 hover:shadow-sm">
                                 <Phone size={16} />
                             </a>
                         </div>
@@ -107,9 +113,11 @@ const Emergency: React.FC = () => {
             </div>
 
             {/* Google Maps Nearby Buttons */}
-            <div className="card">
-                <h2 className="text-sm font-semibold text-slate-700 mb-3">🗺️ Find Nearby on Google Maps</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
+              style={{ boxShadow: "var(--shadow-sm)" }}
+            >
+                <h2 className="text-sm font-bold text-slate-800 mb-4">🗺️ Find Nearby on Google Maps</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 stagger-children">
                     {[
                         { label: "Hospitals", query: "hospitals", emoji: "🏥" },
                         { label: "Ambulance", query: "ambulance+service", emoji: "🚑" },
@@ -120,7 +128,7 @@ const Emergency: React.FC = () => {
                     ].map(item => (
                         <button key={item.label}
                             onClick={() => openMaps(item.query)}
-                            className="flex items-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 rounded-xl text-left transition-all text-sm font-medium text-slate-700">
+                            className="flex items-center gap-2 p-3 bg-slate-50/80 hover:bg-indigo-50/50 border border-slate-100 hover:border-indigo-100 rounded-xl text-left transition-all duration-200 text-sm font-semibold text-slate-700 hover:text-indigo-700 hover:-translate-y-0.5">
                             <span className="text-xl">{item.emoji}</span>
                             <span>{item.label}</span>
                         </button>

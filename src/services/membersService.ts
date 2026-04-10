@@ -149,69 +149,10 @@ export const membersApi = {
   create: async (input: CreateMemberInput) => {
     console.log("[membersApi.create] Creating member:", input.email);
     
+    // Check if memberId is given or generate it
     const memberId = input.memberId || `BCTA-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`;
 
-    if (import.meta.env.VITE_USE_SERVER_API && auth.currentUser) {
-      const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/admin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          action: "createUser",
-          userData: {
-            email: input.email.trim(),
-            password: input.password,
-            displayName: `${input.name} ${input.surname || ""}`.trim(),
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        let errorMsg = "Failed to create user via admin API";
-        try {
-          const errorData = JSON.parse(text);
-          errorMsg = errorData.error || errorMsg;
-        } catch {
-          errorMsg = `Server returned ${res.status}: ${text.slice(0, 100)}`;
-        }
-        throw new Error(errorMsg);
-      }
-
-      const { uid } = await res.json();
-
-      await setDoc(doc(db, "users", uid), {
-        memberId,
-        name: input.name,
-        surname: input.surname ?? "",
-        email: input.email.trim(),
-        phone: input.phone ?? "",
-        age: input.age ?? null,
-        gender: input.gender ?? "",
-        bloodGroup: input.bloodGroup ?? "",
-        aadhaarLast4: input.aadhaarLast4 ?? "",
-        shopAddress: input.shopAddress ?? "",
-        photoURL: "",
-        role: "member",
-        status: "active",
-        attendanceCount: 0,
-        paymentStatus: "unpaid",
-        nomineeDetails: input.nomineeDetails ?? { name: "", relation: "", phone: "" },
-        createdAt: serverTimestamp(),
-      });
-
-      return { member: { uid, memberId } };
-    }
-
-    // Local development: use client SDK directly
-    if (!auth.currentUser) throw new Error("Not authenticated. Please login again.");
-
-    const cred = await createUserWithEmailAndPassword(auth, input.email.trim(), input.password);
-
-    await setDoc(doc(db, "users", cred.user.uid), {
+    const profileData = {
       memberId,
       name: input.name,
       surname: input.surname ?? "",
@@ -228,6 +169,49 @@ export const membersApi = {
       attendanceCount: 0,
       paymentStatus: "unpaid",
       nomineeDetails: input.nomineeDetails ?? { name: "", relation: "", phone: "" },
+      createdAt: new Date().toISOString(),
+    };
+
+    if (import.meta.env.VITE_USE_SERVER_API && auth.currentUser) {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          action: "createUser",
+          email: input.email.trim(),
+          password: input.password,
+          apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+          profile: profileData,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        let errorMsg = "Failed to create user via admin API";
+        try {
+          const errorData = JSON.parse(text);
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          errorMsg = `Server returned ${res.status}: ${text.slice(0, 100)}`;
+        }
+        throw new Error(errorMsg);
+      }
+
+      const { uid } = await res.json();
+      return { member: { uid, memberId } };
+    }
+
+    // Local development: use client SDK directly
+    if (!auth.currentUser) throw new Error("Not authenticated. Please login again.");
+
+    const cred = await createUserWithEmailAndPassword(auth, input.email.trim(), input.password);
+
+    await setDoc(doc(db, "users", cred.user.uid), {
+      ...profileData,
       createdAt: serverTimestamp(),
     });
 

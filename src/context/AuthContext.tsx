@@ -54,7 +54,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           displayName: user.displayName,
           photoURL: user.photoURL,
         });
-        await fetchUserProfile(user.uid);
+        const profile = await fetchUserProfile(user.uid);
+        if (!profile) {
+          console.warn(`[AuthProvider] No Firestore profile found for authenticated user: ${user.uid}`);
+        }
       } else {
         setCurrentUser(null);
         setUserProfile(null);
@@ -68,8 +71,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string): Promise<UserCredential> => {
     const trimmedEmail = email.trim();
     const cred = await signInWithEmailAndPassword(auth, trimmedEmail, password);
+    
     const profile = await fetchUserProfile(cred.user.uid);
-    if (!profile) throw new Error("User profile not found. Contact admin.");
+    if (!profile) {
+      throw new Error(`Account setup is incomplete (UID: ${cred.user.uid}). This usually happens if the system was interrupted. Please contact an admin to delete and re-add this account.`);
+    }
+
     if (profile.status === "blocked") {
       await signOut(auth);
       throw new Error("Your account is blocked. Contact admin.");

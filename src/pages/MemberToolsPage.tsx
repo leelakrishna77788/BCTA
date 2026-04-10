@@ -7,7 +7,7 @@ import Footer from "../components/shared/Footer";
 const MEMBER_FEATURES = [
   {
     icon: ScanLine,
-    color: "bg-blue-600",
+    color: "bg-indigo-600",
     title: "Scan QR to Attend",
     desc: "Point your phone at the meeting QR. Attendance logged to Firestore in under a second.",
     details: [
@@ -81,7 +81,7 @@ const MEMBER_FEATURES = [
 
 const MemberToolsPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-300 via-blue-150 to-yellow-400">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100">
       <Navbar />
 
       {/* Content */}
@@ -91,10 +91,10 @@ const MemberToolsPage: React.FC = () => {
           <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6">
             For Members
           </div>
-          <h2 className="text-4xl sm:text-5xl font-black text-blue-900 mb-4">
-            Powerful Tools for <span className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">BCTA Members</span>
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 mb-4">
+            Powerful Tools for <span className="bg-linear-to-r from-emerald-600 to-indigo-600 bg-clip-text text-transparent">BCTA Members</span>
           </h2>
-          <p className="text-blue-800/70 text-lg max-w-2xl mx-auto">
+          <p className="text-slate-600/70 text-lg max-w-2xl mx-auto">
             Access all the features you need, optimized for mobile devices
           </p>
         </div>
@@ -104,19 +104,19 @@ const MemberToolsPage: React.FC = () => {
           {MEMBER_FEATURES.map((feature, i) => (
             <div
               key={i}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border-2 border-blue-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border-2 border-indigo-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300"
             >
               <div className={`w-14 h-14 ${feature.color} rounded-2xl flex items-center justify-center mb-5 shadow-lg`}>
                 <feature.icon size={28} className="text-white" />
               </div>
-              <h3 className="text-xl font-black text-blue-900 mb-3">{feature.title}</h3>
-              <p className="text-blue-800/70 text-sm mb-4 leading-relaxed">{feature.desc}</p>
+              <h3 className="text-xl font-black text-slate-900 mb-3">{feature.title}</h3>
+              <p className="text-slate-600/70 text-sm mb-4 leading-relaxed">{feature.desc}</p>
               
-              <div className="space-y-2 pt-4 border-t border-blue-100">
+              <div className="space-y-2 pt-4 border-t border-indigo-100">
                 {feature.details.map((detail, idx) => (
                   <div key={idx} className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
-                    <span className="text-xs text-blue-800/70">{detail}</span>
+                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full mt-1.5 shrink-0"></div>
+                    <span className="text-xs text-slate-600/70">{detail}</span>
                   </div>
                 ))}
               </div>
@@ -125,8 +125,8 @@ const MemberToolsPage: React.FC = () => {
         </div>
 
         {/* How to Access */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 sm:p-12 shadow-xl border-2 border-blue-100 mb-16">
-          <h3 className="text-3xl font-black text-blue-900 mb-8 text-center">How to Access Member Tools</h3>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 sm:p-12 shadow-xl border-2 border-indigo-100 mb-16">
+          <h3 className="text-3xl font-black text-slate-900 mb-8 text-center">How to Access Member Tools</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { step: "1", title: "Login", desc: "Use your Member ID and password to login to the portal" },
@@ -134,22 +134,22 @@ const MemberToolsPage: React.FC = () => {
               { step: "3", title: "Use Features", desc: "Scan QR, track payments, raise complaints and more" }
             ].map((item, i) => (
               <div key={i} className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-violet-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-black shadow-lg">
+                <div className="w-16 h-16 bg-linear-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl font-black shadow-lg">
                   {item.step}
                 </div>
-                <h4 className="font-bold text-blue-900 mb-2 text-lg">{item.title}</h4>
-                <p className="text-sm text-blue-800/70">{item.desc}</p>
+                <h4 className="font-bold text-slate-900 mb-2 text-lg">{item.title}</h4>
+                <p className="text-sm text-slate-600/70">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* CTA Section */}
-        <div className="text-center bg-white/60 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border-2 border-blue-200">
-          <h3 className="text-2xl sm:text-3xl font-black text-blue-900 mb-4">
+        <div className="text-center bg-white/60 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border-2 border-indigo-200">
+          <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4">
             Ready to Get Started?
           </h3>
-          <p className="text-blue-800/70 mb-6 max-w-xl mx-auto">
+          <p className="text-slate-600/70 mb-6 max-w-xl mx-auto">
             Login to your member account and access all these powerful tools
           </p>
           <Link

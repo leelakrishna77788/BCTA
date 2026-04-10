@@ -7,7 +7,7 @@ import Footer from "../components/shared/Footer";
 
 const PresidentsPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-300 via-blue-150 to-yellow-400">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100">
       <Navbar />
 
       {/* Content */}
@@ -15,19 +15,19 @@ const PresidentsPage: React.FC = () => {
         {/* Hero Section */}
         <div className="text-center mb-16 sm:mb-20">
           <div className="inline-block mb-6">
-            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-2 border-blue-200 rounded-full px-5 py-2 shadow-lg">
-              <Award className="text-blue-600" size={20} />
-              <span className="text-sm font-bold text-blue-900">Leadership Excellence</span>
+            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border-2 border-indigo-200 rounded-full px-5 py-2 shadow-lg">
+              <Award className="text-indigo-600" size={20} />
+              <span className="text-sm font-bold text-slate-900">Leadership Excellence</span>
             </div>
           </div>
-          <h2 className="text-4xl sm:text-6xl font-black text-blue-900 mb-6 leading-tight">
+          <h2 className="text-4xl sm:text-6xl font-black text-slate-900 mb-6 leading-tight">
             Meet Our
             <br />
-            <span className="bg-gradient-to-r from-blue-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">
               Visionary Leaders
             </span>
           </h2>
-          <p className="text-blue-800/80 text-lg sm:text-xl max-w-3xl mx-auto leading-relaxed">
+          <p className="text-slate-600/80 text-lg sm:text-xl max-w-3xl mx-auto leading-relaxed">
             The dedicated presidents who have shaped BCTA into a thriving community of mobile repair professionals.
           </p>
         </div>
@@ -42,7 +42,7 @@ const PresidentsPage: React.FC = () => {
               {/* Current Badge */}
               {index === presidents.length - 1 && (
                 <div className="absolute top-6 right-6 z-20">
-                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+                  <div className="bg-linear-to-r from-emerald-500 to-teal-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     CURRENT
                   </div>
@@ -51,8 +51,8 @@ const PresidentsPage: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row">
                 {/* Image Container */}
-                <div className="relative w-full sm:w-56 h-56 flex-shrink-0 overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-blue-900/60 via-transparent to-transparent z-10"></div>
+                <div className="relative w-full sm:w-56 h-56 shrink-0 overflow-hidden">
+                  <div className="absolute inset-0 bg-linear-to-t from-indigo-900/60 via-transparent to-transparent z-10"></div>
                   <img
                     src={president.image}
                     alt={president.name}
@@ -64,22 +64,22 @@ const PresidentsPage: React.FC = () => {
                 <div className="flex-1 p-6 sm:p-8">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-2xl sm:text-3xl font-black text-blue-900 mb-2 group-hover:text-blue-600 transition-colors">
+                      <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
                         {president.name}
                       </h3>
-                      <div className="flex items-center gap-2 text-blue-600 mb-4">
+                      <div className="flex items-center gap-2 text-indigo-600 mb-4">
                         <Calendar size={18} />
                         <span className="font-bold text-sm">{president.year}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-violet-50 border-2 border-blue-200 rounded-xl px-4 py-2 mb-4">
-                    <Award size={18} className="text-blue-600" />
-                    <span className="text-sm font-black text-blue-900">President</span>
+                  <div className="inline-flex items-center gap-2 bg-linear-to-r from-indigo-50 to-violet-50 border-2 border-indigo-200 rounded-xl px-4 py-2 mb-4">
+                    <Award size={18} className="text-indigo-600" />
+                    <span className="text-sm font-black text-slate-900">President</span>
                   </div>
 
-                  <p className="text-blue-800/70 leading-relaxed text-sm sm:text-base">
+                  <p className="text-slate-600/70 leading-relaxed text-sm sm:text-base">
                     {index === 0 && "Led BCTA through its founding years, establishing the foundation for a strong community of mobile repair technicians. Pioneered the first member registration system and organized initial training workshops."}
                     {index === 1 && "Expanded BCTA's reach across Bhimavaram, introducing quality standards and professional ethics. Launched the first annual technical conference and strengthened member collaboration."}
                     {index === 2 && "Modernized BCTA operations with digital tools and online platforms. Implemented the QR-based attendance system and enhanced member communication channels for better connectivity."}
@@ -87,11 +87,11 @@ const PresidentsPage: React.FC = () => {
                   </p>
 
                   {/* Achievements */}
-                  <div className="mt-6 pt-6 border-t-2 border-blue-100">
+                  <div className="mt-6 pt-6 border-t-2 border-indigo-100">
                     <div className="flex flex-wrap gap-2">
-                      <div className="flex items-center gap-1.5 bg-blue-50 rounded-lg px-3 py-1.5">
-                        <Users size={14} className="text-blue-600" />
-                        <span className="text-xs font-bold text-blue-900">
+                      <div className="flex items-center gap-1.5 bg-indigo-50/50 rounded-lg px-3 py-1.5">
+                        <Users size={14} className="text-indigo-600" />
+                        <span className="text-xs font-bold text-slate-900">
                           {index === 0 && "50+ Members"}
                           {index === 1 && "120+ Members"}
                           {index === 2 && "200+ Members"}
@@ -113,7 +113,7 @@ const PresidentsPage: React.FC = () => {
               </div>
 
               {/* Decorative Corner */}
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-blue-400/10 to-transparent rounded-tr-full"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-linear-to-tr from-indigo-400/10 to-transparent rounded-tr-full"></div>
             </div>
           ))}
         </div>
@@ -121,18 +121,18 @@ const PresidentsPage: React.FC = () => {
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mb-16 sm:mb-20">
           {[
-            { icon: Calendar, label: "Years of Leadership", value: "6+", color: "from-blue-500 to-blue-600" },
+            { icon: Calendar, label: "Years of Leadership", value: "6+", color: "from-indigo-500 to-indigo-600" },
             { icon: Award, label: "Presidents Served", value: "4", color: "from-violet-500 to-purple-600" },
             { icon: TrendingUp, label: "Members Grown", value: "260+", color: "from-emerald-500 to-teal-600" }
           ].map((stat, i) => (
             <div key={i} className="group bg-white/90 backdrop-blur-md rounded-3xl p-8 sm:p-10 text-center border-2 border-white/50 shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
-              <div className={`w-16 h-16 bg-gradient-to-br ${stat.color} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
+              <div className={`w-16 h-16 bg-linear-to-br ${stat.color} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
                 <stat.icon size={32} className="text-white" />
               </div>
-              <div className="text-5xl sm:text-6xl font-black bg-gradient-to-r from-blue-900 to-blue-600 bg-clip-text text-transparent mb-3">
+              <div className="text-5xl sm:text-6xl font-black bg-linear-to-r from-indigo-900 to-indigo-600 bg-clip-text text-transparent mb-3">
                 {stat.value}
               </div>
-              <p className="text-blue-800 font-bold text-base">{stat.label}</p>
+              <p className="text-slate-600 font-bold text-base">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -140,15 +140,15 @@ const PresidentsPage: React.FC = () => {
         {/* Leadership Timeline */}
         <div className="bg-white/90 backdrop-blur-md rounded-3xl p-8 sm:p-12 shadow-xl border-2 border-white/50 mb-16 sm:mb-20">
           <div className="text-center mb-10">
-            <h3 className="text-3xl sm:text-4xl font-black text-blue-900 mb-4">
-              Leadership <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Timeline</span>
+            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">
+              Leadership <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Timeline</span>
             </h3>
-            <p className="text-blue-800/70 text-base sm:text-lg">A journey of excellence and dedication</p>
+            <p className="text-slate-600/70 text-base sm:text-lg">A journey of excellence and dedication</p>
           </div>
 
           <div className="relative">
             {/* Timeline Line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-400 via-violet-400 to-purple-400 hidden lg:block"></div>
+            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-linear-to-b from-indigo-400 via-violet-400 to-purple-400 hidden lg:block"></div>
 
             {/* Timeline Items */}
             <div className="space-y-8">
@@ -156,9 +156,9 @@ const PresidentsPage: React.FC = () => {
                 <div key={index} className={`flex items-center gap-6 ${index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'}`}>
                   {/* Content */}
                   <div className={`flex-1 ${index % 2 === 0 ? 'lg:text-right' : 'lg:text-left'}`}>
-                    <div className="bg-gradient-to-br from-blue-50 to-violet-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300">
-                      <h4 className="text-xl font-black text-blue-900 mb-2">{president.name}</h4>
-                      <div className="flex items-center gap-2 text-blue-600 justify-center lg:justify-start">
+                    <div className="bg-linear-to-br from-indigo-50 to-violet-50 rounded-2xl p-6 border-2 border-indigo-200 shadow-lg hover:shadow-xl transition-all duration-300">
+                      <h4 className="text-xl font-black text-slate-900 mb-2">{president.name}</h4>
+                      <div className="flex items-center gap-2 text-indigo-600 justify-center lg:justify-start">
                         <Calendar size={16} />
                         <span className="font-bold text-sm">{president.year}</span>
                       </div>
@@ -167,7 +167,7 @@ const PresidentsPage: React.FC = () => {
 
                   {/* Center Dot */}
                   <div className="hidden lg:block relative z-10">
-                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-violet-600 rounded-full border-4 border-white shadow-lg"></div>
+                    <div className="w-6 h-6 bg-linear-to-br from-indigo-500 to-violet-600 rounded-full border-4 border-white shadow-lg"></div>
                   </div>
 
                   {/* Image */}
@@ -183,7 +183,7 @@ const PresidentsPage: React.FC = () => {
         </div>
 
         {/* CTA Section */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-violet-600 to-purple-600 rounded-3xl p-10 sm:p-16 text-center shadow-2xl">
+        <div className="relative overflow-hidden bg-linear-to-br from-indigo-600 via-violet-600 to-purple-600 rounded-3xl p-10 sm:p-16 text-center shadow-2xl">
           {/* Decorative Elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
@@ -202,7 +202,7 @@ const PresidentsPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 to="/login"
-                className="inline-flex items-center gap-2 bg-white text-blue-600 font-black px-8 py-4 rounded-xl hover:bg-blue-50 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1"
+                className="inline-flex items-center gap-2 bg-white text-indigo-600 font-black px-8 py-4 rounded-xl hover:bg-indigo-50/50 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1"
               >
                 Login to Portal
               </Link>

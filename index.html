@@ -4,12 +4,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-  <meta name="theme-color" content="#000080" />
+  <meta name="theme-color" content="#1e1b4b" />
   <meta name="description" content="BCTA - Bhimavaram Cell Phone Technicians Association Management Portal" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="BCTA" />
+  
+  <meta property="og:title" content="BCTA Portal – Bhimavaram Cell Phone Technicians Association" />
+  <meta property="og:description" content="Official management portal for BCTA members. Manage meetings, attendance, and association records." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="BCTA" />
   
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="apple-touch-icon" href="/favicon.svg" />
@@ -18,6 +23,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   
   <style>
@@ -26,7 +32,7 @@
     }
     
     body {
-      background: #FFF5B;
+      background: #f8fafc;
       margin: 0;
     }
     
@@ -34,23 +40,59 @@
       position: fixed;
       inset: 0;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: #FFF5B;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e1b4b 100%);
       z-index: 9999;
+      gap: 1.5rem;
+    }
+    
+    .initial-loader-logo {
+      width: 56px;
+      height: 56px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      animation: logoFloat 2s ease-in-out infinite;
+    }
+    
+    .initial-loader-logo span {
+      font-size: 18px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -0.5px;
     }
     
     .initial-loader-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #e2e8f0;
-      border-top-color: #000080;
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: rgba(129,140,248,0.9);
+      border-right-color: rgba(167,139,250,0.6);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
     
+    .initial-loader-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+    
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
     }
   </style>
 </head>
@@ -58,7 +100,11 @@
 <body>
   <div id="root">
     <div class="initial-loader">
+      <div class="initial-loader-logo">
+        <span>BCTA</span>
+      </div>
       <div class="initial-loader-spinner"></div>
+      <div class="initial-loader-text">Loading Portal</div>
     </div>
   </div>
   <script type="module" src="/src/main.tsx"></script>

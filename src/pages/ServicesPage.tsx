@@ -10,7 +10,7 @@ const SERVICES = [
     title: "Mobile Screen Replacement",
     description: "Expert screen replacement services for all smartphone brands. We use high-quality original and compatible displays with warranty coverage.",
     features: ["LCD/OLED Replacement", "Touch Digitizer Repair", "Gorilla Glass Installation", "Same Day Service"],
-    color: "from-blue-500 to-blue-700",
+    color: "from-indigo-500 to-indigo-700",
     icon: "📱"
   },
   {
@@ -41,16 +41,16 @@ const SERVICES = [
 
 const ServicesPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-300 via-blue-150 to-yellow-400">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100">
       <Navbar />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24 sm:py-28">
         <div className="text-center mb-12">
-          <h2 className="text-4xl sm:text-5xl font-black text-blue-900 mb-4">
-            Professional <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Mobile Repair</span> Services
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 mb-4">
+            Professional <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Mobile Repair</span> Services
           </h2>
-          <p className="text-blue-800/70 text-lg max-w-2xl mx-auto">
+          <p className="text-slate-600/70 text-lg max-w-2xl mx-auto">
             Expert technicians providing quality repair services for all mobile devices
           </p>
         </div>
@@ -60,23 +60,23 @@ const ServicesPage: React.FC = () => {
           {SERVICES.map((service) => (
             <div
               key={service.id}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-blue-100 p-6 sm:p-8 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-indigo-100 p-6 sm:p-8 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
             >
               {/* Icon & Number */}
               <div className="flex items-center justify-between mb-6">
                 <div className="text-5xl">{service.icon}</div>
-                <div className={`text-5xl font-black bg-gradient-to-r ${service.color} bg-clip-text text-transparent`}>
+                <div className={`text-5xl font-black bg-linear-to-r ${service.color} bg-clip-text text-transparent`}>
                   0{service.id}
                 </div>
               </div>
 
               {/* Title */}
-              <h3 className="text-2xl sm:text-3xl font-black text-blue-900 mb-3">
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3">
                 {service.title}
               </h3>
 
               {/* Description */}
-              <p className="text-blue-800/70 text-base mb-6 leading-relaxed">
+              <p className="text-slate-600/70 text-base mb-6 leading-relaxed">
                 {service.description}
               </p>
 
@@ -84,8 +84,8 @@ const ServicesPage: React.FC = () => {
               <div className="space-y-3">
                 {service.features.map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <CheckCircle size={18} className="text-emerald-500 flex-shrink-0" />
-                    <span className="text-sm font-medium text-blue-900">{feature}</span>
+                    <CheckCircle size={18} className="text-emerald-500 shrink-0" />
+                    <span className="text-sm font-medium text-slate-900">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -94,16 +94,16 @@ const ServicesPage: React.FC = () => {
         </div>
 
         {/* CTA Section */}
-        <div className="mt-16 text-center bg-white/60 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border-2 border-blue-200">
-          <h3 className="text-2xl sm:text-3xl font-black text-blue-900 mb-4">
+        <div className="mt-16 text-center bg-white/60 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border-2 border-indigo-200">
+          <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4">
             Need Professional Repair Service?
           </h3>
-          <p className="text-blue-800/70 mb-6 max-w-xl mx-auto">
+          <p className="text-slate-600/70 mb-6 max-w-xl mx-auto">
             Contact BCTA members for reliable and expert mobile repair services
           </p>
           <Link
             to="/contact"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg"
+            className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-lg"
           >
             Contact Us
           </Link>

@@ -280,7 +280,7 @@ const MeetingQR: React.FC = () => {
                     const Icon = t.icon;
                     return (
                         <button key={t.id} onClick={() => { setActiveTab(t.id); setMemberScanResult(null); }}
-                            className={`px-6 py-2 rounded-xl text-sm font-bold flex items-center justify-center ${activeTab === t.id ? "bg-white shadow text-[#000080]" : "text-slate-500"}`}>
+                            className={`px-6 py-2 rounded-xl text-sm font-bold flex items-center justify-center ${activeTab === t.id ? "bg-white shadow text-[#4f46e5]" : "text-slate-500"}`}>
                             <Icon size={16} className="mr-2" />
                             {t.label}
                         </button>
@@ -300,7 +300,7 @@ const MeetingQR: React.FC = () => {
                                     <h3 className="text-xl font-bold text-slate-800 tracking-tight">Attendance Mode</h3>
                                     <p className="text-sm text-slate-500 max-w-xs mx-auto">Generate a rolling QR code for members to mark their attendance.</p>
                                 </div>
-                                <button onClick={startAttendance} className="btn-primary px-10 h-14 w-full shadow-lg shadow-blue-900/20 active:scale-95 transition-transform">
+                                <button onClick={startAttendance} className="btn-primary px-10 h-14 w-full shadow-lg shadow-indigo-900/20 active:scale-95 transition-transform">
                                     <Play size={18} className="mr-2" /> Start Flow
                                 </button>
                             </div>
@@ -308,7 +308,7 @@ const MeetingQR: React.FC = () => {
                             <div className="text-center space-y-8 py-4 animate-fade-in relative z-10">
                                 <div className="relative inline-block group">
                                      {/* Premium Shimmering Border Wrapper */}
-                                    <div className="absolute -inset-[3px] bg-conic-to-r from-indigo-500 via-blue-600 to-indigo-500 rounded-[32px] blur-[1px] opacity-75 animate-spin-slow group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="absolute -inset-[3px] bg-conic-to-r from-indigo-500 via-indigo-600 to-indigo-500 rounded-[32px] blur-[1px] opacity-75 animate-spin-slow group-hover:opacity-100 transition-opacity"></div>
                                     <div className="relative p-7 bg-white rounded-[30px] shadow-2xl">
                                         <QRCodeSVG
                                             value={qrData}
@@ -323,11 +323,11 @@ const MeetingQR: React.FC = () => {
                                                 width: 48,
                                                 excavate: true,
                                             }}
-                                            fgColor="#000040"
+                                            fgColor="#1e1b4b"
                                         />
                                         
                                         {/* Status Indicators */}
-                                        <div className="absolute -top-3 -right-3 w-14 h-14 bg-[#000080] rounded-2xl border-4 border-white flex flex-col items-center justify-center text-white font-bold shadow-xl animate-pulse ring-4 ring-[#000080]/10">
+                                        <div className="absolute -top-3 -right-3 w-14 h-14 bg-[#4f46e5] rounded-2xl border-4 border-white flex flex-col items-center justify-center text-white font-bold shadow-xl animate-pulse ring-4 ring-[#4f46e5]/10">
                                             <span className="text-xs leading-none opacity-80 mb-0.5">EST</span>
                                             <span className="text-base leading-none">{countdown}s</span>
                                         </div>
@@ -341,10 +341,10 @@ const MeetingQR: React.FC = () => {
                                 
                                 <div className="space-y-4">
                                      <div className="flex flex-col gap-1 items-center">
-                                        <p className="text-[#000080] font-black text-sm uppercase tracking-widest flex items-center gap-2">
-                                            <span className="w-2 h-0.5 bg-[#000080]/30 rounded-full"></span>
+                                        <p className="text-[#4f46e5] font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                                            <span className="w-2 h-0.5 bg-[#4f46e5]/30 rounded-full"></span>
                                             Meeting Access Pass
-                                            <span className="w-2 h-0.5 bg-[#000080]/30 rounded-full"></span>
+                                            <span className="w-2 h-0.5 bg-[#4f46e5]/30 rounded-full"></span>
                                         </p>
                                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Dynamic Token: {meeting?.qrToken?.substring(0, 8)}</p>
                                      </div>
@@ -360,7 +360,7 @@ const MeetingQR: React.FC = () => {
                         {/* Background Decor */}
                         {isActive && (
                              <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none">
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#000080] rounded-full blur-[120px]"></div>
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#4f46e5] rounded-full blur-[120px]"></div>
                              </div>
                         )}
                     </div>
@@ -372,7 +372,7 @@ const MeetingQR: React.FC = () => {
                                 <p className="text-xs text-slate-500">Status</p>
                             </div>
                         </div>
-                        {isActive && <div className="text-3xl font-black text-[#000080]">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</div>}
+                        {isActive && <div className="text-3xl font-black text-[#4f46e5]">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</div>}
                     </div>
                 </div>
             )}
@@ -382,14 +382,14 @@ const MeetingQR: React.FC = () => {
                     {!memberScanResult && !memberProcessing ? (
                         !memberScanning ? (
                             <div className="text-center space-y-6 animate-fade-in relative z-10 w-full max-w-sm">
-                                <div className="w-24 h-24 bg-white/5 rounded-3xl flex items-center justify-center mx-auto text-blue-400 border border-white/10 shadow-inner">
+                                <div className="w-24 h-24 bg-white/5 rounded-3xl flex items-center justify-center mx-auto text-indigo-400 border border-white/10 shadow-inner">
                                     <ScanLine size={48} />
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="text-xl font-bold text-white tracking-tight">Manual Verification</h3>
                                     <p className="text-sm text-slate-400 leading-relaxed">Open the secure camera terminal to scan a member's digital ID for instant verification.</p>
                                 </div>
-                                <button onClick={() => setMemberScanning(true)} className="btn-primary w-full h-14 shadow-xl shadow-blue-900/40 border border-white/10 active:scale-95 transition-transform font-bold">
+                                <button onClick={() => setMemberScanning(true)} className="btn-primary w-full h-14 shadow-xl shadow-indigo-900/40 border border-white/10 active:scale-95 transition-transform font-bold">
                                     Open Secure Terminal
                                 </button>
                             </div>
@@ -399,13 +399,13 @@ const MeetingQR: React.FC = () => {
                                      {/* Premium Scanner Container */}
                                     <div className="absolute inset-0 z-10 pointer-events-none border-[12px] border-slate-900">
                                         {/* Glowing Corners */}
-                                        <div className="absolute top-2 left-2 w-16 h-16 border-t-[5px] border-l-[5px] border-blue-500 rounded-tl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
-                                        <div className="absolute top-2 right-2 w-16 h-16 border-t-[5px] border-r-[5px] border-blue-500 rounded-tr-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
-                                        <div className="absolute bottom-2 left-2 w-16 h-16 border-b-[5px] border-l-[5px] border-blue-500 rounded-bl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
-                                        <div className="absolute bottom-2 right-2 w-16 h-16 border-b-[5px] border-r-[5px] border-blue-500 rounded-br-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                        <div className="absolute top-2 left-2 w-16 h-16 border-t-[5px] border-l-[5px] border-indigo-500 rounded-tl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                        <div className="absolute top-2 right-2 w-16 h-16 border-t-[5px] border-r-[5px] border-indigo-500 rounded-tr-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                        <div className="absolute bottom-2 left-2 w-16 h-16 border-b-[5px] border-l-[5px] border-indigo-500 rounded-bl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                        <div className="absolute bottom-2 right-2 w-16 h-16 border-b-[5px] border-r-[5px] border-indigo-500 rounded-br-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
                                         
                                         {/* Scanning Laser Line */}
-                                        <div className="absolute top-0 left-0 w-full h-[3px] bg-linear-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_15px_rgba(96,165,250,0.8)] animate-scan-laser"></div>
+                                        <div className="absolute top-0 left-0 w-full h-[3px] bg-linear-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_15px_rgba(96,165,250,0.8)] animate-scan-laser"></div>
 
                                         {/* Center Target */}
                                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border border-white/10 rounded-3xl"></div>
@@ -420,7 +420,7 @@ const MeetingQR: React.FC = () => {
                                     
                                     {/* HUD Overlays */}
                                     <div className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-1 bg-black/40 backdrop-blur-md rounded-full border border-white/10">
-                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
+                                        <div className="w-1.5 h-1.5 bg-indigo-50/500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
                                         <span className="text-[10px] font-black text-white/90 uppercase tracking-widest">Scanning Mode</span>
                                     </div>
 
@@ -464,14 +464,14 @@ const MeetingQR: React.FC = () => {
                                 </p>
                             </div>
 
-                            <button onClick={() => setMemberScanResult(null)} className="btn-primary px-10 h-14 w-full shadow-lg shadow-blue-900/40 font-bold">
+                            <button onClick={() => setMemberScanResult(null)} className="btn-primary px-10 h-14 w-full shadow-lg shadow-indigo-900/40 font-bold">
                                 Scan Next Member
                             </button>
                         </div>
                     )}
                     
                     {/* Background Overlay */}
-                    <div className="absolute inset-0 bg-linear-to-b from-blue-900/20 to-transparent pointer-events-none opacity-20"></div>
+                    <div className="absolute inset-0 bg-linear-to-b from-indigo-900/20 to-transparent pointer-events-none opacity-20"></div>
                 </div>
             )}
         </div>

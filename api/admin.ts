@@ -5,7 +5,9 @@ import {
   deleteAuthUserREST, 
   deleteFirestoreDocREST, 
   getFirestoreDocREST,
-  revokeTokensREST
+  revokeTokensREST,
+  createAuthUserREST,
+  setFirestoreDocREST
 } from "./adminUtils";
 
 // Define local types if @vercel/node is missing
@@ -118,6 +120,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log(`[api/admin] Revoking tokens for user: ${uid}`);
         await revokeTokensREST(projectId, accessToken, uid);
         return res.status(200).json({ message: `Tokens revoked successfully for user ${uid}` });
+      }
+
+      case "createUser": {
+        const { email, password, profile } = req.body as any;
+        if (!email) return res.status(400).json({ error: "Missing email for createUser" });
+        if (!password) return res.status(400).json({ error: "Missing password for createUser" });
+        const apiKey = req.body.apiKey;
+        if (!apiKey) return res.status(400).json({ error: "Missing apiKey. Send VITE_FIREBASE_API_KEY from the frontend." });
+
+        console.log(`[api/admin] Creating user: ${email}`);
+        let newUid;
+        try {
+          const authUser = await createAuthUserREST(apiKey, email, password);
+          newUid = authUser.localId;
+        } catch (authErr: any) {
+          console.error(`[api/admin] createAuthUserREST failed:`, authErr.message);
+          return res.status(400).json({ error: `Auth creation failed: ${authErr.message}` });
+        }
+
+        console.log(`[api/admin] Created Auth user ${newUid}. Saving Firestore profile...`);
+        try {
+          const profileWithUid = {
+            ...profile,
+            uid: newUid
+          };
+          await setFirestoreDocREST(projectId, accessToken, "users", newUid, profileWithUid);
+        } catch (dbErr: any) {
+          console.error(`[api/admin] setFirestoreDocREST failed:`, dbErr.message);
+          // Rollback: Delete the Auth user since profile creation failed
+          console.log(`[api/admin] Rolling back Auth user ${newUid}...`);
+          try {
+            await deleteAuthUserREST(projectId, accessToken, newUid);
+          } catch (rollbackErr: any) {
+            console.error(`[api/admin] CRITICAL: Rollback failed for ${newUid}:`, rollbackErr.message);
+          }
+          return res.status(500).json({ 
+            error: `Profile creation failed: ${dbErr.message}. The account has been rolled back, you can try again immediately.`,
+            uid: newUid 
+          });
+        }
+
+        return res.status(200).json({ message: `User ${newUid} created successfully`, uid: newUid });
       }
 
       case "bulkDeleteUsers": {

@@ -56,7 +56,7 @@ const RaiseComplaint: React.FC = () => {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center p-12">
-                <div className="w-10 h-10 border-4 border-blue-100 border-t-[#000080] rounded-full animate-spin mb-4" />
+                <div className="w-10 h-10 border-4 border-indigo-100 border-t-[#4f46e5] rounded-full animate-spin mb-4" />
                 <p className="text-slate-500 text-sm">Loading your profile...</p>
             </div>
         );
@@ -113,7 +113,7 @@ const RaiseComplaint: React.FC = () => {
                         />
                     </div>
 
-                    <button type="submit" disabled={submitting || !userProfile} className="btn-primary w-full py-4 rounded-2xl text-lg shadow-xl shadow-blue-900/10 transition-all hover:scale-[1.01] active:scale-[0.98]">
+                    <button type="submit" disabled={submitting || !userProfile} className="btn-primary w-full py-4 rounded-2xl text-lg shadow-xl shadow-indigo-900/10 transition-all hover:scale-[1.01] active:scale-[0.98]">
                         {submitting ? (
                             <span className="flex items-center gap-3">
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

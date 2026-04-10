@@ -195,3 +195,54 @@ export async function getFirestoreDocREST(projectId: string, accessToken: string
   }
   return result;
 }
+
+/**
+ * Creates a user via Firebase Identity Toolkit REST API
+ */
+export async function createAuthUserREST(apiKey: string, email: string, password?: string) {
+  const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, returnSecureToken: true })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.message || `REST createAuthUser failed: ${JSON.stringify(data)}`);
+  }
+  return data; // contains localId (which is the uid)
+}
+
+/**
+ * Creates or overwrites a document in Firestore via REST API
+ */
+export async function setFirestoreDocREST(projectId: string, accessToken: string, collection: string, docId: string, fieldsObj: any) {
+  const fields: Record<string, any> = {};
+  for (const [k, v] of Object.entries(fieldsObj)) {
+    if (v === undefined) continue;
+    if (typeof v === 'string') fields[k] = { stringValue: v };
+    else if (typeof v === 'number') {
+      if (Number.isInteger(v)) fields[k] = { integerValue: v.toString() };
+      else fields[k] = { doubleValue: v };
+    }
+    else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
+    else if (v === null) fields[k] = { nullValue: null };
+  }
+
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collection}/${docId}`;
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ fields })
+  });
+  
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`REST setFirestoreDoc failed: ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+

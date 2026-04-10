@@ -7,7 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Scanner, IDetectedBarcode } from "@yudiel/react-qr-scanner";
 import { QRCodeSVG } from "qrcode.react";
 import toast from "react-hot-toast";
-import { ArrowLeft, CheckCircle, Package, CreditCard, ScanLine, Camera, X, Zap, ZapOff } from "lucide-react";
+import { ArrowLeft, CheckCircle, Package, CreditCard, ScanLine, Camera, X, Zap, ZapOff, Store } from "lucide-react";
 
 interface Shop {
     id: string;
@@ -234,7 +234,7 @@ const ShopDetail: React.FC = () => {
 
     if (loading) return (
         <div className="flex justify-center h-64 items-center">
-            <div className="w-8 h-8 border-4 border-[#000080] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#4f46e5] border-t-transparent rounded-full animate-spin" />
         </div>
     );
 
@@ -243,69 +243,126 @@ const ShopDetail: React.FC = () => {
     const totalDue = products.reduce((s, p) => s + (parseFloat(p.remainingAmount as string) || 0), 0);
 
     return (
-        <div className="space-y-5 animate-fade-in">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-600">
-                    <ArrowLeft size={20} />
+        <div className="space-y-8 animate-fade-in pb-10">
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="group w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 shadow-sm transition-all duration-300 active:scale-95"
+                >
+                    <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform duration-300" />
                 </button>
-                <div>
-                    <h1 className="page-title mb-0">{shop?.shopName}</h1>
-                    <p className="text-slate-500 text-sm">Owner: {shop?.ownerName}</p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="card text-center bg-white border border-slate-200">
-                    <p className="text-xl font-bold text-slate-800">₹{totalRevenue.toLocaleString()}</p>
-                    <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Total Value</p>
-                </div>
-                <div className="card text-center bg-white border border-slate-200">
-                    <p className="text-xl font-bold text-emerald-600">₹{totalPaid.toLocaleString()}</p>
-                    <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Total Paid</p>
-                </div>
-                <div className="card text-center bg-white border border-slate-200">
-                    <p className="text-xl font-bold text-red-500">₹{totalDue.toLocaleString()}</p>
-                    <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Total Due</p>
-                </div>
-            </div>
-
-            <div className="card bg-white border border-slate-200">
-                <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <Package size={18} className="text-[#000080]" /> Distribute Product
-                </h2>
-
-                <div className="mb-6 p-5 bg-slate-50 rounded-xl border border-slate-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <p className="text-sm font-bold text-[#000080]">Step 1: Identify Member</p>
-                        <button 
-                            onClick={() => setIsScanning(true)}
-                            className="text-xs font-bold bg-white border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-2 hover:bg-slate-100 transition-colors shadow-sm"
-                        >
-                            <Camera size={14} className="text-blue-600" />
-                            Scan QR Code
-                        </button>
+                <div className="relative">
+                    <div className="absolute -left-4 top-0 w-1 bg-indigo-600 h-full rounded-full opacity-0 sm:opacity-100" />
+                    <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-1">
+                        {shop?.shopName}
+                    </h1>
+                    <div className="flex items-center gap-2">
+                        <Store size={14} className="text-indigo-500" />
+                        <p className="text-slate-500 font-bold text-sm tracking-tight uppercase">
+                            Authorized Dealer: <span className="text-slate-900">{shop?.ownerName}</span>
+                        </p>
                     </div>
-                    
-                    <div className="flex gap-2">
-                        <input
-                            value={memberUID}
-                            onChange={e => setMemberUID(e.target.value)}
-                            placeholder="Enter Member ID (e.g. BCTA-001)"
-                            className="input-field flex-1 bg-white"
+                </div>
+            </div>
+
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                <div className="glass-card rounded-3xl border border-white/40 p-5 sm:p-8 premium-shadow relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                        <CreditCard size={60} />
+                    </div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Inventory Value</p>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-black text-slate-900 tracking-tighter">₹{totalRevenue.toLocaleString()}</span>
+                    </div>
+                </div>
+                <div className="glass-card rounded-3xl border border-white/40 p-5 sm:p-8 premium-shadow relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                        <CheckCircle size={60} />
+                    </div>
+                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-3">Realized Revenue</p>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-black text-emerald-600 tracking-tighter">₹{totalPaid.toLocaleString()}</span>
+                    </div>
+                    <div className="mt-4 h-1.5 w-full bg-emerald-100 rounded-full overflow-hidden shadow-inner">
+                        <div 
+                            className="h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" 
+                            style={{ width: `${Math.min(100, (totalPaid / (totalRevenue || 1)) * 100)}%` }}
                         />
-                        <button onClick={() => verifyMember()} disabled={verifying} className="btn-primary whitespace-nowrap px-6">
-                            {verifying ? "Checking..." : "Verify"}
-                        </button>
+                    </div>
+                </div>
+                <div className="glass-card rounded-3xl border border-white/40 p-5 sm:p-8 premium-shadow relative overflow-hidden group bg-rose-50/10">
+                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-700">
+                        <ZapOff size={60} />
+                    </div>
+                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-3">Outstanding Credit</p>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-black text-rose-600 tracking-tighter">₹{totalDue.toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Distribution Workflow */}
+            <div className="glass-card rounded-4xl border border-white/40 p-5 sm:p-10 premium-shadow">
+                <div className="flex items-center justify-between mb-6 sm:mb-10">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                            <Package size={20} />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Distribution Console</h2>
+                    </div>
+                </div>
+
+                <div className="relative mb-10">
+                    <div className="absolute inset-0 bg-slate-50/50 rounded-2xl sm:rounded-3xl border border-dashed border-slate-200 -z-10" />
+                    <div className="p-5 sm:p-10">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+                            <div>
+                                <h3 className="text-xs font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">Step 1: Identity Token</h3>
+                                <p className="text-slate-400 font-medium text-xs">Scan or enter the unique member identifier</p>
+                            </div>
+                            <button 
+                                onClick={() => setIsScanning(true)}
+                                className="h-12 px-6 rounded-2xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center gap-3 shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all active:scale-95"
+                            >
+                                <Camera size={18} />
+                                Launch Scanner
+                            </button>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <div className="relative flex-1">
+                                <input
+                                    value={memberUID}
+                                    onChange={e => setMemberUID(e.target.value)}
+                                    placeholder="Enter Member ID (e.g. BCTA-001)"
+                                    className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner"
+                                />
+                                {verifying && (
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                        <div className="w-5 h-5 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
+                                    </div>
+                                )}
+                            </div>
+                            <button 
+                                onClick={() => verifyMember()} 
+                                disabled={verifying} 
+                                className="h-14 px-10 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase tracking-widest hover:bg-black transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                Verify ID
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Premium Scanner Modal/Overlay */}
                 {isScanning && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fade-in">
-                        <div className="w-full max-w-md bg-slate-900 rounded-[40px] p-8 border border-white/10 shadow-2xl relative overflow-hidden">
-                            <div className="flex items-center justify-between mb-8">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/90 backdrop-blur-sm animate-fade-in">
+                        <div className="w-full max-w-md bg-slate-900 rounded-[2.5rem] sm:rounded-[40px] p-6 sm:p-8 border border-white/10 shadow-2xl relative overflow-hidden">
+                            <div className="flex items-center justify-between mb-6 sm:mb-8">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400">
+                                    <div className="w-10 h-10 bg-indigo-50/500/10 rounded-xl flex items-center justify-center text-indigo-400">
                                         <ScanLine size={20} />
                                     </div>
                                     <h3 className="text-xl font-bold text-white tracking-tight">Member Scanner</h3>
@@ -319,13 +376,13 @@ const ShopDetail: React.FC = () => {
                                  {/* Premium Scanner Container */}
                                 <div className="absolute inset-0 z-10 pointer-events-none border-12 border-slate-900">
                                     {/* Glowing Corners */}
-                                    <div className="absolute top-2 left-2 w-16 h-16 border-t-5 border-l-5 border-blue-500 rounded-tl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
-                                    <div className="absolute top-2 right-2 w-16 h-16 border-t-5 border-r-5 border-blue-500 rounded-tr-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
-                                    <div className="absolute bottom-2 left-2 w-16 h-16 border-b-5 border-l-5 border-blue-500 rounded-bl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
-                                    <div className="absolute bottom-2 right-2 w-16 h-16 border-b-5 border-r-5 border-blue-500 rounded-br-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                    <div className="absolute top-2 left-2 w-16 h-16 border-t-5 border-l-5 border-indigo-500 rounded-tl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                    <div className="absolute top-2 right-2 w-16 h-16 border-t-5 border-r-5 border-indigo-500 rounded-tr-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                    <div className="absolute bottom-2 left-2 w-16 h-16 border-b-5 border-l-5 border-indigo-500 rounded-bl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                                    <div className="absolute bottom-2 right-2 w-16 h-16 border-b-5 border-r-5 border-indigo-500 rounded-br-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
                                     
                                     {/* Scanning Laser Line */}
-                                    <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-scan-laser"></div>
+                                    <div className="absolute top-0 left-0 w-full h-[2px] bg-linear-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_10px_rgba(96,165,250,0.8)] animate-scan-laser"></div>
                                 </div>
 
                                 <Scanner
@@ -351,7 +408,7 @@ const ShopDetail: React.FC = () => {
                                 )}
 
                                 <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-2.5 py-1 bg-black/40 backdrop-blur-md rounded-full border border-white/5">
-                                    <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                                    <div className="w-1 h-1 bg-indigo-50/500 rounded-full animate-pulse"></div>
                                     <span className="text-[8px] font-black text-white/90 uppercase tracking-[2px]">Terminal Active</span>
                                 </div>
                             </div>
@@ -362,125 +419,198 @@ const ShopDetail: React.FC = () => {
                             </button>
 
                             {/* Background Glow */}
-                            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+                            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none"></div>
                         </div>
                     </div>
                 )}
 
                 {memberProfile && (
-                    <div className="mb-6 p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-4 animate-slide-up">
-                        <div className="flex items-center gap-3 flex-1">
+                    <div className="mb-10 p-5 sm:p-8 bg-indigo-50/50 rounded-3xl border border-indigo-100 flex flex-col sm:flex-row items-center gap-6 animate-slide-up relative overflow-hidden group/profile">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover/profile:scale-110 transition-transform duration-700">
+                             <CheckCircle size={80} />
+                        </div>
+                        <div className="flex items-center gap-5 flex-1 relative z-10">
                             {memberProfile.photoURL ? (
-                                <img src={memberProfile.photoURL} alt="" className="w-12 h-12 rounded-xl object-cover shadow-sm" />
+                                <img src={memberProfile.photoURL} alt="" className="w-16 h-16 rounded-[24px] object-cover ring-4 ring-white shadow-xl" />
                             ) : (
-                                <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm">
+                                <div className="w-16 h-16 bg-indigo-600 rounded-[24px] flex items-center justify-center text-white font-black text-2xl shadow-xl ring-4 ring-white">
                                     {memberProfile.name?.[0]}
                                 </div>
                             )}
                             <div>
-                                <p className="font-bold text-slate-800">{memberProfile.name} {memberProfile.surname}</p>
-                                <p className="text-xs font-mono font-bold text-emerald-700">{memberProfile.memberId}</p>
+                                <h4 className="text-xl font-black text-slate-900 tracking-tight">{memberProfile.name} {memberProfile.surname}</h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                    <p className="text-xs font-black text-indigo-600 uppercase tracking-widest">{memberProfile.memberId}</p>
+                                </div>
                             </div>
                         </div>
-                        <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                            <CheckCircle size={14} /> Verified
-                        </span>
+                        <div className="flex items-center gap-3 relative z-10">
+                            <span className="bg-white/80 backdrop-blur-md text-emerald-600 text-[10px] font-black px-4 py-2 rounded-xl uppercase tracking-widest border border-emerald-100 shadow-sm flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Registry Match
+                            </span>
+                            <button onClick={() => setMemberProfile(null)} className="p-2 text-slate-400 hover:text-rose-500 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {memberProfile && (
-                    <form onSubmit={handleDistribute} className="space-y-4 animate-fade-in border-t border-slate-100 pt-6">
-                        <p className="text-sm font-bold text-[#000080]">Step 2: Enter Product Details</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="label">Product Name*</label>
-                                <input value={form.productName} onChange={e => setForm(p => ({ ...p, productName: e.target.value }))}
-                                    required placeholder="e.g. iPhone Screen, Battery" className="input-field" />
+                    <form onSubmit={handleDistribute} className="space-y-8 animate-fade-in border-t border-slate-100 pt-10">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-1.5 h-8 bg-indigo-600 rounded-full" />
+                            <h3 className="text-xs font-black text-indigo-600 uppercase tracking-[0.2em]">Step 2: Distribution Details</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Product Description</label>
+                                <input 
+                                    value={form.productName} 
+                                    onChange={e => setForm(p => ({ ...p, productName: e.target.value }))}
+                                    required 
+                                    placeholder="e.g. iPhone Screen, Battery, etc." 
+                                    className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-800 shadow-inner" 
+                                />
                             </div>
-                            <div>
-                                <label className="label">Quantity*</label>
-                                <input type="number" min="1" value={form.quantity}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Quantity</label>
+                                <input 
+                                    type="number" 
+                                    min="1" 
+                                    value={form.quantity}
                                     onChange={e => setForm(p => ({ ...p, quantity: e.target.value }))}
-                                    required className="input-field" />
+                                    required 
+                                    className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-800 shadow-inner" 
+                                />
                             </div>
-                            <div>
-                                <label className="label">Total Amount (₹)*</label>
-                                <input type="number" step="0.01" value={form.totalAmount}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Unit Valuation (₹)</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    value={form.totalAmount}
                                     onChange={e => setForm(p => ({ ...p, totalAmount: e.target.value }))}
-                                    required placeholder="0.00" className="input-field" />
+                                    required 
+                                    placeholder="0.00" 
+                                    className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-800 shadow-inner" 
+                                />
                             </div>
-                            <div>
-                                <label className="label">Amount Paid (₹)</label>
-                                <input type="number" step="0.01" value={form.paidAmount}
-                                    onChange={e => setForm(p => ({ ...p, paidAmount: e.target.value }))}
-                                    placeholder="0.00" className="input-field" />
-                                {form.totalAmount && (
-                                    <p className="text-xs font-bold text-rose-500 mt-2 bg-rose-50 px-2 py-1 rounded inline-block">
-                                        Remaining Due: ₹{Math.max(0, parseFloat(form.totalAmount || "0") - parseFloat(form.paidAmount || "0")).toFixed(2)}
-                                    </p>
-                                )}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Immediate Deposit (₹)</label>
+                                <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        step="0.01" 
+                                        value={form.paidAmount}
+                                        onChange={e => setForm(p => ({ ...p, paidAmount: e.target.value }))}
+                                        placeholder="0.00" 
+                                        className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-800 shadow-inner" 
+                                    />
+                                    {form.totalAmount && (
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1 rounded-lg bg-rose-50 border border-rose-100 flex items-center gap-2">
+                                            <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Balance Due:</span>
+                                            <span className="text-xs font-black text-rose-600">₹{Math.max(0, parseFloat(form.totalAmount || "0") - parseFloat(form.paidAmount || "0")).toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                        <button type="submit" disabled={submitting || !memberProfile} className="btn-primary w-full md:w-auto px-8">
-                            {submitting ? "Recording..." : "Complete Distribution"}
-                        </button>
+
+                        <div className="flex gap-4">
+                            <button 
+                                type="submit" 
+                                disabled={submitting || !memberProfile} 
+                                className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
+                            >
+                                {submitting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle size={20} />}
+                                {submitting ? "Processing..." : "Authorize Distribution"}
+                            </button>
+                        </div>
                     </form>
                 )}
             </div>
 
-            <div className="card bg-white border border-slate-200">
-                <h2 className="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <CreditCard size={18} className="text-violet-600" /> Distribution History ({products.length})
-                </h2>
-                <div className="flex justify-center p-5 bg-white border border-slate-100 rounded-2xl mb-4 shadow-sm animate-fade-in">
-                    <QRCodeSVG
-                        id={`shop-qr-${shop?.id}`}
-                        value={JSON.stringify({ type: "shop", shopId: shop?.id, shopName: shop?.shopName })}
-                        size={140}
-                        level="H"
-                        includeMargin={false}
-                        fgColor="#000040"
-                    />
+            <div className="glass-card rounded-4xl border border-white/40 p-5 sm:p-10 premium-shadow">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6 sm:mb-10">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                            <CreditCard size={20} />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Distribution History</h2>
+                    </div>
                 </div>
-                <div className="overflow-x-auto text-sm">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="bg-slate-50/80 border-b border-slate-100 font-bold text-slate-700">
-                                <th className="table-header text-left pl-4 py-3">Member</th>
-                                <th className="table-header text-left">Product</th>
-                                <th className="table-header text-left">Qty</th>
-                                <th className="table-header text-left">Total</th>
-                                <th className="table-header text-left">Paid</th>
-                                <th className="table-header text-left">Due</th>
-                                <th className="table-header text-right pr-4">Date</th>
+
+                <div className="overflow-x-auto -mx-2">
+                    <table className="w-full text-left border-separate border-spacing-y-4">
+                        <thead className="hidden md:table-header-group">
+                            <tr className="text-slate-400">
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em]">Distributed To</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em]">Product Details</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em]">Total Value</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em]">Status</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-right">Timestamp</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100/60 font-medium">
+                        <tbody className="block md:table-row-group">
                             {products.map(p => (
-                                <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="table-cell pl-4 py-4">
-                                        <p className="font-bold text-slate-800">{p.memberName}</p>
-                                        <p className="text-xs font-mono font-bold text-[#000080]">{p.memberId}</p>
+                                <tr key={p.id} className="block md:table-row bg-white/50 border border-slate-100 rounded-3xl md:rounded-none mb-4 md:mb-0 group hover:bg-white transition-all duration-300">
+                                    <td className="block md:table-cell px-6 py-5 rounded-t-3xl md:rounded-l-3xl md:rounded-tr-none border-x border-t border-slate-100 md:border-y md:border-r-0 md:border-l">
+                                         <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                                                <div className="text-xs font-black">{p.memberName?.[0]}</div>
+                                            </div>
+                                            <div>
+                                                <p className="font-black text-slate-900 tracking-tight leading-none mb-1">{p.memberName}</p>
+                                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{p.memberId}</p>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td className="table-cell font-medium">{p.productName}</td>
-                                    <td className="table-cell">{p.quantity}</td>
-                                    <td className="table-cell font-bold">₹{p.totalAmount}</td>
-                                    <td className="table-cell text-emerald-600 font-bold">₹{p.paidAmount}</td>
-                                    <td className="table-cell">
-                                        <span className={`font-bold ${parseFloat(p.remainingAmount as string) > 0 ? "text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded" : "text-emerald-600"}`}>
-                                            ₹{p.remainingAmount}
+                                    <td className="block md:table-cell px-6 py-5 border-x border-slate-100 md:border-y md:border-x-0">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-slate-700">{p.productName}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Quantity: {p.quantity}</span>
+                                        </div>
+                                    </td>
+                                    <td className="block md:table-cell px-6 py-5 border-x border-slate-100 md:border-y md:border-x-0">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-black text-slate-900">₹{p.totalAmount}</span>
+                                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">Paid: ₹{p.paidAmount}</span>
+                                        </div>
+                                    </td>
+                                    <td className="block md:table-cell px-6 py-5 border-x border-slate-100 md:border-y md:border-x-0">
+                                        {parseFloat(p.remainingAmount as string) > 0 ? (
+                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-100">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                                <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest leading-none">Due: ₹{p.remainingAmount}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-100">
+                                                <CheckCircle size={10} className="text-emerald-500" />
+                                                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none">Settled</span>
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="block md:table-cell px-6 py-5 rounded-b-3xl md:rounded-r-3xl md:rounded-bl-none border-x border-b border-slate-100 md:border-y md:border-l-0 md:border-r text-right">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            {p.distributedAt?.toDate?.().toLocaleDateString("en-IN", { day: '2-digit', month: 'short' }) || 
+                                             (p.distributedAt ? new Date(p.distributedAt).toLocaleDateString("en-IN", { day: '2-digit', month: 'short' }) : "—")}
                                         </span>
-                                    </td>
-                                    <td className="table-cell text-xs text-slate-400 font-medium text-right pr-4">
-                                        {p.distributedAt?.toDate?.().toLocaleDateString("en-IN") || 
-                                         (p.distributedAt ? new Date(p.distributedAt).toLocaleDateString("en-IN") : "—")}
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                     {products.length === 0 && (
-                        <div className="py-16 text-center text-slate-400 font-medium">No distributions recorded yet</div>
+                        <div className="py-20 text-center">
+                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200 border border-slate-100">
+                                <CreditCard size={40} />
+                            </div>
+                            <p className="text-xl font-black text-slate-900 mb-2">No Transactions</p>
+                            <p className="text-slate-400 uppercase tracking-[0.2em] text-xs font-black">History is currently clear</p>
+                        </div>
                     )}
                 </div>
             </div>

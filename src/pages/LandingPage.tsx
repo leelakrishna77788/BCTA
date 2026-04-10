@@ -27,8 +27,8 @@ import Navbar from "../components/shared/Navbar";
 import Footer from "../components/shared/Footer";
 
 /* ─── Intersection Observer reveal ─── */
-function useReveal<T extends HTMLElement = HTMLDivElement>(threshold = 0.1): [React.RefObject<T>, boolean] {
-  const ref = useRef<T>(null);
+function useReveal<T extends HTMLElement = HTMLDivElement>(threshold = 0.1): [React.RefObject<T | null>, boolean] {
+  const ref = useRef<T | null>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
@@ -109,7 +109,7 @@ const SERVICES = [
     title: "Mobile Screen Replacement",
     description: "Expert screen replacement services for all smartphone brands. We use high-quality original and compatible displays with warranty coverage.",
     features: ["LCD/OLED Replacement", "Touch Digitizer Repair", "Gorilla Glass Installation", "Same Day Service"],
-    color: "from-blue-500 to-blue-700",
+    gradient: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
     icon: "📱"
   },
   {
@@ -117,7 +117,7 @@ const SERVICES = [
     title: "Battery Replacement & Repair",
     description: "Professional battery replacement for all mobile devices. Restore your phone's battery life with genuine and high-capacity batteries.",
     features: ["Original Batteries", "Fast Charging Support", "Battery Health Check", "Instant Replacement"],
-    color: "from-emerald-500 to-teal-700",
+    gradient: "linear-gradient(135deg, #10b981, #059669)",
     icon: "🔋"
   },
   {
@@ -125,7 +125,7 @@ const SERVICES = [
     title: "Motherboard & IC Repair",
     description: "Advanced motherboard-level repairs including IC replacement, reballing, and circuit repair. We fix charging issues, network problems, and boot failures.",
     features: ["IC Replacement", "BGA Reballing", "Circuit Repair", "Water Damage Recovery"],
-    color: "from-violet-500 to-purple-700",
+    gradient: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
     icon: "🔧"
   },
   {
@@ -133,48 +133,9 @@ const SERVICES = [
     title: "Software & Unlocking Services",
     description: "Complete software solutions including OS installation, unlocking, data recovery, and virus removal. Keep your device running smoothly.",
     features: ["OS Installation", "Pattern/FRP Unlock", "Data Recovery", "Software Updates"],
-    color: "from-amber-500 to-orange-700",
+    gradient: "linear-gradient(135deg, #f59e0b, #d97706)",
     icon: "💻"
   }
-];
-
-const MEMBER_FEATURES = [
-  {
-    icon: ScanLine,
-    color: "bg-blue-600",
-    title: "Scan QR to Attend",
-    desc: "Point your phone at the meeting QR. Attendance logged to Firestore in under a second.",
-  },
-  {
-    icon: CreditCard,
-    color: "bg-rose-600",
-    title: "Track Your Payments",
-    desc: "See all product purchases, dues, and payment history. Know exactly what you owe.",
-  },
-  {
-    icon: MessageSquare,
-    color: "bg-violet-600",
-    title: "Raise Complaints",
-    desc: "Submit grievances with photo attachment. Track whether it's open or resolved.",
-  },
-  {
-    icon: Droplet,
-    color: "bg-red-600",
-    title: "Emergency Blood Search",
-    desc: "Search by blood group across all members to find the nearest donor instantly.",
-  },
-  {
-    icon: CalendarDays,
-    color: "bg-emerald-600",
-    title: "View Meetings",
-    desc: "Browse upcoming and past meetings with date, time, location, and GPS link.",
-  },
-  {
-    icon: Shield,
-    color: "bg-slate-700",
-    title: "Your Security Status",
-    desc: "See your live account status and Member ID. Blocked members lose all access immediately.",
-  },
 ];
 
 /* ── Live Stats Hook ── */
@@ -196,7 +157,6 @@ function usePlatformStats() {
     };
 
     try {
-      // Members count
       const membersQuery = query(
         collection(db, "users"),
         where("role", "==", "member"),
@@ -210,7 +170,6 @@ function usePlatformStats() {
         )
       );
 
-      // Meetings count
       unsubs.push(
         onSnapshot(
           collection(db, "meetings"),
@@ -219,7 +178,6 @@ function usePlatformStats() {
         )
       );
 
-      // Total Attendance Scans
       unsubs.push(
         onSnapshot(
           collection(db, "attendance"),
@@ -228,7 +186,6 @@ function usePlatformStats() {
         )
       );
 
-      // Total Payments/Distribution Records
       unsubs.push(
         onSnapshot(
           collection(db, "payments"),
@@ -242,11 +199,7 @@ function usePlatformStats() {
 
     return () => {
       unsubs.forEach((unsub) => {
-        try {
-          unsub();
-        } catch (err) {
-          console.warn('[LandingPage] Error unsubscribing:', err);
-        }
+        try { unsub(); } catch (err) { /* noop */ }
       });
     };
   }, []);
@@ -258,147 +211,154 @@ function usePlatformStats() {
 const LandingPage: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [direction, setDirection] = useState("next");
   const platformStats = usePlatformStats();
 
-  // Auto-slide services with 3D effect
   useEffect(() => {
     const interval = setInterval(() => {
       setIsTransitioning(true);
       setTimeout(() => {
-        setDirection("next");
         setCurrentSlide((prev) => (prev + 1) % SERVICES.length);
         setIsTransitioning(false);
-      }, 1500);
-    }, 4000);
+      }, 400);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const nextSlide = () => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setDirection("next");
-      setCurrentSlide((prev) => (prev + 1) % SERVICES.length);
-      setIsTransitioning(false);
-    }, 1500);
-  };
-
-  const prevSlide = () => {
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setDirection("prev");
-      setCurrentSlide((prev) => (prev - 1 + SERVICES.length) % SERVICES.length);
-      setIsTransitioning(false);
-    }, 1500);
-  };
-
   const goToSlide = (index: number) => {
-    if (index !== currentSlide) {
+    if (index !== currentSlide && !isTransitioning) {
       setIsTransitioning(true);
       setTimeout(() => {
-        setDirection(index > currentSlide ? "next" : "prev");
         setCurrentSlide(index);
         setIsTransitioning(false);
-      }, 1500);
+      }, 400);
     }
   };
 
-  const nextIndex = (currentSlide + 1) % SERVICES.length;
+  const service = SERVICES[currentSlide];
 
   return (
     <>
       <style>{`
-          @keyframes slideIn {
-            from {
-              transform: translate3d(-100%, 0, -400px) rotateY(90deg) scale(0.8);
-              opacity: 0;
-            }
-            to {
-              transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
-              opacity: 1;
-            }
-          }
-          @keyframes slideOut {
-            from {
-              transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
-              opacity: 1;
-            }
-            to {
-              transform: translate3d(100%, 0, -400px) rotateY(-90deg) scale(0.8);
-              opacity: 0;
-            }
-          }
-          .animate-slideIn {
-            animation: slideIn 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-          }
-          .animate-slideOut {
-            animation: slideOut 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-          }
-          .preserve-3d {
-            transform-style: preserve-3d;
-          }
-          .backface-hidden {
-            backface-visibility: hidden;
-          }
           .animate-marquee {
-            animation: marqueeScroll 30s linear infinite;
+            animation: marqueeScroll 40s linear infinite;
           }
           @keyframes marqueeScroll {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
           }
+          .mesh-gradient {
+            background-color: #f8fafc;
+            background-image: 
+              radial-gradient(at 0% 0%, hsla(224,71%,90%,1) 0, transparent 50%), 
+              radial-gradient(at 50% 0%, hsla(258,61%,92%,1) 0, transparent 50%), 
+              radial-gradient(at 100% 0%, hsla(224,81%,94%,1) 0, transparent 50%),
+              radial-gradient(at 0% 100%, hsla(224,91%,94%,1) 0, transparent 50%),
+              radial-gradient(at 50% 100%, hsla(258,61%,92%,1) 0, transparent 50%),
+              radial-gradient(at 100% 100%, hsla(224,71%,90%,1) 0, transparent 50%);
+            background-size: 200% 200%;
+            animation: mesh-move 20s ease infinite;
+          }
+          @keyframes mesh-move {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+            100% { background-position: 0% 0%; }
+          }
+          .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+          }
+          .premium-shadow {
+            box-shadow: 0 20px 50px rgba(30, 27, 75, 0.08);
+          }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-300 via-blue-150 to-yellow-400 text-slate-900 overflow-x-hidden">
+      <div className="min-h-screen text-slate-900 overflow-x-hidden" style={{ background: "var(--surface-base)" }}>
         <Navbar />
 
         {/* ================= HERO ================= */}
-        <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 pt-24 sm:pt-32 pb-8 sm:pb-12 overflow-hidden">
+        <section className="relative min-h-[95vh] flex items-center justify-center px-4 sm:px-6 pt-24 sm:pt-32 pb-8 sm:pb-12 overflow-hidden mesh-gradient">
+          {/* Decorative elements */}
+          <div className="absolute top-1/4 -left-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 -right-12 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+
           <img
             src={assets.herologo}
-            alt="watermark"
-            className="absolute w-[400px] sm:w-[650px] md:w-[800px] opacity-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            alt=""
+            loading="lazy"
+            className="absolute w-[400px] sm:w-[550px] md:w-[700px] opacity-[0.04] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
             style={{ mixBlendMode: 'multiply' }}
           />
 
           <div className="text-center max-w-5xl relative z-10">
-            <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-blue-900 mb-4 sm:mb-6 leading-tight px-2">
-              Welcome to
-              <br/>
-              <span className="text-blue-600">
-                Bhimavaram Cell Phone Technicians Association
-              </span>
-            </h1>
+            <Reveal dy={-20}>
+              <div className="inline-flex items-center gap-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-full px-5 py-2.5 mb-8 text-[11px] sm:text-[12px] font-black uppercase tracking-[0.15em] text-indigo-700 shadow-xl shadow-indigo-500/5 ring-4 ring-indigo-500/5">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+                </span>
+                Official Members Association Platform
+              </div>
+            </Reveal>
 
-            <p className="text-blue-800/70 max-w-2xl mx-auto mb-8 sm:mb-10 text-base sm:text-lg px-4">
-              A digital platform to manage members, meetings, attendance,
-              payments and communication for BCTA members.
-            </p>
+            <Reveal dy={20} delay={0.2}>
+              <h1 className="text-4xl sm:text-6xl md:text-8xl font-black mb-6 sm:mb-8 leading-[1.05] px-2 tracking-tighter">
+                <span className="text-slate-900 drop-shadow-sm">The digital heart of</span>
+                <br/>
+                <span className="gradient-text bg-linear-to-r from-indigo-700 via-violet-700 to-indigo-800 bg-clip-text text-transparent italic">
+                  Bhimavaram Technicians
+                </span>
+              </h1>
+            </Reveal>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
+            <Reveal dy={20} delay={0.4}>
+              <p className="text-slate-600 max-w-2xl mx-auto mb-10 sm:mb-12 text-lg sm:text-xl md:text-2xl px-4 font-medium leading-relaxed opacity-90">
+                A unified association portal designed for professional unity, 
+                instant communication, and association management.
+              </p>
+            </Reveal>
+
+            <Reveal dy={30} delay={0.6} className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 px-4">
               <Link
                 to="/login"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 sm:px-7 py-3 rounded-lg hover:bg-blue-700 transition"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 text-white px-10 py-4.5 rounded-2xl font-black transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] hover:-translate-y-2 active:scale-95 text-lg"
+                style={{ background: "var(--gradient-primary)" }}
               >
-                Open Portal <ArrowRight size={18}/>
+                Enter Portal <ArrowRight size={20} className="transition-transform duration-500 group-hover:translate-x-2" />
               </Link>
 
               <a
                 href="#services"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-blue-600 border border-blue-600 px-6 sm:px-7 py-3 rounded-lg hover:bg-blue-50 transition"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white/40 backdrop-blur-xl text-slate-900 border border-white/80 px-10 py-4.5 rounded-2xl font-bold hover:bg-white/80 transition-all duration-500 hover:-translate-y-1 shadow-lg active:scale-95 text-lg"
               >
-                Learn More
+                Our Services
               </a>
-            </div>
+            </Reveal>
+            
+            <Reveal dy={20} delay={1} className="mt-16 sm:mt-24">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mb-8">Trusted by associations across the region</p>
+              <div className="flex flex-wrap justify-center gap-8 sm:gap-16 opacity-40 grayscale pointer-events-none">
+                 <div className="text-xl font-black tracking-tighter">BCTA HUB</div>
+                 <div className="text-xl font-black tracking-tighter">CELL-NETWORK</div>
+                 <div className="text-xl font-black tracking-tighter">TECH-CONNECT</div>
+              </div>
+            </Reveal>
           </div>
+          
+          {/* Bottom curve */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white to-transparent pointer-events-none" />
         </section>
 
         {/* ================= PRESIDENTS ================= */}
-        <section id="presidents" className="py-8 sm:py-12 overflow-hidden">
+        <section id="presidents" className="py-10 sm:py-16 overflow-hidden">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <h2 className="text-3xl sm:text-4xl font-black text-blue-900 text-center mb-12 sm:mb-16">
-              BCTA Presidents
-            </h2>
+            <Reveal className="text-center mb-10 sm:mb-14">
+              <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">Leadership</p>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                BCTA Presidents
+              </h2>
+            </Reveal>
 
             {/* Mobile: Horizontal Scroll */}
             <div className="md:hidden overflow-x-auto scrollbar-hide pb-4">
@@ -407,21 +367,16 @@ const LandingPage: React.FC = () => {
                   <Link
                     key={i}
                     to="/presidents"
-                    className="min-w-[200px] bg-white/80 backdrop-blur-sm rounded-xl shadow hover:shadow-xl transition p-4 text-center border border-blue-100 flex-shrink-0"
+                    className="min-w-[200px] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-4 text-center border border-slate-100 shrink-0"
                   >
                     <img
                       src={p.image}
                       alt={p.name}
-                      className="w-20 h-20 mx-auto rounded-full object-cover mb-3"
+                      loading="lazy"
+                      className="w-20 h-20 mx-auto rounded-full object-cover mb-3 ring-2 ring-indigo-50"
                     />
-
-                    <h3 className="font-bold text-base text-blue-900">
-                      {p.name}
-                    </h3>
-
-                    <p className="text-xs text-blue-800/70">
-                      {p.year}
-                    </p>
+                    <h3 className="font-bold text-base text-slate-900">{p.name}</h3>
+                    <p className="text-xs text-slate-500 font-medium">{p.year}</p>
                   </Link>
                 ))}
               </div>
@@ -433,208 +388,125 @@ const LandingPage: React.FC = () => {
                 <Link
                   key={i}
                   to="/presidents"
-                  className="min-w-[200px] sm:min-w-[250px] bg-white/80 backdrop-blur-sm rounded-xl shadow hover:shadow-xl hover:-translate-y-2 transition p-4 sm:p-6 text-center border border-blue-100 cursor-pointer"
+                  className="min-w-[200px] sm:min-w-[250px] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 p-4 sm:p-6 text-center border border-slate-100 cursor-pointer"
                 >
                   <img
                     src={p.image}
                     alt={p.name}
-                    className="w-20 h-20 sm:w-28 sm:h-28 mx-auto rounded-full object-cover mb-3 sm:mb-4"
+                    loading="lazy"
+                    className="w-20 h-20 sm:w-28 sm:h-28 mx-auto rounded-full object-cover mb-3 sm:mb-4 ring-4 ring-indigo-50"
                   />
-
-                  <h3 className="font-bold text-base sm:text-lg text-blue-900">
-                    {p.name}
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-blue-800/70">
-                    {p.year}
-                  </p>
+                  <h3 className="font-bold text-base sm:text-lg text-slate-900">{p.name}</h3>
+                  <p className="text-xs sm:text-sm text-slate-500 font-medium">{p.year}</p>
                 </Link>
               ))}
             </div>
           </div>
         </section>
 
-       
-
         {/* ================= SERVICES SECTION ================= */}
-        <section id="services" className="py-8 sm:py-12">
+        <section id="services" className="py-10 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-12 sm:mb-16">
-              <h2 className="text-3xl sm:text-5xl font-black text-blue-900 mb-3 sm:mb-4">
-                Our <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Services</span>
+            <Reveal className="text-center mb-12 sm:mb-16">
+              <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">What We Do</p>
+              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 mb-3 sm:mb-4 tracking-tight">
+                Our <span className="gradient-text" style={{ background: "var(--gradient-accent)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Services</span>
               </h2>
-              <p className="text-blue-800/70 text-base sm:text-lg max-w-2xl mx-auto px-4">
+              <p className="text-slate-500 text-base sm:text-lg max-w-2xl mx-auto px-4 font-medium">
                 Professional mobile repair services by expert technicians
               </p>
-            </div>
+            </Reveal>
 
             {/* Slider Container */}
-            <div className="relative" style={{ perspective: "1500px" }}>
-              {/* Slides */}
-              <div className="relative h-[450px] sm:h-[500px]">
-                {isTransitioning ? (
-                  <>
-                    <div
-                      key={currentSlide}
-                      className="absolute inset-0 animate-slideOut preserve-3d backface-hidden"
+            <div className="relative max-w-4xl mx-auto">
+              <div className={`relative transition-all duration-500 ${isTransitioning ? "opacity-0 translate-y-4 scale-[0.98]" : "opacity-100 translate-y-0 scale-100"}`}>
+                <div className="glass-card rounded-2xl sm:rounded-3xl border border-white/40 p-6 sm:p-10 md:p-14 flex flex-col overflow-hidden premium-shadow"
+                  style={{ minHeight: "400px" }}
+                >
+                  <div className="flex items-center justify-center mb-6 sm:mb-8">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center text-4xl sm:text-5xl shadow-lg border border-white/50"
+                      style={{ background: service.gradient }}
                     >
-                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-blue-100 p-6 sm:p-10 md:p-14 h-full flex flex-col">
-                        {/* Icon */}
-                        <div className="flex items-center justify-center mb-6 sm:mb-8">
-                          <div className="text-4xl sm:text-6xl">{SERVICES[currentSlide].icon}</div>
-                        </div>
-
-                        {/* Title */}
-                        <h3 className="text-2xl sm:text-4xl font-black text-blue-900 mb-3 sm:mb-4 text-center">
-                          {SERVICES[currentSlide].title}
-                        </h3>
-
-                        {/* Description */}
-                        <p className="text-blue-800/70 text-sm sm:text-lg mb-6 sm:mb-8 leading-relaxed text-center">
-                          {SERVICES[currentSlide].description}
-                        </p>
-
-                        {/* Features */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-auto">
-                          {SERVICES[currentSlide].features.map((feature, i) => (
-                            <div key={i} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 sm:py-3">
-                              <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${SERVICES[currentSlide].color}`}></div>
-                              <span className="text-xs sm:text-sm font-semibold text-blue-900">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      key={nextIndex}
-                      className="absolute inset-0 animate-slideIn preserve-3d backface-hidden"
-                    >
-                      <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-blue-100 p-6 sm:p-10 md:p-14 h-full flex flex-col">
-                        {/* Icon */}
-                        <div className="flex items-center justify-center mb-6 sm:mb-8">
-                          <div className="text-4xl sm:text-6xl">{SERVICES[nextIndex].icon}</div>
-                        </div>
-
-                        {/* Title */}
-                        <h3 className="text-2xl sm:text-4xl font-black text-blue-900 mb-3 sm:mb-4 text-center">
-                          {SERVICES[nextIndex].title}
-                        </h3>
-
-                        {/* Description */}
-                        <p className="text-blue-800/70 text-sm sm:text-lg mb-6 sm:mb-8 leading-relaxed text-center">
-                          {SERVICES[nextIndex].description}
-                        </p>
-
-                        {/* Features */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-auto">
-                          {SERVICES[nextIndex].features.map((feature, i) => (
-                            <div key={i} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 sm:py-3">
-                              <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${SERVICES[nextIndex].color}`}></div>
-                              <span className="text-xs sm:text-sm font-semibold text-blue-900">{feature}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div
-                    key={currentSlide}
-                    className="absolute inset-0 preserve-3d backface-hidden transition-shadow duration-500 hover:shadow-2xl"
-                  >
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-blue-100 p-6 sm:p-10 md:p-14 h-full flex flex-col">
-                      {/* Icon */}
-                      <div className="flex items-center justify-center mb-6 sm:mb-8">
-                        <div className="text-4xl sm:text-6xl">{SERVICES[currentSlide].icon}</div>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-2xl sm:text-4xl font-black text-blue-900 mb-3 sm:mb-4 text-center">
-                        {SERVICES[currentSlide].title}
-                      </h3>
-
-                      {/* Description */}
-                      <p className="text-blue-800/70 text-sm sm:text-lg mb-6 sm:mb-8 leading-relaxed text-center">
-                        {SERVICES[currentSlide].description}
-                      </p>
-
-                      {/* Features */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-auto">
-                        {SERVICES[currentSlide].features.map((feature, i) => (
-                          <div key={i} className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 sm:py-3">
-                            <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${SERVICES[currentSlide].color}`}></div>
-                            <span className="text-xs sm:text-sm font-semibold text-blue-900">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <span className="drop-shadow-lg">{service.icon}</span>
                     </div>
                   </div>
-                )}
+
+                  <h3 className="text-2xl sm:text-4xl font-black text-slate-900 mb-3 sm:mb-4 text-center tracking-tight">
+                    {service.title}
+                  </h3>
+
+                  <p className="text-slate-500 text-sm sm:text-lg mb-6 sm:mb-8 leading-relaxed text-center max-w-2xl mx-auto font-medium">
+                    {service.description}
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-auto">
+                    {service.features.map((feature, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-slate-50/80 backdrop-blur-sm rounded-xl px-4 py-3 border border-slate-100/60">
+                        <div className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: service.gradient }}
+                        />
+                        <span className="text-xs sm:text-sm font-semibold text-slate-700">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Dots Navigation */}
             <div className="flex items-center justify-center gap-2 sm:gap-3 mt-8 sm:mt-12">
-              {SERVICES.map((_, index) => (
+              {SERVICES.map((s, index) => (
                 <button
                   key={index}
                   onClick={() => goToSlide(index)}
-                  className={`transition-all duration-300 rounded-full ${
-                    index === currentSlide
-                      ? "w-8 sm:w-12 h-2.5 sm:h-3 bg-blue-600"
-                      : "w-2.5 sm:w-3 h-2.5 sm:h-3 bg-blue-200 hover:bg-blue-400"
-                  }`}
+                  className="transition-all duration-300 rounded-full"
+                  style={{
+                    width: index === currentSlide ? "2.5rem" : "0.625rem",
+                    height: "0.625rem",
+                    background: index === currentSlide ? "var(--gradient-accent)" : "#cbd5e1",
+                  }}
                 />
               ))}
             </div>
 
-            {/* View All Services Button */}
             <div className="text-center mt-8">
               <Link
                 to="/services"
-                className="inline-flex items-center gap-2 bg-blue-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg"
+                className="group inline-flex items-center gap-2 text-white font-bold px-8 py-3.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(99,102,241,0.25)] hover:-translate-y-0.5"
+                style={{ background: "var(--gradient-primary)" }}
               >
-                View All Services <ArrowRight size={18} />
+                View All Services <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════════════════ */}
-        {/*  STATS                                                     */}
-        {/* ══════════════════════════════════════════════════════════ */}
-        <section
-          id="stats"
-          className="py-8 sm:py-12 px-5 sm:px-8"
-        >
+        {/* ═══════ STATS ═══════ */}
+        <section id="stats" className="py-10 sm:py-16 px-5 sm:px-8">
           <div className="max-w-5xl mx-auto">
-            <Reveal className="text-center mb-16">
-              <p className="text-blue-900 font-semibold text-[11px] uppercase tracking-[0.2em] mb-4">
+            <Reveal className="text-center mb-12 sm:mb-16">
+              <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">
                 By the numbers
               </p>
-              <h2 className="text-4xl sm:text-5xl font-black text-blue-900 tracking-tight">
+              <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">
                 BCTA's growing impact
               </h2>
             </Reveal>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
               {[
-                {
-                  label: "Active Members",
-                  end: Math.max(platformStats.members, 0),
-                  suffix: "",
-                },
-                {
-                  label: "Meetings Tracked",
-                  end: Math.max(platformStats.meetings, 0),
-                  suffix: "",
-                },
+                { label: "Active Members", end: Math.max(platformStats.members, 0), suffix: "" },
+                { label: "Meetings Tracked", end: Math.max(platformStats.meetings, 0), suffix: "" },
               ].map((s, i) => (
                 <Reveal key={s.label} delay={i * 0.1}>
-                  <div className="text-center bg-white/40 backdrop-blur-sm border border-blue-200 rounded-2xl p-8 sm:p-10 hover:bg-white/50 transition-colors">
-                    <div className="text-5xl sm:text-6xl font-black text-blue-900 mb-3 tracking-tight tabular-nums">
+                  <div className="text-center glass-card border border-white/40 rounded-2xl p-8 sm:p-10 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 premium-shadow"
+                    style={{ background: "rgba(255,255,255,0.7)" }}
+                  >
+                    <div className="text-5xl sm:text-6xl font-black mb-3 tracking-tight tabular-nums gradient-text"
+                      style={{ background: "var(--gradient-accent)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                    >
                       <Counter end={s.end} suffix={s.suffix} />
                     </div>
-                    <p className="text-blue-800 text-base font-medium">
+                    <p className="text-slate-500 text-base font-semibold">
                       {s.label}
                     </p>
                   </div>
@@ -644,28 +516,29 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════════════════ */}
-        {/*  CTA BANNER                                                */}
-        {/* ══════════════════════════════════════════════════════════ */}
-        <section
-          className="py-8 sm:py-12 px-5 sm:px-8 relative overflow-hidden"
-        >
+        {/* ═══════ CTA BANNER ═══════ */}
+        <section className="py-10 sm:py-16 px-5 sm:px-8 relative overflow-hidden">
+          {/* Background gradient */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #faf5ff 100%)"
+          }} />
+
           <Reveal className="relative z-10 max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-white/40 backdrop-blur-sm border border-blue-300 rounded-full px-4 py-1.5 text-sm font-medium mb-7">
-              <Zap size={13} className="text-blue-900" /> Ready to transform
-              your association?
+            <div className="inline-flex items-center gap-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-full px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] mb-8 text-indigo-700 shadow-xl shadow-indigo-500/5 ring-4 ring-indigo-500/5">
+              <Zap size={14} className="text-indigo-600" /> Ready to transform your association?
             </div>
-            <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight mb-5 text-blue-900">
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight mb-5 text-slate-900">
               Go digital with BCTA
             </h2>
-            <p className="text-blue-800 text-lg leading-relaxed mb-10 max-w-xl mx-auto">
+            <p className="text-slate-500 text-lg leading-relaxed mb-10 max-w-xl mx-auto font-medium">
               Log in to the BCTA Portal and start managing your association with
               real-time data, QR attendance, and instant notifications.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 to="/login"
-                className="group inline-flex items-center gap-2.5 bg-blue-600 text-white font-bold px-8 py-4 rounded-2xl hover:bg-blue-700 transition-all shadow-2xl text-base hover:-translate-y-1"
+                className="group inline-flex items-center gap-3 text-white font-black px-10 py-5 rounded-2xl transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] text-lg hover:-translate-y-2"
+                style={{ background: "var(--gradient-primary)" }}
               >
                 Open the Portal{" "}
                 <ArrowRight
@@ -675,7 +548,7 @@ const LandingPage: React.FC = () => {
               </Link>
               <Link
                 to="/register"
-                className="inline-flex items-center gap-2 border-2 border-blue-600 text-blue-900 bg-white/40 backdrop-blur-sm font-medium px-8 py-4 rounded-2xl hover:bg-white/60 transition-all text-base"
+                className="inline-flex items-center gap-3 border border-white/80 text-slate-900 bg-white/40 backdrop-blur-xl font-bold px-10 py-5 rounded-2xl hover:bg-white/80 transition-all duration-500 text-lg hover:-translate-y-1 active:scale-95 shadow-lg"
               >
                 Register as Member
               </Link>

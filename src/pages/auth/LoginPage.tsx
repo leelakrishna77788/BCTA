@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -74,23 +75,49 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF5B7] flex flex-col">
+    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "var(--gradient-primary)" }}>
+      {/* Animated background orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-20 animate-float"
+          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 70%)" }}
+        />
+        <div className="absolute -bottom-48 -left-48 w-[500px] h-[500px] rounded-full opacity-15"
+          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)", animation: "floatUp 4s ease-in-out infinite reverse" }}
+        />
+        <div className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full opacity-10"
+          style={{ background: "radial-gradient(circle, rgba(167,139,250,0.5) 0%, transparent 70%)", animation: "floatUp 5s ease-in-out infinite 1s" }}
+        />
+      </div>
+
       {/* Main Container */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative z-10">
         {/* Login Card */}
-        <div className="w-full max-w-[420px] bg-white rounded-2xl shadow-xl border border-slate-100 animate-fade-in overflow-hidden">
+        <div className="w-full max-w-[440px] rounded-2xl overflow-hidden animate-slide-up"
+          style={{
+            background: "rgba(255,255,255,0.92)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            border: "1px solid rgba(255,255,255,0.3)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.1) inset",
+          }}
+        >
           
-          {/* Header with Logo */}
-          <div className="bg-[#000080] p-6 sm:p-8 text-center">
-            <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center mx-auto shadow-lg mb-3">
-              <span className="text-[#000080] text-3xl font-bold tracking-tight">BC</span>
+          {/* Header with gradient */}
+          <div className="p-6 sm:p-8 text-center relative overflow-hidden" style={{ background: "var(--gradient-primary)" }}>
+            <div className="absolute inset-0 opacity-30" style={{
+              background: "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.4) 0%, transparent 70%)"
+            }} />
+            <div className="relative z-10">
+              <div className="w-16 h-16 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-3 border border-white/20 shadow-lg">
+                <span className="text-white text-2xl font-bold tracking-tight">BC</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                BCTA Management System
+              </h1>
+              <p className="text-indigo-200/80 text-xs sm:text-sm mt-1 font-medium">
+                Bhimavaram Cell Phone Technicians Association
+              </p>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              BCTA Management System
-            </h1>
-            <p className="text-blue-200 text-xs sm:text-sm mt-1">
-              Bhimavaram Cell Phone Technicians Association
-            </p>
           </div>
 
           {/* Form Section */}
@@ -99,7 +126,7 @@ const LoginPage: React.FC = () => {
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                 Welcome Back
               </h2>
-              <p className="text-slate-500 mt-1 text-sm">
+              <p className="text-slate-500 mt-1 text-sm font-medium">
                 Sign in to access your account
               </p>
             </div>
@@ -107,32 +134,42 @@ const LoginPage: React.FC = () => {
             <form onSubmit={handleLogin} className="space-y-5">
               {/* Email Field */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                   Email Address
                 </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="Enter your email"
-                  className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:border-[#000080] focus:ring-1 focus:ring-[#000080] transition-colors text-sm"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail size={17} />
+                  </div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    placeholder="Enter your email"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all text-sm"
+                  />
+                </div>
               </div>
 
               {/* Password Field */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                   Password
                 </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Enter your password"
-                  className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:border-[#000080] focus:ring-1 focus:ring-[#000080] transition-colors text-sm"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Lock size={17} />
+                  </div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="Enter your password"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all text-sm"
+                  />
+                </div>
               </div>
 
               {/* Forgot Password Link */}
@@ -140,7 +177,7 @@ const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowForgotPassword(true)}
-                  className="text-xs font-semibold text-[#000080] hover:text-[#000066] transition-colors"
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
                 >
                   Forgot password?
                 </button>
@@ -150,7 +187,8 @@ const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-[#000080] hover:bg-[#000066] text-white font-medium rounded-lg transition-colors duration-200 mt-2 disabled:opacity-70 flex items-center justify-center gap-2"
+                className="w-full py-3 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-70 flex items-center justify-center gap-2 hover:shadow-[0_0_24px_rgba(99,102,241,0.3)] hover:-translate-y-0.5 active:translate-y-0"
+                style={{ background: "var(--gradient-primary)" }}
               >
                 {loading ? (
                   <>
@@ -158,7 +196,10 @@ const LoginPage: React.FC = () => {
                     Signing in...
                   </>
                 ) : (
-                  "Sign In"
+                  <>
+                    Sign In
+                    <ArrowRight size={16} />
+                  </>
                 )}
               </button>
             </form>
@@ -169,7 +210,7 @@ const LoginPage: React.FC = () => {
                 Don't have an account?{" "}
                 <Link
                   to="/register"
-                  className="text-[#000080] font-bold hover:underline"
+                  className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors"
                 >
                   Register Now
                 </Link>
@@ -178,8 +219,8 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-400">
+          <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 text-center">
+            <p className="text-xs text-slate-400 font-medium">
               © {new Date().getFullYear()} BCTA — All rights reserved
             </p>
           </div>
@@ -188,30 +229,46 @@ const LoginPage: React.FC = () => {
 
       {/* Forgot Password Modal */}
       {showForgotPassword && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="w-full max-w-md overflow-hidden animate-scale-in rounded-2xl"
+            style={{
+              background: "rgba(255,255,255,0.95)",
+              backdropFilter: "blur(24px)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.2)",
+            }}
+          >
             {/* Modal Header */}
-            <div className="bg-[#000080] p-6 text-center">
-              <h3 className="text-xl font-bold text-white">Reset Password</h3>
-              <p className="text-blue-200 text-sm mt-1">
-                Enter your email to receive a reset link
-              </p>
+            <div className="p-6 text-center relative overflow-hidden" style={{ background: "var(--gradient-primary)" }}>
+              <div className="absolute inset-0 opacity-30" style={{
+                background: "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.4) 0%, transparent 70%)"
+              }} />
+              <div className="relative z-10">
+                <h3 className="text-xl font-bold text-white">Reset Password</h3>
+                <p className="text-indigo-200/80 text-sm mt-1 font-medium">
+                  Enter your email to receive a reset link
+                </p>
+              </div>
             </div>
 
             {/* Modal Body */}
             <form onSubmit={handleForgotPassword} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                   Email Address
                 </label>
-                <input
-                  type="email"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  required
-                  placeholder="Enter your registered email"
-                  className="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:border-[#000080] focus:ring-1 focus:ring-[#000080] transition-colors text-sm"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail size={17} />
+                  </div>
+                  <input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                    placeholder="Enter your registered email"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all text-sm"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">
@@ -221,14 +278,15 @@ const LoginPage: React.FC = () => {
                     setShowForgotPassword(false);
                     setResetEmail("");
                   }}
-                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={resetting}
-                  className="flex-1 py-3 bg-[#000080] hover:bg-[#000066] text-white font-medium rounded-lg transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-70 flex items-center justify-center gap-2 hover:shadow-[0_0_24px_rgba(99,102,241,0.3)]"
+                  style={{ background: "var(--gradient-primary)" }}
                 >
                   {resetting ? (
                     <>

@@ -64,7 +64,7 @@ const AttendanceDashboard: React.FC = () => {
 
     if (loading || !meeting) return (
         <div className="flex justify-center h-64 items-center">
-            <div className="w-8 h-8 border-4 border-[#000080] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#4f46e5] border-t-transparent rounded-full animate-spin" />
         </div>
     );
 
@@ -83,7 +83,7 @@ const AttendanceDashboard: React.FC = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: "Total Members", value: allMembers.length, color: "bg-[#000080]", icon: Users },
+                    { label: "Total Members", value: allMembers.length, color: "bg-[#4f46e5]", icon: Users },
                     { label: "Attended", value: attended.length, color: "bg-emerald-500", icon: UserCheck },
                     { label: "Not Attended", value: notAttended.length, color: "bg-red-500", icon: UserX },
                     { label: "Attendance Rate", value: `${rate}%`, color: "bg-violet-500", icon: Users },
@@ -104,10 +104,10 @@ const AttendanceDashboard: React.FC = () => {
             <div className="card">
                 <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-semibold text-slate-700">Attendance Rate</p>
-                    <p className="text-sm text-[#000080] font-bold">{rate}%</p>
+                    <p className="text-sm text-[#4f46e5] font-bold">{rate}%</p>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-3">
-                    <div className="bg-[#000080] h-3 rounded-full transition-all duration-700" style={{ width: `${rate}%` }} />
+                    <div className="bg-[#4f46e5] h-3 rounded-full transition-all duration-700" style={{ width: `${rate}%` }} />
                 </div>
             </div>
 

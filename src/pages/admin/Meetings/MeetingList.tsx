@@ -165,7 +165,7 @@ const MeetingList: React.FC = () => {
     const statusColor = (status: string) => {
         const colors: Record<string, string> = {
             live: "bg-emerald-100 text-emerald-700 border-emerald-200",
-            ready: "bg-blue-100 text-blue-700 border-blue-200 animate-pulse",
+            ready: "bg-indigo-100 text-indigo-700 border-indigo-200 animate-pulse",
             scheduled: "bg-slate-100 text-slate-600 border-slate-200",
             past: "bg-amber-100 text-amber-700 border-amber-200",
             expired: "bg-rose-100 text-rose-700 border-rose-200",
@@ -178,7 +178,7 @@ const MeetingList: React.FC = () => {
     if (loading && meetings.length === 0) {
         return (
             <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 text-slate-500">
-                <Loader2 className="w-8 h-8 animate-spin text-[#000080]" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#4f46e5]" />
                 <p className="font-medium animate-pulse">Loading meetings list...</p>
             </div>
         );
@@ -238,7 +238,7 @@ const MeetingList: React.FC = () => {
             {showForm && (
                 <div className="card border-slate-200 bg-slate-50/50 animate-fade-in">
                     <div className="flex items-center gap-2 mb-6">
-                        <div className="w-8 h-8 bg-[#000080] rounded-lg flex items-center justify-center text-white">
+                        <div className="w-8 h-8 bg-[#4f46e5] rounded-lg flex items-center justify-center text-white">
                             <Plus size={18} />
                         </div>
                         <h2 className="text-lg font-bold text-slate-900">Create New Meeting</h2>
@@ -304,7 +304,7 @@ const MeetingList: React.FC = () => {
                 {meetings.map(m => (
                     <div key={m.id} className="card group hover:border-slate-300 hover:shadow-lg transition-all duration-300">
                         <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-slate-100 group-hover:text-[#000080] transition-colors">
+                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-slate-100 group-hover:text-[#4f46e5] transition-colors">
                                 <CalendarDays size={24} />
                             </div>
                             <div className="flex gap-2">
@@ -323,7 +323,7 @@ const MeetingList: React.FC = () => {
                             </div>
                         </div>
                         
-                        <h3 className="font-bold text-slate-900 group-hover:text-[#000080] transition-colors mb-2 leading-tight">
+                        <h3 className="font-bold text-slate-900 group-hover:text-[#4f46e5] transition-colors mb-2 leading-tight">
                             {m.topic}
                         </h3>
                         {m.description && (

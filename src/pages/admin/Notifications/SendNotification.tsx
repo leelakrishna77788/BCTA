@@ -20,7 +20,7 @@ interface Notification {
 }
 
 const NOTIFICATION_TYPES = [
-    { value: "meeting", label: "📅 Meeting Alert", color: "bg-slate-100 text-[#000080]" },
+    { value: "meeting", label: "📅 Meeting Alert", color: "bg-slate-100 text-[#4f46e5]" },
     { value: "payment", label: "💳 Payment Reminder", color: "bg-amber-100 text-amber-700" },
     { value: "block", label: "🚫 Block Notice", color: "bg-red-100 text-red-700" },
     { value: "emergency", label: "🚨 Emergency Update", color: "bg-rose-100 text-rose-700" },
@@ -93,94 +93,119 @@ const SendNotification: React.FC = () => {
     const selectedType = NOTIFICATION_TYPES.find(t => t.value === form.type);
 
     return (
-        <div className="space-y-5 animate-fade-in">
+        <div className="space-y-6 animate-fade-in pb-10">
             <div>
-                <h1 className="page-title mb-0">Send Notification</h1>
-                <p className="text-slate-500 text-sm">Broadcast messages to all members</p>
+                <h1 className="page-title mb-1 text-3xl sm:text-4xl">Notifications</h1>
+                <p className="text-slate-500 font-medium text-sm tracking-tight">Broadcast platform-wide alerts and updates</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {/* Send Form */}
-                <div className="card">
-                    <form onSubmit={handleSend} className="space-y-4">
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+                {/* Send Form - Spans 3 columns on xl */}
+                <div className="xl:col-span-3 glass-card rounded-2xl sm:rounded-3xl border border-white/40 p-6 sm:p-10 premium-shadow"
+                  style={{ background: "rgba(255, 255, 255, 0.7)" }}
+                >
+                    <form onSubmit={handleSend} className="space-y-6">
                         <div>
-                            <label className="label">Notification Type</label>
-                            <div className="flex flex-wrap gap-2">
+                            <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-4 block">Select Category</label>
+                            <div className="flex flex-wrap gap-2.5">
                                 {NOTIFICATION_TYPES.map(t => (
                                     <button key={t.value} type="button"
                                         onClick={() => setForm(p => ({ ...p, type: t.value }))}
-                                        className={`text-xs px-3 py-1.5 rounded-full font-medium border-2 transition-all ${form.type === t.value ? "border-[#000080] " + t.color : "border-slate-200 bg-slate-50 text-slate-600"}`}>
+                                        className={`text-xs px-4 py-2.5 rounded-xl font-black uppercase tracking-widest border transition-all duration-300 ${form.type === t.value ? "border-indigo-200 shadow-lg " + t.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}>
                                         {t.label}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        <div>
-                            <label className="label">Title*</label>
-                            <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                                required placeholder="Notification title" className="input-field" />
-                        </div>
+                        <div className="grid grid-cols-1 gap-6">
+                            <div>
+                                <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">Heading*</label>
+                                <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                                    required placeholder="What is this about?" 
+                                    className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-4" />
+                            </div>
 
-                        <div>
-                            <label className="label">Message*</label>
-                            <textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
-                                required rows={4} placeholder="Write your message..." className="input-field resize-none" />
+                            <div>
+                                <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">Content*</label>
+                                <textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
+                                    required rows={5} placeholder="Write the main message here..." 
+                                    className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-4 resize-none" />
+                            </div>
                         </div>
 
                         {/* Preview */}
-                        {form.title && (
-                            <div className={`p-3 rounded-xl ${selectedType?.color || "bg-slate-100"} border border-slate-200`}>
-                                <p className="text-xs font-semibold uppercase mb-1 opacity-60">Preview</p>
-                                <p className="font-semibold text-sm">{form.title}</p>
-                                <p className="text-xs mt-0.5 opacity-80">{form.body}</p>
+                        <div className={`p-6 rounded-2xl border border-dashed transition-all duration-500 ${form.title ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}
+                          style={{ borderColor: selectedType?.color.split(' ')[1] || "#e2e8f0", background: "rgba(255,255,255,0.4)" }}
+                        >
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 text-slate-400">Live Preview</p>
+                            <div className={`p-4 rounded-xl shadow-sm border ${selectedType?.color || "bg-slate-100"} border-white/40`}>
+                                <p className="font-black text-sm tracking-tight">{form.title || "Subject Line"}</p>
+                                <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed">{form.body || "Message body will appear here..."}</p>
                             </div>
-                        )}
+                        </div>
 
-                        <button type="submit" disabled={sending} className="btn-primary w-full flex items-center justify-center gap-2">
-                            <Send size={16} /> {sending ? "Sending..." : "Send to All Members"}
+                        <button type="submit" disabled={sending} 
+                          className="group w-full py-5 rounded-2xl text-white font-black uppercase tracking-widest transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                          style={{ background: "var(--gradient-primary)" }}
+                        >
+                            <Send size={18} className="transition-transform group-hover:translate-x-1" />
+                            {sending ? "Processing..." : "Broadcast to All"}
                         </button>
                     </form>
                 </div>
 
-                {/* Notification History */}
-                <div className="card">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                            <Bell size={16} /> Recent Notifications
+                {/* History - Spans 2 columns on xl */}
+                <div className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow"
+                  style={{ background: "rgba(255, 255, 255, 0.6)" }}
+                >
+                    <div className="flex items-center justify-between p-6 sm:p-8 border-b border-white/30">
+                        <h2 className="text-base font-black text-slate-900 flex items-center gap-3 tracking-tight">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+                                <Bell size={18} />
+                            </div>
+                            Feed History
                         </h2>
                         {sent.length > 0 && (
                             <button 
                                 onClick={handleClearAll}
                                 disabled={sending}
-                                className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-widest px-2 py-1 rounded-lg hover:bg-red-50 transition-all disabled:opacity-50"
+                                className="text-[10px] font-black text-rose-500 hover:bg-rose-500 hover:text-white uppercase tracking-[0.15em] px-4 py-2 rounded-xl transition-all border border-rose-100 disabled:opacity-50"
                             >
-                                Clear All
+                                Clear all
                             </button>
                         )}
                     </div>
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                        {sent.map(n => {
+                    <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto max-h-[600px] scrollbar-hide">
+                        {sent.map((n, i) => {
                             const t = NOTIFICATION_TYPES.find(x => x.value === n.type) || NOTIFICATION_TYPES[4];
                             return (
-                                <div key={n.id} className={`p-3 rounded-xl ${t.color} border border-current/10 relative group`}>
-                                    <p className="font-semibold text-sm pr-8">{n.title}</p>
-                                    <p className="text-xs mt-0.5 opacity-80">{n.body}</p>
-                                    <p className="text-xs opacity-50 mt-1.5">
-                                        {n.sentAt?.toDate?.().toLocaleString("en-IN") || "Just now"}
-                                    </p>
-                                    <button
-                                        onClick={() => deleteNotification(n.id)}
-                                        className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/50 text-red-500 hover:bg-red-50 hover:text-red-600 transition-all opacity-0 group-hover:opacity-100"
-                                        title="Delete notification"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
+                                <div key={n.id} className="relative group/notif animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
+                                    <div className={`p-5 rounded-2xl border transition-all duration-300 hover:bg-white/80 ${t.color.split(' ')[1]} ${t.color.split(' ')[0]} border-white/60 relative premium-shadow`}>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <p className="font-black text-[15px] pr-8 tracking-tight leading-tight">{n.title}</p>
+                                            <button
+                                                onClick={() => deleteNotification(n.id)}
+                                                className="absolute top-4 right-4 p-2 rounded-xl bg-white/40 text-rose-500 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover/notif:opacity-100 shadow-sm border border-white/20"
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
+                                        </div>
+                                        <p className="text-[13px] font-medium opacity-80 leading-relaxed mb-4">{n.body}</p>
+                                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-auto pt-3 border-t border-white/20">
+                                            <span className="bg-white/50 px-2.5 py-1 rounded-lg">🕒 {n.sentAt?.toDate?.().toLocaleDateString("en-IN") || "Online"}</span>
+                                            <span className="bg-white/50 px-2.5 py-1 rounded-lg">Target: {n.target || "All"}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             );
                         })}
                         {sent.length === 0 && (
-                            <p className="text-slate-400 text-sm text-center py-10">No notifications sent yet</p>
+                            <div className="flex flex-col items-center justify-center py-20 opacity-30">
+                                <Bell size={48} className="mb-4" />
+                                <p className="text-sm font-black uppercase tracking-widest">No sent logs</p>
+                            </div>
                         )}
                     </div>
                 </div>

@@ -5,7 +5,6 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 
-console.log('[BCTA] App.tsx loading...')
 
 // Scroll to top on route change
 function ScrollToTop() {
@@ -64,7 +63,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-300 via-blue-150 to-yellow-400 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-300 via-blue-150 to-yellow-400 p-4">
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 max-w-lg w-full border-2 border-red-200">
             <h2 className="text-2xl font-black text-red-600 mb-4">Oops! Something went wrong</h2>
             <p className="text-slate-700 mb-4">We encountered an error while loading this page.</p>
@@ -97,9 +96,20 @@ function App() {
           }}
         />
         <React.Suspense fallback={
-          <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-950">
-            <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
-            <div className="text-gray-500 dark:text-gray-400 font-medium animate-pulse">Loading BCTA...</div>
+          <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-900 overflow-hidden relative isolate">
+            {/* Background decorative elements */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-violet-600/15 rounded-full blur-[80px] pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-20 h-20 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-2xl mb-8 animate-logo-float">
+                <span className="text-white font-black text-xl tracking-tighter">BCTA</span>
+              </div>
+              <div className="relative w-48 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                <div className="absolute inset-0 bg-linear-to-r from-indigo-500 via-violet-500 to-indigo-500 w-full rounded-full animate-loading-progress shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
+              </div>
+              <p className="mt-6 text-indigo-300/60 font-bold text-[10px] uppercase tracking-[0.2em] animate-pulse">Initializing Portal</p>
+            </div>
           </div>
         }>
           <Routes>

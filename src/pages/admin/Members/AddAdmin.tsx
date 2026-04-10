@@ -1,10 +1,10 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ArrowLeft, Shield, UserPlus, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Shield, UserPlus, AlertCircle, Loader2, ShieldCheck, Mail, Lock } from "lucide-react";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import { db, auth } from "../../../firebase/firebaseConfig";
+import { adminApi } from "../../../services/adminService";
 
 const AddAdmin: React.FC = () => {
     const navigate = useNavigate();
@@ -28,7 +28,8 @@ const AddAdmin: React.FC = () => {
                 if (snap.exists()) {
                     const role = snap.data().role;
                     if (role !== "admin" && role !== "superadmin") {
-                        setCheckingAuth(false);
+                        toast.error("Unauthorized access");
+                        navigate("/dashboard");
                         return;
                     }
                 }
@@ -65,18 +66,22 @@ const AddAdmin: React.FC = () => {
 
         setLoading(true);
         try {
-            const cred = await createUserWithEmailAndPassword(auth, form.email.trim(), form.password);
-            
-            await setDoc(doc(db, "users", cred.user.uid), {
+            await adminApi.createAdmin({
                 name: form.name.trim(),
                 email: form.email.trim(),
-                role: "admin",
-                status: "active",
-                createdAt: serverTimestamp(),
+                password: form.password
+            });
+            
+            toast.success(`Administrator account for "${form.name}" has been provisioned successfully!`, {
+                duration: 5000,
+                icon: '🛡️'
             });
 
-            toast.success(`Admin "${form.name}" created successfully!`);
+            // Reset form for next admin OR redirect back to list if required
             setForm({ name: "", email: "", password: "", confirmPassword: "" });
+            
+            // Give immediate feedback that session is preserved
+            console.log("[AddAdmin] Account created. Current session UID:", auth.currentUser?.uid);
         } catch (err: any) {
             if (err.code === "auth/email-already-in-use") {
                 toast.error("Email already in use by another account");
@@ -90,118 +95,158 @@ const AddAdmin: React.FC = () => {
 
     if (checkingAuth) {
         return (
-            <div className="flex flex-col items-center justify-center h-96 gap-4">
-                <Loader2 size={48} className="text-[#000080] animate-spin" />
-                <p className="text-slate-500">Checking permissions...</p>
+            <div className="flex flex-col items-center justify-center h-screen gap-6 bg-slate-50/50">
+                <div className="relative">
+                    <div className="w-12 h-12 border-4 border-indigo-100 rounded-full"></div>
+                    <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                </div>
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] animate-pulse">Verifying Security Credentials...</p>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 animate-fade-in pb-12 max-w-3xl mx-auto">
-            <div className="flex items-center gap-4">
+        <div className="space-y-10 animate-fade-in pb-20 max-w-4xl mx-auto px-4 sm:px-0">
+            {/* Header */}
+            <div className="flex items-center gap-5">
                 <button
                     onClick={() => navigate(-1)}
-                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200/60 text-slate-500 hover:text-[#000080] hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm"
+                    className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-slate-300 transition-all shadow-sm"
                 >
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={22} />
                 </button>
                 <div>
-                    <h1 className="page-title mb-1 drop-shadow-sm text-3xl">Add New Admin</h1>
-                    <p className="text-slate-500 font-medium text-sm">Create a new administrator account</p>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Provision Admin</h1>
+                    <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2 leading-none">Security Privilege Configuration</p>
                 </div>
             </div>
 
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                        <Shield size={20} className="text-[#000080]" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-white">Admin Privileges</h3>
-                        <p className="text-slate-400 text-xs">This user will have full admin access to the portal</p>
-                    </div>
+            {/* Info Card */}
+            <div className="glass-card bg-slate-900 rounded-[2.5rem] p-8 sm:p-10 text-white shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-10 opacity-10 text-indigo-500 group-hover:scale-110 transition-transform duration-700">
+                    <Shield size={160} />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                    {["Member Management", "Meetings & Attendance", "Payments & Shops", "Notifications"].map((perm) => (
-                        <div key={perm} className="bg-white/5 rounded-lg px-3 py-2 text-center">
-                            <p className="text-xs text-slate-300 font-medium">{perm}</p>
+                <div className="relative z-10">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                            <ShieldCheck size={24} />
                         </div>
-                    ))}
+                        <div>
+                            <h3 className="text-xl font-black tracking-tight">Privileged Access</h3>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Full System Authority</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+                        {["Member Registry", "Financial Ledger", "QR Ecosystem", "Push Service"].map((perm) => (
+                            <div key={perm} className="bg-white/5 backdrop-blur-md rounded-2xl px-4 py-3 border border-white/10">
+                                <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest text-center">{perm}</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="card bg-white border border-slate-200 shadow-sm rounded-xl">
-                    <h2 className="text-sm font-bold text-slate-800 mb-6 tracking-tight uppercase flex items-center gap-2">
-                        <UserPlus size={18} className="text-[#000080]" />
-                        Admin Details
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-1 gap-10">
+                <div className="glass-card bg-white border border-slate-200/60 shadow-xl rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden">
+                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-600"></div>
+                        Administrator Credentials
                     </h2>
-                    <div className="space-y-5">
-                        <div>
-                            <label className="label">Full Name <span className="text-red-500">*</span></label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={form.name}
-                                onChange={handleChange}
-                                placeholder="Enter admin's full name"
-                                required
-                                className="input-field"
-                            />
-                        </div>
-                        <div>
-                            <label className="label">Email Address <span className="text-red-500">*</span></label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={form.email}
-                                onChange={handleChange}
-                                placeholder="admin@example.com"
-                                required
-                                className="input-field"
-                            />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div>
-                                <label className="label">Password <span className="text-red-500">*</span></label>
+                    
+                    <div className="space-y-8">
+                        <div className="space-y-2 group">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+                                Full Name <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative">
                                 <input
-                                    type="password"
-                                    name="password"
-                                    value={form.password}
+                                    type="text"
+                                    name="name"
+                                    value={form.name}
                                     onChange={handleChange}
-                                    placeholder="Min 6 characters"
+                                    placeholder="e.g. Administrator"
                                     required
-                                    minLength={6}
-                                    className="input-field"
+                                    className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                                 />
+                                <UserPlus className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
                             </div>
-                            <div>
-                                <label className="label">Confirm Password <span className="text-red-500">*</span></label>
+                        </div>
+
+                        <div className="space-y-2 group">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+                                Email Address <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative">
                                 <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={form.confirmPassword}
+                                    type="email"
+                                    name="email"
+                                    value={form.email}
                                     onChange={handleChange}
-                                    placeholder="Re-enter password"
+                                    placeholder="admin@bcta.in"
                                     required
-                                    minLength={6}
-                                    className="input-field"
+                                    className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                                 />
+                                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                            <div className="space-y-2 group">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+                                    Access Password <span className="text-rose-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={form.password}
+                                        onChange={handleChange}
+                                        placeholder="••••••••"
+                                        required
+                                        minLength={6}
+                                        className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                                    />
+                                    <Lock className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+                                </div>
+                            </div>
+                            <div className="space-y-2 group">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+                                    Confirm Password <span className="text-rose-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="password"
+                                        name="confirmPassword"
+                                        value={form.confirmPassword}
+                                        onChange={handleChange}
+                                        placeholder="••••••••"
+                                        required
+                                        minLength={6}
+                                        className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                                    />
+                                    <ShieldCheck className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex gap-4 pt-4 border-t border-slate-200/60 sticky bottom-4 bg-white p-4 rounded-xl shadow-md border border-slate-200 z-20">
-                    <button type="button" onClick={() => navigate(-1)} className="btn-secondary flex-1 sm:flex-none py-3 font-semibold shadow-sm">
-                        Cancel
-                    </button>
-                    <button type="submit" disabled={loading} className="btn-primary flex-1 py-3 font-semibold shadow-xl shadow-slate-200/50 hover:shadow-xl shadow-slate-200/50 transition-all flex items-center justify-center gap-2">
-                        {loading ? (
-                            <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating Admin...</>
-                        ) : "Create Admin Account"}
-                    </button>
+                    <div className="mt-12 flex flex-col sm:flex-row gap-4">
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className="bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl shadow-2xl shadow-indigo-200 hover:shadow-indigo-400 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 flex-1 flex items-center justify-center gap-3"
+                        >
+                            {loading ? <Loader2 className="animate-spin" size={20} /> : <UserPlus size={20} />}
+                            {loading ? "Authorizing Account..." : "Confirm Provisioning"}
+                        </button>
+                        <button 
+                            type="button" 
+                            onClick={() => navigate(-1)}
+                            className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl hover:bg-slate-50 transition-all active:scale-95"
+                        >
+                            Abort Process
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

@@ -67,47 +67,95 @@ const ShopList: React.FC = () => {
 
     return (
         <div className="space-y-5 animate-fade-in">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="page-title mb-0">Shops & Product Distribution</h1>
-                    <p className="text-slate-500 text-sm">{shops.length} registered shops</p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-2">
+                <div className="relative">
+                    <div className="absolute -left-4 top-0 w-1 bg-indigo-600 h-full rounded-full opacity-0 md:opacity-100" />
+                    <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-2">
+                        Shops & <span className="text-indigo-600">Distribution</span>
+                    </h1>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <p className="text-slate-500 font-semibold text-sm tracking-tight">
+                            <span className="text-slate-900">{shops.length}</span> active distribution points
+                        </p>
+                    </div>
                 </div>
-                <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center gap-2">
-                    <Plus size={16} /> Add Shop
+                <button 
+                    onClick={() => setShowForm(!showForm)} 
+                    className={`h-12 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg ${
+                        showForm 
+                        ? "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50" 
+                        : "bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5"
+                    }`}
+                >
+                    {showForm ? <Plus className="rotate-45 transition-transform" /> : <Plus />}
+                    <span>{showForm ? "Cancel Registration" : "Register New Shop"}</span>
                 </button>
             </div>
 
             {/* Add Shop Form */}
             {showForm && (
-                <div className="card animate-fade-in">
-                    <h2 className="text-base font-semibold text-slate-700 mb-4">Register New Shop</h2>
-                    <form onSubmit={handleSubmit}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label className="label">Shop Name*</label>
-                                <input value={form.shopName} onChange={e => setForm(p => ({ ...p, shopName: e.target.value }))}
-                                    required placeholder="e.g. Sri Rama Mobile Store" className="input-field" />
+                <div className="glass-card rounded-4xl border border-white/40 p-8 sm:p-10 premium-shadow animate-slide-up relative overflow-hidden"
+                  style={{ background: "rgba(255, 255, 255, 0.7)" }}
+                >
+                    <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
+                        <Store size={120} />
+                    </div>
+                    <h2 className="text-[11px] font-black text-indigo-600 mb-8 tracking-[0.2em] uppercase flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                        Registration Form
+                    </h2>
+                    
+                    <form onSubmit={handleSubmit} className="relative z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Shop Name</label>
+                                <input 
+                                    value={form.shopName} 
+                                    onChange={e => setForm(p => ({ ...p, shopName: e.target.value }))}
+                                    required 
+                                    placeholder="e.g. Sri Rama Mobile Store" 
+                                    className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner" 
+                                />
                             </div>
-                            <div>
-                                <label className="label">Owner Name*</label>
-                                <input value={form.ownerName} onChange={e => setForm(p => ({ ...p, ownerName: e.target.value }))}
-                                    required placeholder="Owner's full name" className="input-field" />
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Proprietor Name</label>
+                                <input 
+                                    value={form.ownerName} 
+                                    onChange={e => setForm(p => ({ ...p, ownerName: e.target.value }))}
+                                    required 
+                                    placeholder="Owner's full name" 
+                                    className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner" 
+                                />
                             </div>
-                            <div>
-                                <label className="label">Phone</label>
-                                <input type="tel" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-                                    placeholder="9876543210" className="input-field" />
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Primary Contact</label>
+                                <input 
+                                    type="tel" 
+                                    value={form.phone} 
+                                    onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                                    placeholder="9876543210" 
+                                    className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner" 
+                                />
                             </div>
-                            <div>
-                                <label className="label">Address</label>
-                                <input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))}
-                                    placeholder="Shop address" className="input-field" />
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Full Address</label>
+                                <input 
+                                    value={form.address} 
+                                    onChange={e => setForm(p => ({ ...p, address: e.target.value }))}
+                                    placeholder="Detailed location" 
+                                    className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner" 
+                                />
                             </div>
                         </div>
-                        <div className="flex gap-3">
-                            <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
-                            <button type="submit" disabled={submitting} className="btn-primary">
-                                {submitting ? "Creating..." : "Create Shop & Generate QR"}
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <button 
+                                type="submit" 
+                                disabled={submitting} 
+                                className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {submitting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <QrCode size={18} />}
+                                {submitting ? "Processing..." : "Register & Generate QR"}
                             </button>
                         </div>
                     </form>
@@ -115,52 +163,59 @@ const ShopList: React.FC = () => {
             )}
 
             {/* Shop Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {shops.map(shop => (
-                    <div key={shop.id} className="card hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-11 h-11 bg-violet-100 rounded-xl flex items-center justify-center">
-                                    <Store size={20} className="text-violet-600" />
+                    <div key={shop.id} className="glass-card rounded-3xl border border-white/40 p-6 premium-shadow hover:bg-white/90 transition-all duration-500 group">
+                        <div className="flex items-start justify-between mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500">
+                                    <Store size={26} className="text-indigo-600" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-slate-800 text-sm">{shop.shopName}</h3>
-                                    <p className="text-xs text-slate-500">{shop.ownerName}</p>
+                                    <h3 className="font-black text-slate-900 tracking-tight text-base leading-tight">{shop.shopName}</h3>
+                                    <p className="text-xs font-semibold text-slate-400 mt-0.5">{shop.ownerName}</p>
                                 </div>
                             </div>
-                            <span className="bg-emerald-100 text-emerald-700 text-xs font-medium px-2 py-0.5 rounded-full">Fixed QR</span>
+                            <span className="bg-indigo-50 text-indigo-700 text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border border-indigo-100/50">Fixed Identifier</span>
                         </div>
 
-                        <div className="flex justify-center p-5 bg-white border border-slate-100 rounded-2xl mb-4 shadow-sm animate-fade-in">
+                        <div className="flex justify-center p-8 bg-white border border-slate-100 rounded-3xl mb-6 shadow-inner relative group/qr overflow-hidden">
+                            <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover/qr:opacity-100 transition-opacity" />
                             <QRCodeSVG
                                 id={`shop-qr-${shop.id}`}
                                 value={JSON.stringify({ type: "shop", shopId: shop.id, shopName: shop.shopName })}
-                                size={140}
+                                size={150}
                                 level="H"
                                 includeMargin={false}
-                                fgColor="#000040"
+                                fgColor="#0f172a"
+                                className="relative z-10 drop-shadow-sm"
                             />
                         </div>
 
-                        <p className="text-xs text-slate-400 text-center mb-3">
-                            🔒 This QR is permanent and never changes
-                        </p>
+                        <div className="flex items-center gap-2 justify-center mb-6 py-2 px-4 rounded-xl bg-slate-50/50 border border-slate-100">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Verified Merchant Key</p>
+                        </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                             <Link to={`/admin/shops/${shop.id}`}
-                                className="flex-1 btn-secondary text-xs py-1.5 flex items-center justify-center gap-1">
-                                <Eye size={13} /> View History
+                                className="flex-1 h-11 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all flex items-center justify-center gap-2 shadow-sm font-bold text-xs">
+                                <Eye size={16} /> Inventory
                             </Link>
                             <button onClick={() => downloadShopQR(shop)}
-                                className="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1">
-                                <Download size={13} /> QR
+                                className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-slate-50 transition-all flex items-center justify-center shadow-sm">
+                                <Download size={18} />
                             </button>
                         </div>
                     </div>
                 ))}
                 {shops.length === 0 && (
-                    <div className="card md:col-span-2 xl:col-span-3 text-center text-slate-400 py-16">
-                        No shops registered yet.
+                    <div className="glass-card md:col-span-2 xl:col-span-3 text-center py-20 rounded-3xl border border-white/40">
+                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200 border border-slate-100">
+                            <Store size={40} />
+                        </div>
+                        <p className="text-xl font-black text-slate-900 mb-2">No Shops Registered</p>
+                        <p className="text-slate-400 font-medium uppercase tracking-[0.2em] text-xs">Registry is currently empty</p>
                     </div>
                 )}
             </div>

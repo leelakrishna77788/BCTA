@@ -37,7 +37,7 @@ const MyPayments: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="card text-center p-4">
-                    <p className="text-xl font-bold text-[#000080]">₹{totalPaid}</p>
+                    <p className="text-xl font-bold text-[#4f46e5]">₹{totalPaid}</p>
                     <p className="text-xs text-slate-500 mt-1">Total Paid</p>
                 </div>
                 <div className="card text-center p-4">
@@ -54,7 +54,7 @@ const MyPayments: React.FC = () => {
 
             {totalDue > 0 && (
                 <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-                    <AlertCircle className="text-amber-500 flex-shrink-0" size={20} />
+                    <AlertCircle className="text-amber-500 shrink-0" size={20} />
                     <p className="text-sm text-amber-800">You have ₹{totalDue} in pending dues. Please clear them to avoid account restrictions.</p>
                 </div>
             )}
@@ -85,7 +85,7 @@ const MyPayments: React.FC = () => {
                     <div className="space-y-3">
                         {products.map(p => (
                             <div key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border ${(p.remainingAmount || 0) > 0 ? "bg-red-50 border-red-100" : "bg-emerald-50 border-emerald-100"}`}>
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${(p.remainingAmount || 0) > 0 ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-600"}`}>
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${(p.remainingAmount || 0) > 0 ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-600"}`}>
                                     <Package size={18} />
                                 </div>
                                 <div className="flex-1">

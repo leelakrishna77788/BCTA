@@ -110,15 +110,25 @@ const MemberDetail: React.FC = () => {
         const previousStatus = member.status;
         const newStatus = previousStatus === "active" ? "blocked" : "active";
         
+        let updatePayload: any = { status: newStatus };
+        let actionText = newStatus === "active" ? "unblocked" : "blocked";
+
+        if (previousStatus === "pending" && newStatus === "active") {
+            const year = new Date().getFullYear();
+            const num = Math.floor(Math.random() * 900) + 100;
+            updatePayload.memberId = `BCTA-${year}-${num}`;
+            actionText = "approved";
+        }
+        
         // Optimistic update
-        setMember(p => p ? { ...p, status: newStatus } : null);
-        toast.success(`Member ${newStatus}`);
+        setMember(p => p ? { ...p, ...updatePayload } : null);
+        toast.success(`Member ${actionText}`);
 
         // Fire and forget
         (async () => {
             try {
                 const memberRef = doc(db, "users", member.id);
-                await updateDoc(memberRef, { status: newStatus });
+                await updateDoc(memberRef, updatePayload);
                 if (newStatus === "blocked") {
                     await membersApi.revokeTokens(member.id);
                 }
@@ -177,7 +187,7 @@ const MemberDetail: React.FC = () => {
                 <div className="flex items-center gap-5">
                     <button
                         onClick={() => navigate(-1)}
-                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-[#000080] hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm hover:shadow-lg hover:-translate-x-1"
+                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-[#4f46e5] hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm hover:shadow-lg hover:-translate-x-1"
                     >
                         <ArrowLeft size={22} />
                     </button>
@@ -206,13 +216,20 @@ const MemberDetail: React.FC = () => {
                         onClick={() => setShowID(true)}
                         className="py-3 px-6 bg-slate-900 text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-md group relative overflow-hidden"
                     >
-                        <div className="absolute inset-0 bg-linear-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <QrCode size={18} className="text-blue-400" /> Digital ID
+                        <div className="absolute inset-0 bg-linear-to-r from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <QrCode size={18} className="text-indigo-400" /> Digital ID
                     </button>
-                    <button onClick={toggleBlock}
-                        className={`py-3 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg ${member.status === "active" ? "bg-white text-red-600 border border-red-100 hover:bg-red-50" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200"}`}>
-                        {member.status === "active" ? <><UserX size={18} /> Block Member</> : <><UserCheck size={18} /> Unblock Member</>}
-                    </button>
+                    {member.status === "pending" ? (
+                        <button onClick={toggleBlock}
+                            className="py-3 px-6 bg-indigo-600 text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-md">
+                            <UserCheck size={18} /> Approve Member
+                        </button>
+                    ) : (
+                        <button onClick={toggleBlock}
+                            className={`py-3 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg ${member.status === "active" ? "bg-white text-red-600 border border-red-100 hover:bg-red-50" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200"}`}>
+                            {member.status === "active" ? <><UserX size={18} /> Block Member</> : <><UserCheck size={18} /> Unblock Member</>}
+                        </button>
+                    )}
                     <button onClick={handleDelete}
                         className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-red-100 text-red-500 hover:bg-red-50 transition-all shadow-sm">
                         <Trash2 size={20} />
@@ -222,16 +239,16 @@ const MemberDetail: React.FC = () => {
 
             {/* Profile Hero Card */}
             <div className="relative group p-1">
-                <div className="absolute inset-0 bg-linear-to-r from-blue-600/10 to-indigo-600/10 rounded-[2.5rem] blur-3xl opacity-50"></div>
+                <div className="absolute inset-0 bg-linear-to-r from-indigo-600/10 to-indigo-600/10 rounded-[2.5rem] blur-3xl opacity-50"></div>
                 <div className="card p-0! overflow-hidden bg-white border border-slate-200/60 shadow-xl rounded-[2.5rem] relative">
                     {/* Visual Decor */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-32 -mt-32 opacity-40"></div>
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-50 rounded-full -ml-24 -mb-24 opacity-30"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-50/50 rounded-full -ml-24 -mb-24 opacity-30"></div>
 
                     <div className="p-8 sm:p-12 flex flex-col lg:flex-row gap-10 items-center lg:items-start text-center lg:text-left relative z-10">
                         {/* Avatar Section */}
                         <div className="relative">
-                            <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-[3rem] p-1.5 bg-linear-to-br from-blue-500 via-indigo-500 to-purple-500 shadow-2xl">
+                            <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-[3rem] p-1.5 bg-linear-to-br from-indigo-500 via-indigo-500 to-purple-500 shadow-2xl">
                                 {loading ? (
                                     <div className="w-full h-full rounded-[2.75rem] bg-slate-800 animate-pulse border-4 border-white"></div>
                                 ) : member?.photoURL ? (
@@ -262,13 +279,13 @@ const MemberDetail: React.FC = () => {
                                     <>
                                         <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-3">
                                             <h2 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-none">{member?.name} {member?.surname}</h2>
-                                            <div className="px-4 py-1.5 bg-[#000080] text-white text-xs font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-slate-200">
+                                            <div className="px-4 py-1.5 bg-[#4f46e5] text-white text-xs font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-slate-200">
                                                 {member?.memberId}
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-slate-500">
                                             <span className="flex items-center gap-2 font-bold text-sm">
-                                                <Mail size={16} className="text-[#000080]" /> {member?.email}
+                                                <Mail size={16} className="text-[#4f46e5]" /> {member?.email}
                                             </span>
                                             <span className="flex items-center gap-2 font-bold text-sm">
                                                 <Phone size={16} className="text-indigo-500" /> {member?.phone || "N/A"}
@@ -289,7 +306,7 @@ const MemberDetail: React.FC = () => {
                                         <div className="flex items-center gap-2 bg-slate-50 text-slate-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
                                             <Calendar size={14} /> {member?.age} Yrs
                                         </div>
-                                        <div className="flex items-center gap-2 bg-slate-50 text-[#000080] font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+                                        <div className="flex items-center gap-2 bg-slate-50 text-[#4f46e5] font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
                                             <Activity size={14} /> {attendanceRate}% consistency
                                         </div>
                                         <div className="flex items-center gap-2 bg-amber-50 text-amber-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-amber-100 shadow-sm">
@@ -302,10 +319,10 @@ const MemberDetail: React.FC = () => {
                             <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
                                 <div className="flex -space-x-3 overflow-hidden">
                                      {[...Array(5)].map((_, i) => (
-                                         <div key={i} className={`inline-block h-8 w-8 rounded-full ring-2 ring-white ${i < Math.floor(attendanceRate/20) ? 'bg-[#000080]' : 'bg-slate-200'}`}></div>
+                                         <div key={i} className={`inline-block h-8 w-8 rounded-full ring-2 ring-white ${i < Math.floor(attendanceRate/20) ? 'bg-[#4f46e5]' : 'bg-slate-200'}`}></div>
                                      ))}
                                 </div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Global Ranking: <span className="text-[#000080]">Top 15%</span></p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Global Ranking: <span className="text-[#4f46e5]">Top 15%</span></p>
                             </div>
                         </div>
 
@@ -316,7 +333,7 @@ const MemberDetail: React.FC = () => {
                                     <TrendingUp size={80} />
                                 </div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 flex items-center gap-2 leading-none">
-                                    <div className="w-1 h-1 rounded-full bg-[#000080]"></div> Total Value
+                                    <div className="w-1 h-1 rounded-full bg-[#4f46e5]"></div> Total Value
                                 </p>
                                 <p className="text-4xl font-black tracking-tight mb-2 leading-none">₹{totalSpent}</p>
                                 <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
@@ -325,7 +342,7 @@ const MemberDetail: React.FC = () => {
                                         <span className="text-red-400">₹{totalDue}</span>
                                     </div>
                                     <div className="w-full bg-white/10 rounded-full h-1.5 p-0.5">
-                                        <div className="bg-[#000080] h-full rounded-full transition-all duration-1000" style={{ width: `${paymentProgress}%` }}></div>
+                                        <div className="bg-[#4f46e5] h-full rounded-full transition-all duration-1000" style={{ width: `${paymentProgress}%` }}></div>
                                     </div>
                                 </div>
                              </div>
@@ -340,13 +357,13 @@ const MemberDetail: React.FC = () => {
                 <div className="space-y-8">
                     {/* Contact Detail Card */}
                     <div className="card p-8! bg-white border border-slate-200/60 shadow-lg rounded-4xl hover:shadow-xl transition-shadow relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-2 h-full bg-[#000080]"></div>
+                        <div className="absolute top-0 left-0 w-2 h-full bg-[#4f46e5]"></div>
                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                             <MapPin size={14} className="text-[#000080]" /> Location Profile
+                             <MapPin size={14} className="text-[#4f46e5]" /> Location Profile
                         </h3>
                         <div className="space-y-10">
                             <div>
-                                <p className="text-[10px] font-black text-[#000080] uppercase tracking-widest mb-2">Shop Residence</p>
+                                <p className="text-[10px] font-black text-[#4f46e5] uppercase tracking-widest mb-2">Shop Residence</p>
                                 <p className="text-base font-bold text-slate-800 leading-relaxed pr-6">{member.shopAddress || "Primary address not provided"}</p>
                             </div>
                             <div className="pt-8 border-t border-slate-100">
@@ -381,7 +398,7 @@ const MemberDetail: React.FC = () => {
                         <div className="space-y-4">
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
                                 <div className="flex items-center gap-3">
-                                    <Calendar size={18} className="text-blue-400" />
+                                    <Calendar size={18} className="text-indigo-400" />
                                     <span className="text-xs font-bold text-slate-300">Member Since</span>
                                 </div>
                                 <span className="text-xs font-black">
@@ -405,8 +422,8 @@ const MemberDetail: React.FC = () => {
                 <div className="lg:col-span-2 space-y-8">
                     {/* Insights Hub */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="card p-6! bg-white border border-slate-200/60 shadow-lg rounded-4xl flex flex-col items-center text-center group hover:bg-[#000080] transition-all duration-300">
-                                <div className="w-14 h-14 bg-slate-50 text-[#000080] rounded-[1.25rem] flex items-center justify-center mb-4 group-hover:bg-white/10 group-hover:text-white transition-colors">
+                            <div className="card p-6! bg-white border border-slate-200/60 shadow-lg rounded-4xl flex flex-col items-center text-center group hover:bg-[#4f46e5] transition-all duration-300">
+                                <div className="w-14 h-14 bg-slate-50 text-[#4f46e5] rounded-[1.25rem] flex items-center justify-center mb-4 group-hover:bg-white/10 group-hover:text-white transition-colors">
                                     <Activity size={24} />
                                 </div>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 group-hover:text-white">Consistency</p>
@@ -433,7 +450,7 @@ const MemberDetail: React.FC = () => {
                         <div className="p-8 sm:p-10 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                             <div>
                                 <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                                    <CreditCard size={24} className="text-[#000080]" /> Distribution Ledger
+                                    <CreditCard size={24} className="text-[#4f46e5]" /> Distribution Ledger
                                 </h3>
                                 <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Tracking item flow and financial dues</p>
                             </div>
@@ -445,7 +462,7 @@ const MemberDetail: React.FC = () => {
 
                         {products.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-24 text-slate-400 px-6 text-center">
-                                <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner border border-slate-100">
+                                <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-4xl flex items-center justify-center mb-6 shadow-inner border border-slate-100">
                                     <Package size={36} />
                                 </div>
                                 <p className="text-lg font-black text-slate-600 mb-2">No Allocation History</p>
@@ -453,8 +470,8 @@ const MemberDetail: React.FC = () => {
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
+                                <table className="w-full text-left border-collapse block md:table">
+                                    <thead className="hidden md:table-header-group">
                                         <tr className="bg-slate-50/80">
                                             <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Asset Details</th>
                                             <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Volume</th>
@@ -462,38 +479,50 @@ const MemberDetail: React.FC = () => {
                                             <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Commitment Date</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="block md:table-row-group divide-y md:divide-slate-100">
                                         {products.map((p, i) => (
-                                            <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-8 py-6">
-                                                    <div>
-                                                        <p className="text-base font-black text-slate-800 leading-none">{p.productName}</p>
-                                                        <p className="text-[10px] font-bold text-[#000080] mt-1.5 uppercase tracking-widest">Distributor: Internal System</p>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-6 text-center">
-                                                    <span className="bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-xl border-2 border-white shadow-md inline-block min-w-14">
-                                                        {p.quantity} UNIT
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-6">
-                                                    <div className="space-y-1.5">
-                                                        <div className="flex justify-between items-end gap-6 mb-1">
-                                                            <span className="text-sm font-black text-slate-800">₹{p.paidAmount} <span className="text-[10px] font-bold text-slate-400">PAID</span></span>
-                                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${(p.remainingAmount ?? 0) <= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                                                                {(p.remainingAmount ?? 0) <= 0 ? 'Settled' : `₹${p.remainingAmount} DUE`}
-                                                            </span>
-                                                        </div>
-                                                        <div className="w-32 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                                            <div className={`h-full rounded-full ${(p.remainingAmount ?? 0) <= 0 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
-                                                                 style={{ width: `${Math.min(100, ((p.paidAmount || 0) / (p.totalAmount || 1)) * 100)}%` }}></div>
+                                            <tr key={i} className="block md:table-row bg-white md:bg-transparent border border-slate-100 md:border-0 rounded-2xl md:rounded-none mb-4 md:mb-0 shadow-sm md:shadow-none hover:bg-slate-50 transition-colors p-6 md:p-0">
+                                                <td className="block md:table-cell md:px-8 md:py-6 mb-4 md:mb-0">
+                                                    <div className="flex justify-between items-start md:block">
+                                                        <span className="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">Asset Details</span>
+                                                        <div className="text-right md:text-left">
+                                                            <p className="text-base font-black text-slate-800 leading-none">{p.productName}</p>
+                                                            <p className="text-[10px] font-bold text-[#4f46e5] mt-1.5 uppercase tracking-widest">Distributor: Internal System</p>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-8 py-6 text-right">
-                                                    <p className="text-sm font-black text-slate-800">
-                                                        {p.distributedAt && typeof p.distributedAt.toDate === "function" ? p.distributedAt.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : "—"}
-                                                    </p>
+                                                <td className="block md:table-cell md:px-6 md:py-6 mb-4 md:mb-0 text-right md:text-center">
+                                                    <div className="flex justify-between items-center md:block">
+                                                        <span className="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">Volume</span>
+                                                        <span className="bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-xl border-2 border-white shadow-md inline-block min-w-14">
+                                                            {p.quantity} UNIT
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="block md:table-cell md:px-6 md:py-6 mb-4 md:mb-0">
+                                                    <div className="flex flex-col md:block">
+                                                        <span className="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Financial Status</span>
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex justify-between items-end gap-6 mb-1">
+                                                                <span className="text-sm font-black text-slate-800">₹{p.paidAmount} <span className="text-[10px] font-bold text-slate-400">PAID</span></span>
+                                                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${(p.remainingAmount ?? 0) <= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                                                                    {(p.remainingAmount ?? 0) <= 0 ? 'Settled' : `₹${p.remainingAmount} DUE`}
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-full md:w-32 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                                                <div className={`h-full rounded-full ${(p.remainingAmount ?? 0) <= 0 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
+                                                                     style={{ width: `${Math.min(100, ((p.paidAmount || 0) / (p.totalAmount || 1)) * 100)}%` }}></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="block md:table-cell md:px-8 md:py-6 text-right border-t border-slate-100 md:border-0 pt-4 md:pt-0 mt-2 md:mt-0">
+                                                    <div className="flex justify-between items-center md:block">
+                                                        <span className="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">Commitment Date</span>
+                                                        <p className="text-sm font-black text-slate-800">
+                                                            {p.distributedAt && typeof p.distributedAt.toDate === "function" ? p.distributedAt.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : "—"}
+                                                        </p>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -519,14 +548,14 @@ const MemberDetail: React.FC = () => {
                         {/* The Pass Card */}
                         <div className="relative group p-1 animate-scale-up">
                              {/* Shimmer Border */}
-                            <div className="absolute inset-0 bg-conic-to-r from-blue-500 via-[#000040] to-blue-500 rounded-[2.5rem] animate-spin-slow opacity-50 blur-sm"></div>
+                            <div className="absolute inset-0 bg-conic-to-r from-indigo-500 via-[#1e1b4b] to-indigo-500 rounded-[2.5rem] animate-spin-slow opacity-50 blur-sm"></div>
                             
                             <div className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[2.4rem] relative">
                                 {/* Pass Header */}
                                 <div className="p-8 pb-4 flex items-center justify-between border-b border-white/5">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                                            <div className="w-4 h-4 bg-blue-500 rounded-sm rotate-45"></div>
+                                            <div className="w-4 h-4 bg-indigo-50/500 rounded-sm rotate-45"></div>
                                         </div>
                                         <span className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</span>
                                     </div>
@@ -543,7 +572,7 @@ const MemberDetail: React.FC = () => {
                                             {member.photoURL ? (
                                                 <img src={member.photoURL} alt="" className="w-full h-full rounded-xl object-cover border border-white/10" />
                                             ) : (
-                                                <div className="w-full h-full bg-[#000040] rounded-xl flex items-center justify-center text-white text-3xl font-black">
+                                                <div className="w-full h-full bg-[#1e1b4b] rounded-xl flex items-center justify-center text-white text-3xl font-black">
                                                     {member.name?.[0]}
                                                 </div>
                                             )}
@@ -552,7 +581,7 @@ const MemberDetail: React.FC = () => {
                                             <h3 className="text-2xl font-black text-white tracking-tight leading-none mb-2">
                                                 {member.name}<br />{member.surname}
                                             </h3>
-                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] bg-blue-500/10 px-2 py-1 rounded inline-block">
+                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] bg-indigo-50/500/10 px-2 py-1 rounded inline-block">
                                                 {member.memberId}
                                             </p>
                                         </div>
@@ -560,20 +589,20 @@ const MemberDetail: React.FC = () => {
 
                                     {/* Premium QR Section */}
                                     <div className="relative group/qr flex justify-center py-4">
-                                        <div className="absolute inset-0 bg-blue-500/5 rounded-3xl blur-2xl group-hover/qr:bg-blue-500/10 transition-all duration-500"></div>
+                                        <div className="absolute inset-0 bg-indigo-50/500/5 rounded-3xl blur-2xl group-hover/qr:bg-indigo-50/500/10 transition-all duration-500"></div>
                                         <div className="relative p-6 bg-white rounded-3xl shadow-2xl border border-white/5 group-hover/qr:scale-105 transition-transform duration-500">
                                             <QRCodeSVG
                                                 value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
                                                 size={160}
                                                 level="H"
                                                 includeMargin={false}
-                                                fgColor="#000040"
+                                                fgColor="#1e1b4b"
                                             />
                                             {/* Corner Accents */}
-                                            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#000040]/20 rounded-tl-lg"></div>
-                                            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#000040]/20 rounded-tr-lg"></div>
-                                            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#000040]/20 rounded-bl-lg"></div>
-                                            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#000040]/20 rounded-br-lg"></div>
+                                            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#1e1b4b]/20 rounded-tl-lg"></div>
+                                            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#1e1b4b]/20 rounded-tr-lg"></div>
+                                            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#1e1b4b]/20 rounded-bl-lg"></div>
+                                            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#1e1b4b]/20 rounded-br-lg"></div>
                                         </div>
                                     </div>
 
@@ -584,7 +613,7 @@ const MemberDetail: React.FC = () => {
                                 </div>
                                 
                                 {/* Security Strip */}
-                                <div className="h-2 bg-linear-to-r from-[#000040] via-blue-600 to-[#000040] opacity-80 shadow-[0_0_20px_rgba(37,99,235,0.3)]"></div>
+                                <div className="h-2 bg-linear-to-r from-[#1e1b4b] via-indigo-600 to-[#1e1b4b] opacity-80 shadow-[0_0_20px_rgba(37,99,235,0.3)]"></div>
                             </div>
                         </div>
 

@@ -228,7 +228,7 @@ const ScanQR: React.FC = () => {
                         onClick={() => { setActiveTab(tab.id); setResult(null); setScanning(false); setPermissionError(null); }}
                         className={`relative flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-colors duration-200 z-10 ${
                             activeTab === tab.id
-                                ? "text-[#000080]"
+                                ? "text-[#4f46e5]"
                                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
                         }`}
                     >
@@ -325,7 +325,7 @@ const ScanQR: React.FC = () => {
                                                 <div className="flex-1 bg-black/70 h-full transition-all" />
                                                 <div className="w-[240px] h-[240px] relative shrink-0">
                                                     {/* Outer pulse effect */}
-                                                    <div className="absolute -inset-4 border-2 border-blue-400/20 rounded-[40px] pulse-ring" />
+                                                    <div className="absolute -inset-4 border-2 border-indigo-400/20 rounded-[40px] pulse-ring" />
                                                     
                                                     {/* Corner brackets - sharp and thick */}
                                                     <div className="absolute top-0 left-0 w-12 h-12 border-t-[5px] border-l-[5px] border-white rounded-tl-3xl shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
@@ -334,7 +334,7 @@ const ScanQR: React.FC = () => {
                                                     <div className="absolute bottom-0 right-0 w-12 h-12 border-b-[5px] border-r-[5px] border-white rounded-br-3xl shadow-[0_0_15px_rgba(255,255,255,0.4)]" />
                                                     
                                                     {/* Scanning laser animation with glow gradient */}
-                                                    <div className="absolute top-0 left-0 w-full h-[3px] bg-linear-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_25px_8px_rgba(59,130,246,0.6)] animate-scan-laser-paytm" />
+                                                    <div className="absolute top-0 left-0 w-full h-[3px] bg-linear-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_25px_8px_rgba(59,130,246,0.6)] animate-scan-laser-paytm" />
                                                 </div>
                                                 <div className="flex-1 bg-black/70 h-full transition-all" />
                                             </div>
@@ -343,7 +343,7 @@ const ScanQR: React.FC = () => {
                                             <div className="flex-[1.2] bg-black/70 w-full flex flex-col items-center justify-start pt-8 transition-all px-6">
                                                 <div className="bg-white/10 backdrop-blur-xl border border-white/20 px-5 py-3 rounded-2xl flex flex-col items-center gap-2 max-w-[200px] text-center">
                                                     <div className="flex items-center gap-2 text-white">
-                                                        <QrCode size={18} className="text-blue-400" />
+                                                        <QrCode size={18} className="text-indigo-400" />
                                                         <span className="font-bold text-sm">SCANNING MODE</span>
                                                     </div>
                                                     <span className="text-white/60 text-[10px] leading-tight">Keep the QR code within the frame for instant detection</span>
@@ -381,7 +381,7 @@ const ScanQR: React.FC = () => {
                     {/* Processing */}
                     {processing && (
                         <div className="card text-center py-10">
-                            <div className="w-10 h-10 border-4 border-[#000080] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                            <div className="w-10 h-10 border-4 border-[#4f46e5] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                             <p className="text-slate-600 font-medium">Processing QR code...</p>
                         </div>
                     )}
@@ -430,9 +430,9 @@ const ScanQR: React.FC = () => {
             {/* ── TAB: SHOW MY QR (High Level Member Card) ── */}
             {activeTab === "myqr" && (
                 <div className="space-y-6 animate-fade-in">
-                    <div className="relative overflow-hidden bg-linear-to-br from-[#000040] via-[#000080] to-[#003366] rounded-[32px] p-8 shadow-2xl text-white border-4 border-white/10">
+                    <div className="relative overflow-hidden bg-linear-to-br from-[#1e1b4b] via-[#4f46e5] to-[#312e81] rounded-[32px] p-8 shadow-2xl text-white border-4 border-white/10">
                         {/* Decorative background patterns */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                         <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
                         
                         <div className="relative z-10 flex flex-col items-center text-center space-y-6">
@@ -451,7 +451,7 @@ const ScanQR: React.FC = () => {
                                             size={200}
                                             level="H"
                                             includeMargin={false}
-                                            fgColor="#000040"
+                                            fgColor="#1e1b4b"
                                         />
                                         {/* Verified Floating Badge */}
                                         <div className="absolute -bottom-2 -right-2 bg-white/40 backdrop-blur-xl border border-white/60 p-1.5 rounded-2xl shadow-lg transform rotate-6 scale-90">
@@ -469,19 +469,19 @@ const ScanQR: React.FC = () => {
                                 <h2 className="text-2xl font-black tracking-tight uppercase">
                                     {userProfile?.name} {userProfile?.surname}
                                 </h2>
-                                <p className="text-blue-300 text-xs font-semibold tracking-widest uppercase">Member Profile</p>
+                                <p className="text-indigo-300 text-xs font-semibold tracking-widest uppercase">Member Profile</p>
                             </div>
 
                             <div className="w-full flex gap-3 pt-2">
                                 <div className="flex-1 bg-white/10 backdrop-blur-lg rounded-2xl p-4 text-left border border-white/10">
-                                    <span className="text-[10px] text-blue-200/60 uppercase font-bold block mb-1">ID Status</span>
+                                    <span className="text-[10px] text-indigo-200/60 uppercase font-bold block mb-1">ID Status</span>
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
                                         <span className="font-mono text-sm font-bold tracking-wider">ACTIVE</span>
                                     </div>
                                 </div>
                                 <div className="flex-1 bg-white/10 backdrop-blur-lg rounded-2xl p-4 text-left border border-white/10">
-                                    <span className="text-[10px] text-blue-200/60 uppercase font-bold block mb-1">Member ID</span>
+                                    <span className="text-[10px] text-indigo-200/60 uppercase font-bold block mb-1">Member ID</span>
                                     <span className="font-mono text-sm font-bold tracking-widest overflow-hidden text-ellipsis block">
                                         {userProfile?.memberId || "GS1-992"}
                                     </span>
@@ -490,12 +490,12 @@ const ScanQR: React.FC = () => {
                         </div>
 
                         {/* Bottom card logo/stripe */}
-                        <div className="absolute bottom-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-blue-400 to-transparent opacity-30" />
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-indigo-400 to-transparent opacity-30" />
                     </div>
 
                     <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 flex items-start gap-4">
-                        <div className="bg-[#000080]/10 p-3 rounded-2xl">
-                            <CreditCard className="text-[#000080]" size={20} />
+                        <div className="bg-[#4f46e5]/10 p-3 rounded-2xl">
+                            <CreditCard className="text-[#4f46e5]" size={20} />
                         </div>
                         <div>
                             <h4 className="text-sm font-bold text-slate-800">Swift Check-in</h4>

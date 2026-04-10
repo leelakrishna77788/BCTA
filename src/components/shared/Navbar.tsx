@@ -3,6 +3,14 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { assets } from "../../assets/assets";
 
+const navLinks = [
+  { to: "/", label: "Home" },
+  { to: "/about", label: "About" },
+  { to: "/services", label: "Services" },
+  { to: "/presidents", label: "Presidents" },
+  { to: "/contact", label: "Contact" },
+];
+
 const Navbar: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -11,104 +19,141 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = (): void => setScrolled(window.scrollY > 30);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-white shadow-md" : "bg-white/90 backdrop-blur"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        scrolled
+          ? "bg-white/80 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_8px_24px_rgba(0,0,0,0.04)]"
+          : "bg-white/50 backdrop-blur-md"
       }`}
     >
-      <div className="w-full px-4 sm:px-6 h-16 flex items-center justify-between relative">
+      {/* Gradient bottom border */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 h-[2px] transition-opacity duration-500 ${
+          scrolled ? "opacity-100" : "opacity-0"
+        }`}
+        style={{ background: "var(--gradient-accent)" }}
+      />
+
+      <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
         {/* LOGO */}
-        <div
-          className="flex items-center"
-          style={{ marginLeft: '0.75rem' }}
-        >
+        <div className="flex items-center" style={{ marginLeft: "0.25rem" }}>
           <Link
             to="/"
-            className="flex items-center"
+            className="flex items-center group"
             style={{
-              transform: isHome ? 'scale(1.7) translateY(12px)' : 'scale(1) translateY(0px)',
-              filter: isHome ? 'drop-shadow(0 0 25px rgba(0,0,80,0.9))' : 'none',
-              transition: 'transform 0.5s ease-in-out, filter 0.5s ease-in-out',
-              display: 'inline-flex',
+              transform: isHome
+                ? "scale(1.5) translateY(10px)"
+                : "scale(1) translateY(0px)",
+              filter: isHome
+                ? "drop-shadow(0 0 20px rgba(99,102,241,0.4))"
+                : "none",
+              transition:
+                "transform 0.5s cubic-bezier(0.16,1,0.3,1), filter 0.5s ease",
+              display: "inline-flex",
             }}
           >
             <img
               src={assets.logo}
               alt="BCTA Logo"
-              className="w-10 h-10 sm:w-14 sm:h-14 object-contain rounded-xl"
+              className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded-xl transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
         </div>
 
-        {/* MENU */}
-        <nav className="hidden md:flex gap-6 lg:gap-10 font-medium text-blue-900 absolute left-1/2 -translate-x-1/2">
-          <Link to="/" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
-            Home
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-          </Link>
-          <Link to="/about" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
-            About
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-          </Link>
-          <Link to="/services" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
-            Services
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-          </Link>
-          <Link to="/presidents" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
-            Presidents
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-          </Link>
-          <Link to="/contact" className="hover:text-blue-600 transition text-sm lg:text-base relative group">
-            Contact
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
-          </Link>
+        {/* DESKTOP NAV */}
+        <nav className="hidden md:flex gap-1 lg:gap-2 absolute left-1/2 -translate-x-1/2">
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.to;
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`relative px-4 py-2 rounded-lg text-sm lg:text-[15px] font-medium transition-all duration-300 ${
+                  isActive
+                    ? "text-indigo-700 bg-indigo-50/80"
+                    : "text-slate-600 hover:text-indigo-700 hover:bg-indigo-50/50"
+                }`}
+              >
+                {link.label}
+                {isActive && (
+                  <span
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-[2px] rounded-full"
+                    style={{ background: "var(--gradient-accent)" }}
+                  />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* MOBILE MENU & LOGIN */}
-        <div className="flex items-center gap-3">
+        {/* RIGHT SECTION */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
             to="/login"
-            className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 transition text-sm sm:text-base"
+            className="relative inline-flex items-center justify-center px-5 sm:px-6 py-2 text-sm font-semibold text-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-[0_0_20px_rgba(99,102,241,0.25)] hover:-translate-y-0.5 active:translate-y-0"
+            style={{ background: "var(--gradient-primary)" }}
           >
-            Login
+            <span className="relative z-10">Login</span>
           </Link>
 
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden p-2 text-blue-900 hover:bg-blue-50 rounded-lg transition"
+            className="md:hidden p-2 text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-all duration-200"
+            aria-label="Toggle menu"
           >
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
-      {menuOpen && (
-        <div className="md:hidden bg-white border-t border-blue-100 shadow-lg">
-          <nav className="flex flex-col px-4 py-4 space-y-2">
-            <Link to="/" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-              Home
-            </Link>
-            <Link to="/about" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-              About
-            </Link>
-            <Link to="/services" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-              Services
-            </Link>
-            <Link to="/presidents" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-              Presidents
-            </Link>
-            <Link to="/contact" onClick={() => setMenuOpen(false)} className="px-4 py-3 text-blue-900 hover:bg-blue-50 rounded-lg transition font-medium">
-              Contact
-            </Link>
-          </nav>
-        </div>
-      )}
+      {/* MOBILE MENU */}
+      <div
+        className={`md:hidden overflow-hidden transition-all duration-400 ${
+          menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        }`}
+        style={{
+          transitionTimingFunction: "var(--ease-out-expo)",
+        }}
+      >
+        <nav className="px-4 pb-4 pt-1 space-y-1 bg-white/90 backdrop-blur-xl border-t border-slate-100/80">
+          {navLinks.map((link, i) => {
+            const isActive = location.pathname === link.to;
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center px-4 py-3 rounded-xl font-medium text-[15px] transition-all duration-200 ${
+                  isActive
+                    ? "text-indigo-700 bg-indigo-50/80"
+                    : "text-slate-600 hover:text-indigo-700 hover:bg-slate-50"
+                }`}
+                style={{
+                  animationDelay: menuOpen ? `${i * 50}ms` : "0ms",
+                }}
+              >
+                {isActive && (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full mr-3"
+                    style={{ background: "var(--gradient-accent)" }}
+                  />
+                )}
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </header>
   );
 };

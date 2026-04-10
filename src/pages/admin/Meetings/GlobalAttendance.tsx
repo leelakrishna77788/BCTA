@@ -156,8 +156,8 @@ const GlobalAttendance: React.FC = () => {
     if (loading) return (
         <div className="flex flex-col items-center justify-center h-screen gap-6 bg-slate-50/50">
             <div className="relative">
-                <div className="w-16 h-16 border-4 border-blue-100 rounded-full"></div>
-                <div className="w-16 h-16 border-4 border-[#000080] border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                <div className="w-16 h-16 border-4 border-indigo-100 rounded-full"></div>
+                <div className="w-16 h-16 border-4 border-[#4f46e5] border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
             </div>
             <div className="text-center">
                 <p className="text-slate-900 font-black text-xl tracking-tight mb-1">Generating Global Matrix</p>
@@ -182,28 +182,28 @@ const GlobalAttendance: React.FC = () => {
     );
 
     return (
-        <div className="space-y-8 animate-fade-in pb-20 px-2 sm:px-0">
+        <div className="space-y-6 sm:space-y-8 animate-fade-in pb-20 px-1 sm:px-0">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="flex items-start gap-5">
                     <button 
                         onClick={() => navigate(-1)} 
-                        className="mt-1 p-3.5 rounded-2xl bg-white border border-slate-200 text-slate-600 shadow-sm hover:shadow-xl hover:border-slate-300 hover:text-[#000080] transition-all active:scale-90"
+                        className="mt-1 p-3.5 rounded-2xl bg-white border border-slate-200 text-slate-600 shadow-sm hover:shadow-xl hover:border-slate-300 hover:text-[#4f46e5] transition-all active:scale-90"
                     >
                         <ArrowLeft size={22} />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-black text-slate-900 leading-tight tracking-tighter">Attendance Report</h1>
-                        <p className="text-slate-500 font-medium text-sm mt-1">Cross-meeting attendance matrix for all registered members</p>
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight tracking-tighter">Attendance Report</h1>
+                        <p className="text-slate-500 font-medium text-[10px] sm:text-sm mt-1 uppercase sm:normal-case tracking-wider sm:tracking-normal">Cross-meeting attendance matrix</p>
                     </div>
                 </div>
                 
                 <button 
                     onClick={handleDownloadExcel}
-                    className="flex items-center justify-center gap-2.5 px-8 py-4 bg-[#000080] text-white rounded-2xl font-bold font-inter shadow-2xl shadow-slate-200 hover:bg-[#000066] hover:shadow-slate-200 transition-all active:scale-95 group"
+                    className="flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 sm:py-4 bg-[#4f46e5] text-white rounded-2xl font-bold text-xs sm:text-base shadow-2xl shadow-slate-200 hover:bg-[#4338ca] transition-all active:scale-95 group w-full sm:w-auto"
                 >
-                    <Download size={20} className="group-hover:-translate-y-0.5 transition-transform" />
-                    <span>Download Excel Report</span>
+                    <Download size={18} className="group-hover:-translate-y-0.5 transition-transform" />
+                    <span>Download Report</span>
                 </button>
             </div>
 
@@ -215,21 +215,22 @@ const GlobalAttendance: React.FC = () => {
                 <StatCard icon={<Award size={20}/>} label="Top Attendee" value={stats.topMember} color="amber" subValue="Most Consistent" />
             </div>
 
-            {/* Matrix Card */}
+            {/* Matrix / Card View */}
             <div className="bg-white rounded-[40px] border border-slate-200/60 shadow-[0_20px_50px_rgba(0,0,0,0.04)] overflow-hidden relative">
-                <div className="overflow-x-auto overflow-y-auto max-h-[70vh] custom-scrollbar">
+                {/* Desktop Matrix View */}
+                <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[70vh] custom-scrollbar">
                     <table className="w-full text-left border-collapse">
                         <thead className="sticky top-0 z-30">
                             <tr className="bg-slate-50/90 backdrop-blur-xl border-b border-slate-200">
                                 <th className="p-6 font-black text-slate-900 min-w-[260px] sticky left-0 bg-slate-50 z-40 border-r border-slate-200 shadow-[2px_0_10px_rgba(0,0,0,0.02)]">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-2.5 h-2.5 bg-[#000080] rounded-full animate-pulse"></div>
+                                        <div className="w-2.5 h-2.5 bg-[#4f46e5] rounded-full animate-pulse"></div>
                                         <span className="tracking-tight uppercase text-xs text-slate-500">Member Directory</span>
                                     </div>
                                 </th>
                                 {meetings.map(m => (
                                     <th key={m.id} className="p-6 text-center border-r border-slate-100 last:border-r-0 min-w-[160px]">
-                                        <div className="text-[10px] text-[#000080] font-black uppercase tracking-widest mb-1 opacity-70">{m.displayDate}</div>
+                                        <div className="text-[10px] text-[#4f46e5] font-black uppercase tracking-widest mb-1 opacity-70">{m.displayDate}</div>
                                         <div className="text-[14px] font-black text-slate-900 truncate mx-auto leading-none" style={{ maxWidth: '120px' }} title={m.topic}>
                                             {m.topic || "Meeting"}
                                         </div>
@@ -247,7 +248,7 @@ const GlobalAttendance: React.FC = () => {
                                         <td className="p-5 sticky left-0 bg-white group-hover:bg-slate-50/50 z-20 border-r border-slate-200 shadow-[5px_0_15px_rgba(0,0,0,0.01)]">
                                             <div className="flex items-center gap-4">
                                                 <div className="relative">
-                                                    <div className="w-11 h-11 rounded-[1.25rem] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-white font-black text-sm shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                                    <div className="w-11 h-11 rounded-[1.25rem] bg-linear-to-br from-slate-800 to-slate-900 flex items-center justify-center text-white font-black text-sm shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
                                                         {(member.name?.[0] || "U").toUpperCase()}
                                                     </div>
                                                     <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold text-white shadow-sm ${attendancePercent > 70 ? 'bg-emerald-500' : 'bg-slate-400'}`}>
@@ -283,6 +284,55 @@ const GlobalAttendance: React.FC = () => {
                             })}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden p-4 space-y-4 max-h-[75vh] overflow-y-auto custom-scrollbar bg-slate-50/30">
+                    {members.map(member => {
+                        const attendedCount = Object.keys(attendanceMap[member.id] || {}).length;
+                        const attendancePercent = meetings.length > 0 ? Math.round((attendedCount / meetings.length) * 100) : 0;
+                        
+                        return (
+                            <div key={member.id} className="bg-white rounded-2xl sm:rounded-3xl border border-slate-100 p-4 sm:p-5 shadow-sm active:scale-[0.98] transition-transform">
+                                <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white font-black text-xs">
+                                            {(member.name?.[0] || "U").toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-slate-900 text-sm leading-tight">{member.name}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{member.memberId || "PENDING"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className={`text-xs font-black px-2.5 py-1 rounded-lg ${attendancePercent > 70 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                                            {attendancePercent}%
+                                        </div>
+                                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">{attendedCount}/{meetings.length} Met</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex flex-wrap gap-2">
+                                    {meetings.slice(0, 5).map(m => (
+                                        <div key={m.id} className="flex flex-col items-center gap-1">
+                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${attendanceMap[member.id]?.[m.id] ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
+                                                {attendanceMap[member.id]?.[m.id] ? <Check size={14} strokeWidth={3} /> : <X size={12} />}
+                                            </div>
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase">{m.displayDate?.split('/')[0]}/{m.displayDate?.split('/')[1]}</span>
+                                        </div>
+                                    ))}
+                                    {meetings.length > 5 && (
+                                        <div className="flex flex-col items-center gap-1 opacity-50">
+                                            <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
+                                                <span className="text-[10px] font-black">+{meetings.length - 5}</span>
+                                            </div>
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase">More</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 {members.length === 0 && !loading && (
@@ -327,14 +377,14 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color, suffix, subValue }) => {
     const colorMap = {
-        blue: "bg-blue-50 text-blue-600 border-blue-100",
+        blue: "bg-indigo-50/50 text-indigo-600 border-indigo-100",
         purple: "bg-purple-50 text-purple-600 border-purple-100",
         emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
         amber: "bg-amber-50 text-amber-600 border-amber-100"
     };
 
     return (
-        <div className="bg-white p-6 rounded-[32px] border border-slate-200/60 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[32px] border border-slate-200/60 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 border ${colorMap[color]}`}>
                 {icon}
             </div>

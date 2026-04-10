@@ -49,31 +49,35 @@ const MyProfile: React.FC = () => {
             <h1 className="page-title mb-0">My Profile</h1>
 
             {/* Profile Card */}
-            <div className="card text-center">
+            <div className="bg-white rounded-xl p-6 text-center border border-slate-100 transition-all duration-300 hover:shadow-md"
+              style={{ boxShadow: "var(--shadow-sm)" }}
+            >
                 {userProfile.photoURL ? (
-                    <img src={userProfile.photoURL} alt="" className="w-24 h-24 rounded-2xl object-cover border-4 border-slate-200 mx-auto" />
+                    <img src={userProfile.photoURL} alt="" className="w-24 h-24 rounded-2xl object-cover mx-auto ring-4 ring-indigo-50 shadow-lg" />
                 ) : (
-                    <div className="w-24 h-24 bg-[#000080] rounded-2xl flex items-center justify-center text-white text-4xl font-bold mx-auto">
+                    <div className="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-4xl font-bold mx-auto shadow-lg"
+                      style={{ background: "var(--gradient-primary)" }}
+                    >
                         {userProfile.name?.[0]}
                     </div>
                 )}
-                <h2 className="text-xl font-bold text-slate-800 mt-3">{userProfile.name} {userProfile.surname}</h2>
-                <p className="font-mono text-[#000080] text-sm">{userProfile.memberId}</p>
+                <h2 className="text-xl font-bold text-slate-900 mt-3 tracking-tight">{userProfile.name} {userProfile.surname}</h2>
+                <p className="font-mono text-indigo-600 text-sm font-semibold">{userProfile.memberId}</p>
                 <div className="flex items-center justify-center gap-2 mt-2 mb-4">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${userProfile.status === "active" ? "badge-active" : "badge-blocked"}`}>
                         {userProfile.status}
                     </span>
-                    <span className="bg-red-100 text-red-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1">
+                    <span className="bg-red-50 text-red-600 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 border border-red-100">
                         <Droplet size={10} /> {userProfile.bloodGroup}
                     </span>
                 </div>
                 
                 <button 
                     onClick={() => setShowID(true)}
-                    className="w-full py-3 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-lg active:scale-95 group overflow-hidden relative"
+                    className="w-full py-3 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg active:scale-95 group overflow-hidden relative hover:-translate-y-0.5"
+                    style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-md)" }}
                 >
-                    <div className="absolute inset-0 bg-linear-to-r from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <QrCode size={18} className="text-blue-400" />
+                    <QrCode size={18} className="text-indigo-300" />
                     <span>View Digital ID Card</span>
                 </button>
             </div>
@@ -82,42 +86,45 @@ const MyProfile: React.FC = () => {
             {showID && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-fade-in">
                     <div className="w-full max-w-sm relative">
-                        {/* Close Button */}
                         <button 
                             onClick={() => setShowID(false)}
-                            className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors bg-white/10 rounded-full"
+                            className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors bg-white/10 rounded-full backdrop-blur-sm"
                         >
                             <X size={24} />
                         </button>
 
-                        {/* The Pass Card */}
-                        <div className="relative group p-1 animate-scale-up">
-                             {/* Shimmer Border */}
-                            <div className="absolute inset-0 bg-conic-to-r from-blue-500 via-[#000040] to-blue-500 rounded-[2.5rem] animate-spin-slow opacity-50 blur-sm"></div>
+                        <div className="relative group p-1 animate-scale-in">
+                             <div className="absolute inset-0 rounded-[2.5rem] animate-spin-slow opacity-40 blur-sm"
+                               style={{ background: "conic-gradient(from 0deg, #6366f1, #1e1b4b, #8b5cf6, #1e1b4b, #6366f1)" }}
+                             />
                             
-                            <div className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[2.4rem] relative">
-                                {/* Pass Header */}
+                            <div className="p-0 overflow-hidden border border-white/10 shadow-2xl rounded-[2.4rem] relative"
+                              style={{ background: "linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%)" }}
+                            >
                                 <div className="p-8 pb-4 flex items-center justify-between border-b border-white/5">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                                            <div className="w-4 h-4 bg-blue-500 rounded-sm rotate-45"></div>
+                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                                            <div className="w-4 h-4 rounded-sm rotate-45" style={{ background: "var(--gradient-accent)" }}></div>
                                         </div>
                                         <span className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</span>
                                     </div>
-                                    <div className="px-2.5 py-1 bg-white/10 rounded-full border border-white/10 flex items-center gap-1.5">
-                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+                                    <div className="px-2.5 py-1 bg-white/10 rounded-full border border-white/10 flex items-center gap-1.5 backdrop-blur-sm">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-breathe shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
                                         <span className="text-[8px] font-black text-white/60 tracking-widest uppercase">Verified</span>
                                     </div>
                                 </div>
 
                                 <div className="p-8 space-y-8">
-                                    {/* Member Info */}
                                     <div className="flex items-center gap-6">
-                                        <div className="w-24 h-24 rounded-2xl p-1 bg-linear-to-br from-white/20 to-transparent shadow-xl">
+                                        <div className="w-24 h-24 rounded-2xl p-1 shadow-xl"
+                                          style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.2), transparent)" }}
+                                        >
                                             {userProfile.photoURL ? (
                                                 <img src={userProfile.photoURL} alt="" className="w-full h-full rounded-xl object-cover border border-white/10" />
                                             ) : (
-                                                <div className="w-full h-full bg-[#000040] rounded-xl flex items-center justify-center text-white text-3xl font-black">
+                                                <div className="w-full h-full rounded-xl flex items-center justify-center text-white text-3xl font-black"
+                                                  style={{ background: "var(--gradient-primary)" }}
+                                                >
                                                     {userProfile.name?.[0]}
                                                 </div>
                                             )}
@@ -126,28 +133,26 @@ const MyProfile: React.FC = () => {
                                             <h3 className="text-2xl font-black text-white tracking-tight leading-none mb-2">
                                                 {userProfile.name}<br />{userProfile.surname}
                                             </h3>
-                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] bg-blue-500/10 px-2 py-1 rounded inline-block">
+                                            <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em] bg-indigo-500/10 px-2 py-1 rounded inline-block border border-indigo-500/10">
                                                 {userProfile.memberId}
                                             </p>
                                         </div>
                                     </div>
 
-                                    {/* Premium QR Section */}
                                     <div className="relative group/qr flex justify-center py-4">
-                                        <div className="absolute inset-0 bg-blue-500/5 rounded-3xl blur-2xl group-hover/qr:bg-blue-500/10 transition-all duration-500"></div>
+                                        <div className="absolute inset-0 bg-indigo-500/5 rounded-3xl blur-2xl group-hover/qr:bg-indigo-500/10 transition-all duration-500"></div>
                                         <div className="relative p-6 bg-white rounded-3xl shadow-2xl border border-white/5 group-hover/qr:scale-105 transition-transform duration-500">
                                             <QRCodeSVG
                                                 value={JSON.stringify({ type: "member", uid: currentUser?.uid, memberId: userProfile.memberId })}
                                                 size={160}
                                                 level="H"
                                                 includeMargin={false}
-                                                fgColor="#000040"
+                                                fgColor="#1e1b4b"
                                             />
-                                            {/* Corner Accents */}
-                                            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#000040]/20 rounded-tl-lg"></div>
-                                            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#000040]/20 rounded-tr-lg"></div>
-                                            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#000040]/20 rounded-bl-lg"></div>
-                                            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#000040]/20 rounded-br-lg"></div>
+                                            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-indigo-200 rounded-tl-lg"></div>
+                                            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-indigo-200 rounded-tr-lg"></div>
+                                            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-indigo-200 rounded-bl-lg"></div>
+                                            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-indigo-200 rounded-br-lg"></div>
                                         </div>
                                     </div>
 
@@ -158,11 +163,12 @@ const MyProfile: React.FC = () => {
                                 </div>
                                 
                                 {/* Security Strip */}
-                                <div className="h-2 bg-linear-to-r from-[#000040] via-blue-600 to-[#000040] opacity-80 shadow-[0_0_20px_rgba(37,99,235,0.3)]"></div>
+                                <div className="h-2 opacity-80"
+                                  style={{ background: "linear-gradient(90deg, #1e1b4b, #6366f1, #1e1b4b)", boxShadow: "0 0 20px rgba(99,102,241,0.3)" }}
+                                />
                             </div>
                         </div>
 
-                        {/* ID Controls */}
                         <div className="flex gap-3 mt-8">
                              <button onClick={() => window.print()} className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition-all backdrop-blur-sm border border-white/5">
                                 Save Passport
@@ -176,8 +182,12 @@ const MyProfile: React.FC = () => {
             )}
 
             {/* Details */}
-            <div className="card">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Personal Details</h3>
+            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
+              style={{ boxShadow: "var(--shadow-sm)" }}
+            >
+                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <User size={14} className="text-indigo-600" /> Personal Details
+                </h3>
                 <dl className="space-y-3">
                     {[
                         { label: "Full Name", value: `${userProfile.surname || ""} ${userProfile.name}`.trim() },
@@ -188,42 +198,50 @@ const MyProfile: React.FC = () => {
                         { label: "Aadhaar", value: `XXXX-XXXX-XXXX-${userProfile.aadhaarLast4}` },
                     ].map(d => (
                         <div key={d.label} className="flex justify-between border-b border-slate-50 pb-2 last:border-0">
-                            <dt className="text-xs text-slate-500">{d.label}</dt>
-                            <dd className="text-sm font-medium text-slate-800">{d.value || "—"}</dd>
+                            <dt className="text-xs text-slate-400 font-medium">{d.label}</dt>
+                            <dd className="text-sm font-semibold text-slate-800">{d.value || "—"}</dd>
                         </div>
                     ))}
                 </dl>
             </div>
 
             {/* Shop & Nominee */}
-            <div className="card">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                    <MapPin size={14} /> Shop & Nominee
+            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
+              style={{ boxShadow: "var(--shadow-sm)" }}
+            >
+                <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    <MapPin size={14} className="text-indigo-600" /> Shop & Nominee
                 </h3>
                 <p className="text-sm text-slate-600 mb-2">{userProfile.shopAddress || "No address on file"}</p>
                 {userProfile.nomineeDetails?.name && (
-                    <div className="p-3 bg-slate-50 rounded-xl text-sm">
-                        <p className="font-medium text-slate-700">{userProfile.nomineeDetails.name}</p>
+                    <div className="p-3 bg-indigo-50/50 rounded-xl text-sm border border-indigo-100/50">
+                        <p className="font-semibold text-slate-800">{userProfile.nomineeDetails.name}</p>
                         <p className="text-xs text-slate-500">{userProfile.nomineeDetails.relation} • {userProfile.nomineeDetails.phone}</p>
                     </div>
                 )}
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="card text-center p-4">
-                    <p className="text-2xl font-bold text-[#000080]">{attendance.length}</p>
-                    <p className="text-xs text-slate-500 mt-1">Meetings Attended</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger-children">
+                <div className="bg-white rounded-xl p-4 text-center border border-slate-100 transition-all hover:shadow-md"
+                  style={{ boxShadow: "var(--shadow-xs)" }}
+                >
+                    <p className="text-2xl font-bold gradient-text">{attendance.length}</p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Meetings Attended</p>
                 </div>
-                <div className="card text-center p-4">
+                <div className="bg-white rounded-xl p-4 text-center border border-slate-100 transition-all hover:shadow-md"
+                  style={{ boxShadow: "var(--shadow-xs)" }}
+                >
                     <p className={`text-2xl font-bold ${userProfile.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-500"}`}>
                         {userProfile.paymentStatus}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">Payment Status</p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Payment Status</p>
                 </div>
-                <div className="card text-center p-4">
-                    <p className="text-2xl font-bold text-violet-600">{new Date().getFullYear()}</p>
-                    <p className="text-xs text-slate-500 mt-1">Member Since</p>
+                <div className="bg-white rounded-xl p-4 text-center border border-slate-100 transition-all hover:shadow-md"
+                  style={{ boxShadow: "var(--shadow-xs)" }}
+                >
+                    <p className="text-2xl font-bold gradient-text">{new Date().getFullYear()}</p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Member Since</p>
                 </div>
             </div>
         </div>
