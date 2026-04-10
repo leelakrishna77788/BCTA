@@ -1,30 +1,188 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { collection, query, where, getDocs, DocumentData } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
-import { Droplet, MapPin, User, Phone, CreditCard, ShieldCheck, X, QrCode } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import {
+    AlertCircle,
+    BadgeCheck,
+    CalendarDays,
+    CheckCircle2,
+    CreditCard,
+    Droplet,
+    Edit3,
+    Mail,
+    MapPin,
+    Phone,
+    Save,
+    ShieldCheck,
+    User,
+} from "lucide-react";
 import LoadingSkeleton, { CardSkeleton } from "../../components/shared/LoadingSkeleton";
+import { updateMember } from "../../services/membersService";
+import toast from "react-hot-toast";
 
 interface AttendanceRecord {
     [key: string]: any;
 }
 
+interface ProfileEditForm {
+    name: string;
+    surname: string;
+    phone: string;
+    age: string;
+    gender: string;
+    bloodGroup: string;
+    aadhaarLast4: string;
+    shopAddress: string;
+    nomineeName: string;
+    nomineeRelation: string;
+    nomineePhone: string;
+}
+
+const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d{3}$/;
+
 const MyProfile: React.FC = () => {
-    const { userProfile, currentUser } = useAuth();
+    const { userProfile, currentUser, refreshProfile } = useAuth();
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-    const [showID, setShowID] = useState<boolean>(false);
+    const [isEditing, setIsEditing] = useState<boolean>(false);
+    const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [editForm, setEditForm] = useState<ProfileEditForm>({
+        name: "",
+        surname: "",
+        phone: "",
+        age: "",
+        gender: "",
+        bloodGroup: "",
+        aadhaarLast4: "",
+        shopAddress: "",
+        nomineeName: "",
+        nomineeRelation: "",
+        nomineePhone: "",
+    });
+
+    const memberId = userProfile?.memberId?.trim() || "";
+    const hasMemberId = memberId.length > 0;
+    const memberIdVerified = hasMemberId && MEMBER_ID_PATTERN.test(memberId);
+    const fullName = userProfile ? `${userProfile.name ?? ""} ${userProfile.surname ?? ""}`.trim() : "";
+    const createdAt = userProfile?.createdAt;
+    const memberSince = createdAt && "toDate" in createdAt
+        ? createdAt.toDate().getFullYear()
+        : new Date().getFullYear();
+    const profileInitial = (userProfile?.name?.[0] ?? currentUser?.email?.[0] ?? "M").toUpperCase();
+    const paymentTone = userProfile?.paymentStatus === "paid"
+        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+        : "bg-amber-50 text-amber-700 border-amber-200";
+    const statusTone = userProfile?.status === "active"
+        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+        : "bg-red-50 text-red-700 border-red-200";
 
     useEffect(() => {
         if (!currentUser) return;
-        getDocs(query(collection(db, "attendance"), where("memberUID", "==", currentUser.uid)))
-            .then(snap => setAttendance(snap.docs.map(d => d.data() as AttendanceRecord)));
+        const q = query(collection(db, "attendance"), where("memberUID", "==", currentUser.uid));
+        const unsubscribe = onSnapshot(
+            q,
+            (snap) => setAttendance(snap.docs.map((d) => d.data() as AttendanceRecord)),
+            (error) => console.error("Attendance listener error:", error)
+        );
+        return () => unsubscribe();
     }, [currentUser]);
 
+    useEffect(() => {
+        if (!userProfile) return;
+        setEditForm({
+            name: userProfile.name || "",
+            surname: userProfile.surname || "",
+            phone: userProfile.phone || "",
+            age: userProfile.age ? String(userProfile.age) : "",
+            gender: userProfile.gender || "",
+            bloodGroup: userProfile.bloodGroup || "",
+            aadhaarLast4: userProfile.aadhaarLast4 || "",
+            shopAddress: userProfile.shopAddress || "",
+            nomineeName: userProfile.nomineeDetails?.name || "",
+            nomineeRelation: userProfile.nomineeDetails?.relation || "",
+            nomineePhone: userProfile.nomineeDetails?.phone || "",
+        });
+    }, [userProfile]);
+
+    const onFormChange = (field: keyof ProfileEditForm, value: string) => {
+        setEditForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const onCancelEdit = () => {
+        if (!userProfile) return;
+        setIsEditing(false);
+        setEditForm({
+            name: userProfile.name || "",
+            surname: userProfile.surname || "",
+            phone: userProfile.phone || "",
+            age: userProfile.age ? String(userProfile.age) : "",
+            gender: userProfile.gender || "",
+            bloodGroup: userProfile.bloodGroup || "",
+            aadhaarLast4: userProfile.aadhaarLast4 || "",
+            shopAddress: userProfile.shopAddress || "",
+            nomineeName: userProfile.nomineeDetails?.name || "",
+            nomineeRelation: userProfile.nomineeDetails?.relation || "",
+            nomineePhone: userProfile.nomineeDetails?.phone || "",
+        });
+    };
+
+    const onSaveProfile = async () => {
+        if (!currentUser) {
+            toast.error("Please login again and retry.");
+            return;
+        }
+
+        const parsedAge = editForm.age.trim() === "" ? null : Number(editForm.age);
+        if (parsedAge !== null && (Number.isNaN(parsedAge) || parsedAge < 0 || parsedAge > 120)) {
+            toast.error("Please enter a valid age.");
+            return;
+        }
+
+        if (editForm.aadhaarLast4 && !/^\d{4}$/.test(editForm.aadhaarLast4.trim())) {
+            toast.error("Aadhaar last 4 must be exactly 4 digits.");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            await updateMember(currentUser.uid, {
+                name: editForm.name.trim(),
+                surname: editForm.surname.trim(),
+                phone: editForm.phone.trim(),
+                age: parsedAge,
+                gender: (editForm.gender as any) || "",
+                bloodGroup: (editForm.bloodGroup as any) || "",
+                aadhaarLast4: editForm.aadhaarLast4.trim(),
+                shopAddress: editForm.shopAddress.trim(),
+                nomineeDetails: {
+                    name: editForm.nomineeName.trim(),
+                    relation: editForm.nomineeRelation.trim(),
+                    phone: editForm.nomineePhone.trim(),
+                },
+            });
+
+            await refreshProfile();
+            setIsEditing(false);
+            toast.success("Profile updated from backend.");
+        } catch (error: any) {
+            console.error("Profile update failed:", error);
+            if (error?.code === "permission-denied") {
+                toast.error("Profile update blocked by backend rules. Please refresh and retry.");
+            } else {
+                toast.error(error?.message || "Failed to update profile. Try again.");
+            }
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     if (!userProfile) return (
-        <div className="max-w-xl mx-auto space-y-5 animate-fade-in">
-            <LoadingSkeleton height="2rem" width="150px" className="mb-4" />
-            <CardSkeleton />
+        <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-4 sm:px-6 lg:px-8 animate-fade-in">
+            <LoadingSkeleton height="2rem" width="180px" className="mb-2" />
+            <div className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
+                <CardSkeleton />
+                <CardSkeleton />
+            </div>
             <div className="card space-y-4">
                 <LoadingSkeleton height="1rem" width="40%" />
                 <div className="space-y-3">
@@ -36,7 +194,7 @@ const MyProfile: React.FC = () => {
                     ))}
                 </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <LoadingSkeleton height="80px" borderRadius="1rem" />
                 <LoadingSkeleton height="80px" borderRadius="1rem" />
                 <LoadingSkeleton height="80px" borderRadius="1rem" />
@@ -45,204 +203,294 @@ const MyProfile: React.FC = () => {
     );
 
     return (
-        <div className="max-w-xl mx-auto space-y-5 animate-fade-in">
-            <h1 className="page-title mb-0">My Profile</h1>
+        <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-4 sm:px-6 lg:px-8 animate-fade-in">
+            <section className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.22),_transparent_46%)]" />
+                <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
+                <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
+                    <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
+                        {userProfile.photoURL ? (
+                            <img
+                                src={userProfile.photoURL}
+                                alt={`${fullName} profile photo`}
+                                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
+                            />
+                        ) : (
+                            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
+                                {profileInitial}
+                            </div>
+                        )}
 
-            {/* Profile Card */}
-            <div className="bg-white rounded-xl p-6 text-center border border-slate-100 transition-all duration-300 hover:shadow-md"
-              style={{ boxShadow: "var(--shadow-sm)" }}
-            >
-                {userProfile.photoURL ? (
-                    <img src={userProfile.photoURL} alt="" className="w-24 h-24 rounded-2xl object-cover mx-auto ring-4 ring-indigo-50 shadow-lg" />
-                ) : (
-                    <div className="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-4xl font-bold mx-auto shadow-lg"
-                      style={{ background: "var(--gradient-primary)" }}
-                    >
-                        {userProfile.name?.[0]}
+                        <div className="min-w-0 space-y-4">
+                            <div className="space-y-1">
+                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">Member profile</p>
+                                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{fullName || userProfile.name}</h1>
+                                <p className="max-w-2xl text-sm text-white/75 sm:text-base">Your account summary, contact details, membership status, and identity details in one place.</p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${statusTone}`}>
+                                    <ShieldCheck size={12} /> {userProfile.status}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+                                    <Droplet size={12} /> {userProfile.bloodGroup || "Blood group not set"}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+                                    <BadgeCheck size={12} /> {hasMemberId ? memberId : "Member ID pending"}
+                                </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
+                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-semibold ${memberIdVerified ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100" : "border-amber-300/40 bg-amber-400/10 text-amber-100"}`}>
+                                    {memberIdVerified ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                                    {memberIdVerified ? "Member ID verified" : "Member ID pending check"}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-white/80">
+                                    Joined {memberSince}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                )}
-                <h2 className="text-xl font-bold text-slate-900 mt-3 tracking-tight">{userProfile.name} {userProfile.surname}</h2>
-                <p className="font-mono text-indigo-600 text-sm font-semibold">{userProfile.memberId}</p>
-                <div className="flex items-center justify-center gap-2 mt-2 mb-4">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${userProfile.status === "active" ? "badge-active" : "badge-blocked"}`}>
-                        {userProfile.status}
-                    </span>
-                    <span className="bg-red-50 text-red-600 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 border border-red-100">
-                        <Droplet size={10} /> {userProfile.bloodGroup}
-                    </span>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Meetings</p>
+                            <p className="mt-2 text-3xl font-bold">{attendance.length}</p>
+                            <p className="mt-1 text-xs text-white/65">attended</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Payment</p>
+                            <p className={`mt-2 text-2xl font-bold capitalize ${userProfile.paymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
+                                {userProfile.paymentStatus}
+                            </p>
+                            <p className="mt-1 text-xs text-white/65">current status</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur sm:col-span-2 xl:col-span-1">
+                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Member since</p>
+                            <p className="mt-2 text-3xl font-bold">{memberSince}</p>
+                            <p className="mt-1 text-xs text-white/65">joined the portal</p>
+                        </div>
+                    </div>
                 </div>
-                
-                <button 
-                    onClick={() => setShowID(true)}
-                    className="w-full py-3 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-lg active:scale-95 group overflow-hidden relative hover:-translate-y-0.5"
-                    style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-md)" }}
-                >
-                    <QrCode size={18} className="text-indigo-300" />
-                    <span>View Digital ID Card</span>
-                </button>
-            </div>
+            </section>
 
-            {/* Premium Digital ID Card Modal */}
-            {showID && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-fade-in">
-                    <div className="w-full max-w-sm relative">
-                        <button 
-                            onClick={() => setShowID(false)}
-                            className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors bg-white/10 rounded-full backdrop-blur-sm"
-                        >
-                            <X size={24} />
-                        </button>
-
-                        <div className="relative group p-1 animate-scale-in">
-                             <div className="absolute inset-0 rounded-[2.5rem] animate-spin-slow opacity-40 blur-sm"
-                               style={{ background: "conic-gradient(from 0deg, #6366f1, #1e1b4b, #8b5cf6, #1e1b4b, #6366f1)" }}
-                             />
-                            
-                            <div className="p-0 overflow-hidden border border-white/10 shadow-2xl rounded-[2.4rem] relative"
-                              style={{ background: "linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%)" }}
-                            >
-                                <div className="p-8 pb-4 flex items-center justify-between border-b border-white/5">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                                            <div className="w-4 h-4 rounded-sm rotate-45" style={{ background: "var(--gradient-accent)" }}></div>
-                                        </div>
-                                        <span className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</span>
-                                    </div>
-                                    <div className="px-2.5 py-1 bg-white/10 rounded-full border border-white/10 flex items-center gap-1.5 backdrop-blur-sm">
-                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-breathe shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                                        <span className="text-[8px] font-black text-white/60 tracking-widest uppercase">Verified</span>
-                                    </div>
-                                </div>
-
-                                <div className="p-8 space-y-8">
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-24 h-24 rounded-2xl p-1 shadow-xl"
-                                          style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.2), transparent)" }}
-                                        >
-                                            {userProfile.photoURL ? (
-                                                <img src={userProfile.photoURL} alt="" className="w-full h-full rounded-xl object-cover border border-white/10" />
-                                            ) : (
-                                                <div className="w-full h-full rounded-xl flex items-center justify-center text-white text-3xl font-black"
-                                                  style={{ background: "var(--gradient-primary)" }}
-                                                >
-                                                    {userProfile.name?.[0]}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-2xl font-black text-white tracking-tight leading-none mb-2">
-                                                {userProfile.name}<br />{userProfile.surname}
-                                            </h3>
-                                            <p className="text-[10px] font-black text-indigo-300 uppercase tracking-[0.2em] bg-indigo-500/10 px-2 py-1 rounded inline-block border border-indigo-500/10">
-                                                {userProfile.memberId}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="relative group/qr flex justify-center py-4">
-                                        <div className="absolute inset-0 bg-indigo-500/5 rounded-3xl blur-2xl group-hover/qr:bg-indigo-500/10 transition-all duration-500"></div>
-                                        <div className="relative p-6 bg-white rounded-3xl shadow-2xl border border-white/5 group-hover/qr:scale-105 transition-transform duration-500">
-                                            <QRCodeSVG
-                                                value={JSON.stringify({ type: "member", uid: currentUser?.uid, memberId: userProfile.memberId })}
-                                                size={160}
-                                                level="H"
-                                                includeMargin={false}
-                                                fgColor="#1e1b4b"
-                                            />
-                                            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-indigo-200 rounded-tl-lg"></div>
-                                            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-indigo-200 rounded-tr-lg"></div>
-                                            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-indigo-200 rounded-bl-lg"></div>
-                                            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-indigo-200 rounded-br-lg"></div>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-center text-[10px] text-white/30 font-bold uppercase tracking-widest leading-relaxed">
-                                        🔒 SECURED THROUGH BCTA BLOCKCHAIN IDENTITY<br />
-                                        VALID FOR {new Date().getFullYear()} FISCAL YEAR
-                                    </p>
-                                </div>
-                                
-                                {/* Security Strip */}
-                                <div className="h-2 opacity-80"
-                                  style={{ background: "linear-gradient(90deg, #1e1b4b, #6366f1, #1e1b4b)", boxShadow: "0 0 20px rgba(99,102,241,0.3)" }}
-                                />
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.85fr)]">
+                <div className="min-w-0 space-y-6">
+                    <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+                        <div className="mb-5 flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Personal Details</h2>
+                                <p className="text-sm text-slate-500">Key identity, member ID, and contact information.</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => (isEditing ? onCancelEdit() : setIsEditing(true))}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    <Edit3 size={13} /> {isEditing ? "Cancel" : "Edit details"}
+                                </button>
+                                <User className="text-[#000080]" size={20} />
                             </div>
                         </div>
 
-                        <div className="flex gap-3 mt-8">
-                             <button onClick={() => window.print()} className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition-all backdrop-blur-sm border border-white/5">
-                                Save Passport
-                             </button>
-                             <button onClick={() => setShowID(false)} className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95 shadow-xl">
-                                Close
-                             </button>
+                        {isEditing && (
+                            <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                                <h3 className="text-sm font-semibold text-slate-800">Edit Profile Details</h3>
+                                <p className="mt-1 text-xs text-slate-500">All changes are saved to backend and reflected in your profile.</p>
+
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <input value={editForm.name} onChange={(e) => onFormChange("name", e.target.value)} placeholder="First name" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+                                    <input value={editForm.surname} onChange={(e) => onFormChange("surname", e.target.value)} placeholder="Surname" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+                                    <input value={editForm.phone} onChange={(e) => onFormChange("phone", e.target.value)} placeholder="Phone" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+                                    <input value={editForm.age} onChange={(e) => onFormChange("age", e.target.value)} placeholder="Age" inputMode="numeric" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+
+                                    <select value={editForm.gender} onChange={(e) => onFormChange("gender", e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1">
+                                        <option value="">Gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+
+                                    <select value={editForm.bloodGroup} onChange={(e) => onFormChange("bloodGroup", e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1">
+                                        <option value="">Blood Group</option>
+                                        <option value="A+">A+</option>
+                                        <option value="A-">A-</option>
+                                        <option value="B+">B+</option>
+                                        <option value="B-">B-</option>
+                                        <option value="AB+">AB+</option>
+                                        <option value="AB-">AB-</option>
+                                        <option value="O+">O+</option>
+                                        <option value="O-">O-</option>
+                                    </select>
+
+                                    <input value={editForm.aadhaarLast4} onChange={(e) => onFormChange("aadhaarLast4", e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="Aadhaar last 4" inputMode="numeric" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+                                    <input value={editForm.shopAddress} onChange={(e) => onFormChange("shopAddress", e.target.value)} placeholder="Shop address" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+
+                                    <input value={editForm.nomineeName} onChange={(e) => onFormChange("nomineeName", e.target.value)} placeholder="Nominee name" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+                                    <input value={editForm.nomineeRelation} onChange={(e) => onFormChange("nomineeRelation", e.target.value)} placeholder="Nominee relation" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+                                </div>
+
+                                <input value={editForm.nomineePhone} onChange={(e) => onFormChange("nomineePhone", e.target.value)} placeholder="Nominee phone" className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+
+                                <div className="mt-4 flex flex-wrap items-center gap-2">
+                                    <button
+                                        type="button"
+                                        disabled={isSaving}
+                                        onClick={onSaveProfile}
+                                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#000080] px-4 py-2 text-xs font-semibold text-white hover:bg-[#000066] disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <Save size={13} /> {isSaving ? "Saving..." : "Save to backend"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={onCancelEdit}
+                                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            {[
+                                {
+                                    label: "Member ID",
+                                    value: hasMemberId ? memberId : "Pending assignment",
+                                    icon: BadgeCheck,
+                                },
+                                { label: "Full Name", value: fullName || "—" },
+                                { label: "Age", value: userProfile.age ? `${userProfile.age} years` : "—" },
+                                { label: "Gender", value: userProfile.gender || "—" },
+                                { label: "Blood Group", value: userProfile.bloodGroup || "—" },
+                                { label: "Email", value: userProfile.email || currentUser?.email || "—", icon: Mail },
+                                { label: "Aadhaar", value: userProfile.aadhaarLast4 ? `XXXX-XXXX-XXXX-${userProfile.aadhaarLast4}` : "—", icon: CreditCard },
+                            ].map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <div key={item.label} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                        <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                            {Icon ? <Icon size={13} className="text-[#000080]" /> : null}
+                                            {item.label}
+                                        </dt>
+                                        <dd className="mt-2 text-sm font-semibold text-slate-900 break-words">{item.value}</dd>
+                                    </div>
+                                );
+                            })}
+                        </dl>
+                    </div>
+
+                    <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+                        <div className="mb-5 flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Shop & Nominee</h2>
+                                <p className="text-sm text-slate-500">Residence, shop address, and emergency contact.</p>
+                            </div>
+                            <MapPin className="text-[#000080]" size={20} />
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-0.5 rounded-xl bg-[#000080]/10 p-2 text-[#000080]">
+                                        <MapPin size={16} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Shop address</p>
+                                        <p className="mt-1 text-sm font-medium text-slate-800 leading-6">{userProfile.shopAddress || "No address on file"}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Phone</p>
+                                    <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-900 break-words">
+                                        <Phone size={14} className="text-[#000080]" />
+                                        {userProfile.phone || "—"}
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment status</p>
+                                    <p className={`mt-2 inline-flex rounded-full border px-3 py-1.5 text-sm font-semibold capitalize ${paymentTone}`}>
+                                        {userProfile.paymentStatus}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {userProfile.nomineeDetails?.name ? (
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Nominee</p>
+                                    <div className="mt-3 space-y-1">
+                                        <p className="text-sm font-semibold text-slate-900">{userProfile.nomineeDetails.name}</p>
+                                        <p className="text-sm text-slate-600">{userProfile.nomineeDetails.relation || "Relation not set"}</p>
+                                        <p className="text-sm text-slate-600">{userProfile.nomineeDetails.phone || "Phone not set"}</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-4 text-sm text-slate-500">
+                                    No nominee details have been added yet.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
-            )}
 
-            {/* Details */}
-            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
-              style={{ boxShadow: "var(--shadow-sm)" }}
-            >
-                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <User size={14} className="text-indigo-600" /> Personal Details
-                </h3>
-                <dl className="space-y-3">
-                    {[
-                        { label: "Full Name", value: `${userProfile.surname || ""} ${userProfile.name}`.trim() },
-                        { label: "Age", value: userProfile.age ? `${userProfile.age} years` : "Not set" },
-                        { label: "Gender", value: userProfile.gender || "Not set" },
-                        { label: "Blood Group", value: userProfile.bloodGroup || "Not set" },
-                        { label: "Email", value: userProfile.email },
-                        { label: "Aadhaar", value: `XXXX-XXXX-XXXX-${userProfile.aadhaarLast4}` },
-                    ].map(d => (
-                        <div key={d.label} className="flex justify-between border-b border-slate-50 pb-2 last:border-0">
-                            <dt className="text-xs text-slate-400 font-medium">{d.label}</dt>
-                            <dd className="text-sm font-semibold text-slate-800">{d.value || "—"}</dd>
+                <aside className="min-w-0 space-y-6">
+                    <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+                        <div className="mb-5 flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Membership Snapshot</h2>
+                                <p className="text-sm text-slate-500">A quick view of your account status and ID check.</p>
+                            </div>
+                            <CalendarDays className="text-[#000080]" size={20} />
                         </div>
-                    ))}
-                </dl>
-            </div>
 
-            {/* Shop & Nominee */}
-            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
-              style={{ boxShadow: "var(--shadow-sm)" }}
-            >
-                <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <MapPin size={14} className="text-indigo-600" /> Shop & Nominee
-                </h3>
-                <p className="text-sm text-slate-600 mb-2">{userProfile.shopAddress || "No address on file"}</p>
-                {userProfile.nomineeDetails?.name && (
-                    <div className="p-3 bg-indigo-50/50 rounded-xl text-sm border border-indigo-100/50">
-                        <p className="font-semibold text-slate-800">{userProfile.nomineeDetails.name}</p>
-                        <p className="text-xs text-slate-500">{userProfile.nomineeDetails.relation} • {userProfile.nomineeDetails.phone}</p>
+                        <div className="space-y-3">
+                            <div className={`rounded-2xl border p-4 ${statusTone}`}>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em]">Account status</p>
+                                <p className="mt-1 text-lg font-bold capitalize">{userProfile.status}</p>
+                            </div>
+                            <div className={`rounded-2xl border p-4 ${memberIdVerified ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Member ID check</p>
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    <p className="font-mono text-sm font-semibold text-slate-900 break-all">{hasMemberId ? memberId : "Member ID pending"}</p>
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${memberIdVerified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                                        {memberIdVerified ? <CheckCircle2 size={11} /> : <AlertCircle size={11} />}
+                                        {memberIdVerified ? "Verified" : "Needs check"}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Joined year</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900">{memberSince}</p>
+                            </div>
+                        </div>
                     </div>
-                )}
-            </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger-children">
-                <div className="bg-white rounded-xl p-4 text-center border border-slate-100 transition-all hover:shadow-md"
-                  style={{ boxShadow: "var(--shadow-xs)" }}
-                >
-                    <p className="text-2xl font-bold gradient-text">{attendance.length}</p>
-                    <p className="text-xs text-slate-500 mt-1 font-medium">Meetings Attended</p>
-                </div>
-                <div className="bg-white rounded-xl p-4 text-center border border-slate-100 transition-all hover:shadow-md"
-                  style={{ boxShadow: "var(--shadow-xs)" }}
-                >
-                    <p className={`text-2xl font-bold ${userProfile.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-500"}`}>
-                        {userProfile.paymentStatus}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1 font-medium">Payment Status</p>
-                </div>
-                <div className="bg-white rounded-xl p-4 text-center border border-slate-100 transition-all hover:shadow-md"
-                  style={{ boxShadow: "var(--shadow-xs)" }}
-                >
-                    <p className="text-2xl font-bold gradient-text">{new Date().getFullYear()}</p>
-                    <p className="text-xs text-slate-500 mt-1 font-medium">Member Since</p>
-                </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                        <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Meetings attended</p>
+                            <p className="mt-2 text-3xl font-bold text-[#000080]">{attendance.length}</p>
+                            <p className="mt-1 text-sm text-slate-500">Attendance summary pulled from meeting records.</p>
+                        </div>
+                        <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payment</p>
+                            <p className={`mt-2 text-3xl font-bold capitalize ${userProfile.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-500"}`}>
+                                {userProfile.paymentStatus}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">Keep this updated with the admin office.</p>
+                        </div>
+                        <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Quick contact</p>
+                            <div className="mt-3 space-y-2 text-sm text-slate-700">
+                                <p className="flex items-center gap-2 break-words"><Mail size={14} className="text-[#000080]" /> {userProfile.email || currentUser?.email || "—"}</p>
+                                <p className="flex items-center gap-2 break-words"><Phone size={14} className="text-[#000080]" /> {userProfile.phone || "—"}</p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </div>
     );
