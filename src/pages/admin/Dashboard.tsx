@@ -2,8 +2,10 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Users, CalendarDays, CreditCard, MessageSquareWarning, TrendingUp, UserCheck, UserX, AlertCircle, RefreshCw, LucideIcon } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
+import { adminApi } from "../../services/adminService";
 import { CardSkeleton, TableSkeleton } from "../../components/shared/LoadingSkeleton";
 
 interface StatCardProps {
@@ -79,6 +81,7 @@ const AdminDashboard: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [attendanceData, setAttendanceData] = useState<any[]>([]);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
 
     const fetchStats = useCallback(async () => {
         try {
@@ -299,6 +302,7 @@ const AdminDashboard: React.FC = () => {
                     )}
                 </div>
             </div>
+
         </div>
     );
 };
