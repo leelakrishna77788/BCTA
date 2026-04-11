@@ -177,7 +177,7 @@ const MyProfile: React.FC = () => {
     };
 
     if (!userProfile) return (
-        <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-4 sm:px-6 lg:px-8 animate-fade-in">
+        <div className="mx-auto w-full max-w-6xl space-y-6 p-0 animate-fade-in">
             <LoadingSkeleton height="2rem" width="180px" className="mb-2" />
             <div className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
                 <CardSkeleton />
@@ -203,8 +203,8 @@ const MyProfile: React.FC = () => {
     );
 
     return (
-        <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-4 sm:px-6 lg:px-8 animate-fade-in">
-            <section className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
+        <div className="mx-auto w-full max-w-6xl space-y-6 p-0 animate-fade-in">
+            <section className="relative overflow-hidden rounded-[2rem] border border-bbluee-100 bg-gradient-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.22),_transparent_46%)]" />
                 <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
                 <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
@@ -223,9 +223,7 @@ const MyProfile: React.FC = () => {
 
                         <div className="min-w-0 space-y-4">
                             <div className="space-y-1">
-                                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">Member profile</p>
                                 <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{fullName || userProfile.name}</h1>
-                                <p className="max-w-2xl text-sm text-white/75 sm:text-base">Your account summary, contact details, membership status, and identity details in one place.</p>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
@@ -340,7 +338,7 @@ const MyProfile: React.FC = () => {
                                         onClick={onSaveProfile}
                                         className="inline-flex items-center gap-1.5 rounded-xl bg-[#000080] px-4 py-2 text-xs font-semibold text-white hover:bg-[#000066] disabled:cursor-not-allowed disabled:opacity-60"
                                     >
-                                        <Save size={13} /> {isSaving ? "Saving..." : "Save to backend"}
+                                        <Save size={13} /> {isSaving ? "Saving..." : "Save"}
                                     </button>
                                     <button
                                         type="button"
