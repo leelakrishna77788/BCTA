@@ -322,14 +322,13 @@ const LandingPage: React.FC = () => {
         <Navbar />
 
         {/* ================= HERO ================= */}
-        <section className="relative min-h-[95vh] flex items-center justify-center px-4 sm:px-6 pt-24 sm:pt-32 pb-8 sm:pb-12 overflow-hidden mesh-gradient">
+        <section className="relative min-h-[80vh] flex items-center justify-center px-4 sm:px-6 pt-3 sm:pt-32 pb-2 sm:pb-12 overflow-hidden mesh-gradient">
           {/* Decorative elements */}
           <div className="absolute top-1/4 -left-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
           <div
             className="absolute bottom-1/4 -right-12 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "2s" }}
           />
-
           <img
             src={assets.herologo}
             alt=""
@@ -337,7 +336,6 @@ const LandingPage: React.FC = () => {
             className="absolute w-[400px] sm:w-[550px] md:w-[700px] opacity-[0.10] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
             style={{ mixBlendMode: "multiply" }}
           />
-
           <div
             className="text-center max-w-5xl relative z-10"
             style={{
@@ -387,13 +385,12 @@ const LandingPage: React.FC = () => {
               </a>
             </Reveal>
           </div>
-
           {/* Bottom curve */}
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white to-transparent pointer-events-none" />
         </section>
 
         {/* ================= PRESIDENTS ================= */}
-        <section id="presidents" className="py-10 sm:py-16 overflow-hidden">
+        <section id="presidents" className="py-6 sm:py-16 overflow-hidden">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <Reveal className="text-center mb-10 sm:mb-14">
               <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">
@@ -457,7 +454,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* ================= SERVICES SECTION ================= */}
-        <section id="services" className="py-10 sm:py-16">
+        <section id="services" className="py-6 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <Reveal className="text-center mb-12 sm:mb-16">
               <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">

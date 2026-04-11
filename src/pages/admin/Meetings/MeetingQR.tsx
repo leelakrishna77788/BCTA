@@ -153,60 +153,49 @@ const MeetingQR: React.FC = () => {
         return () => unsubscribe();
     }, [id, stopAttendance]);
 
-    useEffect(() => {
-        if (isActive && id) {
-            rotationTimer.current = setInterval(() => {
-                setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
-                setCountdown(prev => {
-                    if (prev <= 1) {
-                        // ROLLING TOKEN: Token refreshes every 30s
-                        // But each token is valid for 45s to allow for network/scan lag
-                        const ROLLING_EXPIRY_MS = 45 * 1000;
-                        updateDoc(doc(db, "meetings", id), {
-                            qrToken: generateId(),
-                            qrExpiresAt: Timestamp.fromDate(new Date(Date.now() + ROLLING_EXPIRY_MS))
-                        }).catch(console.error);
-                        return 30;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
+    const getStatus = useCallback(() => {
+        if (!meeting || !meeting.date || !meeting.startTime) return "unknown";
+        
+        const now = new Date();
+        const [year, month, day] = meeting.date.split('-').map(Number);
+        const [startH, startM] = meeting.startTime.split(':').map(Number);
+        
+        const meetingStart = new Date(year, month - 1, day, startH, startM);
+        const bufferStart = new Date(meetingStart.getTime() - 30 * 60 * 1000); // 30m early
+        
+        let meetingEnd: Date;
+        if (meeting.endTime) {
+            const [endH, endM] = meeting.endTime.split(':').map(Number);
+            meetingEnd = new Date(year, month - 1, day, endH, endM);
+        } else {
+            meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
         }
-        return () => {
-            if (rotationTimer.current) clearInterval(rotationTimer.current);
-        };
-    }, [isActive, id]);
 
-    const isMeetingTimeValid = () => {
-        if (!meeting || !meeting.date || !meeting.startTime) return true;
-        try {
-            const now = new Date();
-            const [year, month, day] = meeting.date.split('-').map(Number);
-            const [startH, startM] = meeting.startTime.split(':').map(Number);
-            
-            const meetingStart = new Date(year, month - 1, day, startH, startM);
-            const bufferStart = new Date(meetingStart.getTime() - 30 * 60 * 1000); // 30m early
-            
-            let meetingEnd: Date;
-            if (meeting.endTime) {
-                const [endH, endM] = meeting.endTime.split(':').map(Number);
-                meetingEnd = new Date(year, month - 1, day, endH, endM);
-            } else {
-                meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
-            }
-            
-            return now >= bufferStart && now <= meetingEnd;
-        } catch (e) {
-            return true;
-        }
-    };
+        if (meeting.status === "active") return "live";
+        if (now < bufferStart) return meeting.status === "expired" ? "expired" : "scheduled";
+        if (now >= bufferStart && now <= meetingEnd) return meeting.status === "expired" ? "expired" : "ready";
+        return "past";
+    }, [meeting]);
+
+    const isConcluded = getStatus() === "past" || getStatus() === "expired";
 
     const startAttendance = async () => {
         if (!id || !meeting) return;
         
         // Strict Time Enforcement
-        if (!isMeetingTimeValid()) {
-            const confirmMsg = `This meeting is scheduled for ${meeting.date} at ${meeting.startTime}. Starting attendance now might be outside the valid window. Continue anyway?`;
+        if (isConcluded) {
+            toast.error("This meeting has already concluded. Attendance cannot be started.", { icon: "🚫" });
+            return;
+        }
+
+        const now = new Date();
+        const [year, month, day] = meeting.date.split('-').map(Number);
+        const [startH, startM] = meeting.startTime.split(':').map(Number);
+        const meetingStart = new Date(year, month - 1, day, startH, startM);
+        const bufferStart = new Date(meetingStart.getTime() - 30 * 60 * 1000);
+
+        if (now < bufferStart) {
+            const confirmMsg = `This meeting is scheduled for ${meeting.date} at ${meeting.startTime}. It's too early to start attendance. Continue anyway?`;
             if (!window.confirm(confirmMsg)) return;
         }
 
@@ -297,12 +286,25 @@ const MeetingQR: React.FC = () => {
                                     <QrCode size={40} />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-xl font-bold text-slate-800 tracking-tight">Attendance Mode</h3>
-                                    <p className="text-sm text-slate-500 max-w-xs mx-auto">Generate a rolling QR code for members to mark their attendance.</p>
+                                    <h3 className="text-xl font-bold text-slate-800 tracking-tight">
+                                        {isConcluded ? "Session Concluded" : "Attendance Mode"}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 max-w-xs mx-auto">
+                                        {isConcluded 
+                                            ? "This meeting has ended or explicitly expired. No further attendance can be marked."
+                                            : "Generate a rolling QR code for members to mark their attendance."}
+                                    </p>
                                 </div>
-                                <button onClick={startAttendance} className="btn-primary px-10 h-14 w-full shadow-lg shadow-indigo-900/20 active:scale-95 transition-transform">
-                                    <Play size={18} className="mr-2" /> Start Flow
-                                </button>
+                                {!isConcluded && (
+                                    <button onClick={startAttendance} className="btn-primary px-10 h-14 w-full shadow-lg shadow-indigo-900/20 active:scale-95 transition-transform">
+                                        <Play size={18} className="mr-2" /> Start Flow
+                                    </button>
+                                )}
+                                {isConcluded && (
+                                    <div className="flex items-center gap-2 justify-center py-3 px-6 bg-amber-50 rounded-xl border border-amber-100 text-amber-700 text-sm font-bold">
+                                        <Clock size={16} /> Data Collection Locked
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="text-center space-y-8 py-4 animate-fade-in relative z-10">
@@ -386,12 +388,24 @@ const MeetingQR: React.FC = () => {
                                     <ScanLine size={48} />
                                 </div>
                                 <div className="space-y-2">
-                                    <h3 className="text-xl font-bold text-white tracking-tight">Manual Verification</h3>
-                                    <p className="text-sm text-slate-400 leading-relaxed">Open the secure camera terminal to scan a member's digital ID for instant verification.</p>
+                                    <h3 className="text-xl font-bold text-white tracking-tight">
+                                        {isConcluded ? "Verification Locked" : "Manual Verification"}
+                                    </h3>
+                                    <p className="text-sm text-slate-400 leading-relaxed">
+                                        {isConcluded 
+                                            ? "The verification terminal is disabled as this meeting has concluded."
+                                            : "Open the secure camera terminal to scan a member's digital ID for instant verification."}
+                                    </p>
                                 </div>
-                                <button onClick={() => setMemberScanning(true)} className="btn-primary w-full h-14 shadow-xl shadow-indigo-900/40 border border-white/10 active:scale-95 transition-transform font-bold">
-                                    Open Secure Terminal
-                                </button>
+                                {!isConcluded ? (
+                                    <button onClick={() => setMemberScanning(true)} className="btn-primary w-full h-14 shadow-xl shadow-indigo-900/40 border border-white/10 active:scale-95 transition-transform font-bold">
+                                        Open Secure Terminal
+                                    </button>
+                                ) : (
+                                    <div className="w-full py-4 px-6 bg-slate-800/50 rounded-2xl border border-slate-700 text-slate-500 text-sm font-bold flex items-center justify-center gap-2">
+                                        <Shield size={16} /> Restricted Access
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="w-full max-w-sm space-y-8 animate-fade-in">

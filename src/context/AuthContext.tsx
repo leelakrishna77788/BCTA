@@ -5,6 +5,7 @@ import {
   signOut,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  deleteUser,
   type UserCredential,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -97,16 +98,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   ): Promise<UserCredential> => {
     const trimmedEmail = email.trim();
     const cred = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
-    await setDoc(doc(db, "users", cred.user.uid), {
-      ...memberData,
-      uid: cred.user.uid,
-      role: "member",
-      status: "active",
-      attendanceCount: 0,
-      paymentStatus: "unpaid",
-      createdAt: serverTimestamp(),
-    });
-    return cred;
+    
+    try {
+      await setDoc(doc(db, "users", cred.user.uid), {
+        ...memberData,
+        uid: cred.user.uid,
+        role: "member",
+        status: "active",
+        attendanceCount: 0,
+        paymentStatus: "unpaid",
+        createdAt: serverTimestamp(),
+      });
+      return cred;
+    } catch (err) {
+      console.error("[AuthContext] Firestore setup failed, rolling back Auth user:", err);
+      try {
+        await deleteUser(cred.user);
+      } catch (rollbackErr) {
+        console.error("[AuthContext] CRITICAL: Rollback failed:", rollbackErr);
+      }
+      throw err;
+    }
   };
 
   const registerUser = async (
@@ -117,25 +129,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   ): Promise<UserCredential> => {
     const trimmedEmail = email.trim();
     const cred = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
-    const userData: Partial<Member> = {
-      uid: cred.user.uid,
-      name,
-      email: trimmedEmail,
-      role,
-      status: "active",
-      ...(role === "member" && {
-        memberId: `BCTA-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`,
-        attendanceCount: 0,
-        paymentStatus: "unpaid",
-      }),
-    };
-    await setDoc(doc(db, "users", cred.user.uid), {
-      ...userData,
-      createdAt: serverTimestamp(),
-    });
-    setUserProfile(userData as Member);
-    setUserRole(role?.toLowerCase() as UserRole);
-    return cred;
+    
+    try {
+      const userData: Partial<Member> = {
+        uid: cred.user.uid,
+        name,
+        email: trimmedEmail,
+        role,
+        status: "active",
+        ...(role === "member" && {
+          memberId: `BCTA-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`,
+          attendanceCount: 0,
+          paymentStatus: "unpaid",
+        }),
+      };
+      await setDoc(doc(db, "users", cred.user.uid), {
+        ...userData,
+        createdAt: serverTimestamp(),
+      });
+      setUserProfile(userData as Member);
+      setUserRole(role?.toLowerCase() as UserRole);
+      return cred;
+    } catch (err) {
+      console.error("[AuthContext] Firestore setup failed, rolling back Auth user:", err);
+      try {
+        await deleteUser(cred.user);
+      } catch (rollbackErr) {
+        console.error("[AuthContext] CRITICAL: Rollback failed:", rollbackErr);
+      }
+      throw err;
+    }
   };
 
   const register = (email: string, password: string) => {

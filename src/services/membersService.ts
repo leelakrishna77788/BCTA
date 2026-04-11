@@ -16,7 +16,7 @@ import {
   increment,
   type DocumentSnapshot,
 } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
 import { db, auth } from "../firebase/firebaseConfig";
 import type { Member, CreateMemberInput, MemberStats } from "../types/member.types";
 
@@ -122,8 +122,18 @@ export async function createMember(input: CreateMemberInput): Promise<Member> {
     createdAt: serverTimestamp() as unknown as Date,
   };
 
-  await setDoc(doc(db, "users", cred.user.uid), memberData);
-  return { uid: cred.user.uid, ...memberData };
+  try {
+    await setDoc(doc(db, "users", cred.user.uid), memberData);
+    return { uid: cred.user.uid, ...memberData };
+  } catch (err) {
+    console.error("[membersService] Firestore setup failed, rolling back Auth user:", err);
+    try {
+      await deleteUser(cred.user);
+    } catch (rollbackErr) {
+      console.error("[membersService] CRITICAL: Rollback failed:", rollbackErr);
+    }
+    throw err;
+  }
 }
 
 /** Update member Firestore profile (does NOT affect Auth; use /api/admin for Auth ops) */
@@ -247,13 +257,23 @@ export const membersApi = {
 
     const cred = await createUserWithEmailAndPassword(auth, input.email.trim(), input.password);
 
-    await setDoc(doc(db, "users", cred.user.uid), {
-      ...profileData,
-      createdAt: serverTimestamp(),
-    });
+    try {
+      await setDoc(doc(db, "users", cred.user.uid), {
+        ...profileData,
+        createdAt: serverTimestamp(),
+      });
 
-    console.log("[membersApi.create] Member created successfully:", cred.user.uid);
-    return { member: { uid: cred.user.uid, memberId } };
+      console.log("[membersApi.create] Member created successfully:", cred.user.uid);
+      return { member: { uid: cred.user.uid, memberId } };
+    } catch (err) {
+      console.error("[membersApi.create] Firestore setup failed, rolling back Auth user:", err);
+      try {
+        await deleteUser(cred.user);
+      } catch (rollbackErr) {
+        console.error("[membersApi.create] CRITICAL: Rollback failed:", rollbackErr);
+      }
+      throw err;
+    }
   },
 
   delete: async (uid: string) => {
