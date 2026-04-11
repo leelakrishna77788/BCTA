@@ -76,8 +76,13 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   }, []);
 
   return (
-    <header className="h-16 overflow-visible shrink-0 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 z-30 px-3 sm:px-8 flex items-center justify-between transition-all duration-300 relative">
-      
+    <header
+      className="h-16 overflow-visible shrink-0 relative z-30 px-3 sm:px-8 flex items-center justify-between transition-all duration-300 shadow-sm"
+      style={{
+        background: "linear-gradient(135deg, white 50%, #1e3a8a 50%)",
+      }}
+    >
+      {" "}
       <div className="relative flex items-center gap-4 h-full">
         {/* Mobile Only Logo */}
         <img
