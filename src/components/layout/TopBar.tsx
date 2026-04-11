@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { assets } from "../../assets/assets";
 import { Bell, Trash2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { collection, query, orderBy, limit, onSnapshot, deleteDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import toast from "react-hot-toast";
 
@@ -28,7 +37,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
     const q = query(
       collection(db, "notifications"),
       orderBy("sentAt", "desc"),
-      limit(5)
+      limit(5),
     );
 
     const unsubscribe = onSnapshot(
@@ -42,7 +51,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
       },
       (err) => {
         console.error("Notifs fetch error:", err);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -67,17 +76,29 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   }, []);
 
   return (
-    <header className="h-16 shrink-0 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 z-30 px-3 sm:px-8 flex items-center justify-between transition-all duration-300 relative">
+    <header
+      className="h-16 overflow-visible shrink-0 relative z-30 px-3 sm:px-8 flex items-center justify-between transition-all duration-300 shadow-sm"
+      style={{
+        background: "linear-gradient(135deg, white 50%, #1e3a8a 50%)",
+      }}
+    >
+      {" "}
+      <div className="relative flex items-center gap-4 h-full">
+        {/* Mobile Only Logo */}
+        <img
+          src={assets.herologo}
+          alt="Logo"
+          className="h-full max-h-12 object-contain block sm:hidden"
+        />
+      </div>
       {/* Gradient bottom accent */}
       <div
         className="absolute bottom-0 left-0 right-0 h-px opacity-30"
         style={{ background: "var(--gradient-accent)" }}
       />
-
       <div className="flex items-center gap-4">
         {/* Placeholder or other left-side items can go here */}
       </div>
-
       <div className="flex items-center gap-2 sm:gap-4">
         {/* Notification Bell */}
         <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -87,7 +108,8 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
           >
             <Bell size={19} />
             {notifs.length > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full border-2 border-white animate-breathe"
+              <span
+                className="absolute top-2 right-2 w-2 h-2 rounded-full border-2 border-white animate-breathe"
                 style={{ background: "var(--gradient-accent)" }}
               />
             )}
@@ -96,9 +118,14 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
           {showNotifs && (
             <div className="absolute top-full -right-2 sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100/80 py-1 animate-scale-in z-50 overflow-hidden">
               {/* Gradient header strip */}
-              <div className="h-[3px]" style={{ background: "var(--gradient-accent)" }} />
+              <div
+                className="h-[3px]"
+                style={{ background: "var(--gradient-accent)" }}
+              />
               <div className="px-5 py-3 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Notifications
+                </h3>
                 <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider text-indigo-600 bg-indigo-50">
                   Latest
                 </span>
@@ -116,20 +143,21 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                       {n.message}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-1 font-semibold uppercase tracking-tight">
-                      {n.sentAt ? (
-                        n.sentAt.toDate ? (
-                          n.sentAt.toDate().toLocaleTimeString()
-                        ) : n.sentAt._seconds ? (
-                          new Date(n.sentAt._seconds * 1000).toLocaleTimeString()
-                        ) : (
-                          new Date(n.sentAt).toLocaleTimeString()
-                        )
-                      ) : (
-                        "Just now"
-                      )}
+                      {n.sentAt
+                        ? n.sentAt.toDate
+                          ? n.sentAt.toDate().toLocaleTimeString()
+                          : n.sentAt._seconds
+                            ? new Date(
+                                n.sentAt._seconds * 1000,
+                              ).toLocaleTimeString()
+                            : new Date(n.sentAt).toLocaleTimeString()
+                        : "Just now"}
                     </p>
                     <button
-                      onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteNotification(n.id);
+                      }}
                       className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-50 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-500 transition-all"
                       title="Delete notification"
                     >

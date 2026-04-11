@@ -1,6 +1,13 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Users, CreditCard, Menu, Smartphone, User } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  Menu,
+  Smartphone,
+  User,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 interface MobileBottomNavProps {
@@ -27,7 +34,12 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
   const links = isAdmin ? adminNav : memberNav;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-slate-200/60 pb-safe md:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t border-slate-200/60 pb-safe md:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.04)]"
+      style={{
+        background: "linear-gradient(120deg, #1e3a8a 50%, #ffffff 50%)",
+      }}
+    >
       <div className="flex items-center justify-around h-16 px-2">
         {links.map((link) => (
           <NavLink
@@ -48,7 +60,10 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
                     isActive ? "bg-indigo-50 text-indigo-600 shadow-sm" : ""
                   }`}
                 >
-                  <link.icon size={22} className={isActive ? "animate-breathe" : ""} />
+                  <link.icon
+                    size={22}
+                    className={isActive ? "animate-breathe" : ""}
+                  />
                 </div>
                 <span className="text-[10px] tracking-wide">{link.label}</span>
               </>
