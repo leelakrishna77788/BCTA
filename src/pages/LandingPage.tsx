@@ -393,7 +393,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* ================= PRESIDENTS ================= */}
-        <section id="presidents" className="py-10 sm:py-16 overflow-hidden">
+        <section id="presidents" className="py-6 sm:py-16 overflow-hidden">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <Reveal className="text-center mb-10 sm:mb-14">
               <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">
@@ -457,7 +457,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* ================= SERVICES SECTION ================= */}
-        <section id="services" className="py-10 sm:py-16">
+        <section id="services" className="py-6 sm:py-16">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <Reveal className="text-center mb-12 sm:mb-16">
               <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">
