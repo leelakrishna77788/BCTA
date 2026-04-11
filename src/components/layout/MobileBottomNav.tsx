@@ -40,16 +40,15 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
         background: "linear-gradient(135deg, #1e3a8a 50%, #ffffff 50%)",
       }}
     >
-      {/* ✅ FIXED CONTAINER */}
-      <div className="flex items-center justify-between h-16 px-6 gap-18">
-        {" "}
+      {/* ✅ CORRECT CONTAINER */}
+      <div className="flex items-center h-16 px-6 w-full">
         {/* NAV LINKS */}
         {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center flex-1 h-full px-1 space-y-1 transition-all duration-200 ${
+              `flex flex-col items-center justify-center flex-1 h-full space-y-1 transition-all duration-200 ${
                 isActive ? "text-indigo-600 font-bold" : "text-slate-500"
               }`
             }
@@ -71,10 +70,11 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
             )}
           </NavLink>
         ))}
+
         {/* MORE BUTTON */}
         <button
           onClick={onMenuClick}
-          className="flex flex-col items-center justify-center flex-1 h-full px-1 space-y-1 transition-all duration-200 text-slate-500 hover:text-slate-900 focus:outline-none"
+          className="flex flex-col items-center justify-center flex-1 h-full space-y-1 transition-all duration-200 text-slate-500 hover:text-slate-900 focus:outline-none"
         >
           <div className="p-2 rounded-xl transition-all duration-300">
             <Menu size={22} />
