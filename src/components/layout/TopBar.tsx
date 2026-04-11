@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { assets } from "../../assets/assets";
 import { Bell, Trash2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -28,6 +29,7 @@ interface NotificationDoc {
 
 const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   const { currentUser, userProfile, userRole } = useAuth();
+  const navigate = useNavigate();
   const [notifs, setNotifs] = useState<NotificationDoc[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
 
@@ -181,8 +183,14 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
         <div className="h-8 w-px bg-slate-200/60 mx-1 hidden sm:block" />
 
         {/* User Info */}
-        <div className="flex items-center gap-3 pl-1 group cursor-pointer">
-          <div className="hidden md:block text-right">
+        <div
+          className="flex items-center gap-3 pl-1 group cursor-pointer"
+          onClick={() => {
+            const isAdmin = userRole === "admin" || userRole === "superadmin";
+            navigate(isAdmin ? "/admin/dashboard" : "/member/profile");
+          }}
+          title="View Profile"
+        >          <div className="hidden md:block text-right">
             <p className="text-xs font-bold text-slate-800 leading-none group-hover:text-indigo-700 transition-colors tracking-tight">
               {userProfile?.name || currentUser?.displayName || "User"}
             </p>

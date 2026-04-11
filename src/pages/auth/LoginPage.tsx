@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { assets } from "../../assets/assets";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
@@ -9,7 +9,7 @@ import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 
 const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, currentUser, userRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,6 +18,14 @@ const LoginPage: React.FC = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetting, setResetting] = useState(false);
+
+  // Auto-redirect if user is already authenticated (session persisted)
+  useEffect(() => {
+    if (!authLoading && currentUser && userRole) {
+      const isAdmin = userRole === "admin" || userRole === "superadmin";
+      navigate(isAdmin ? "/admin/dashboard" : "/member/dashboard", { replace: true });
+    }
+  }, [authLoading, currentUser, userRole, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +86,15 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "var(--surface-base)" }}>
+      {/* Show loading spinner while checking persisted session */}
+      {authLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-50/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-slate-500 text-sm font-medium">Restoring session...</p>
+          </div>
+        </div>
+      )}
       {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-20 animate-float"
