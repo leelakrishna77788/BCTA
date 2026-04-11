@@ -169,23 +169,23 @@ const MemberList: React.FC = () => {
 
             {/* Bulk Deletion Modal */}
             {showBulkConfirm && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 p-8 sm:p-12 max-w-lg w-full relative overflow-hidden">
+                <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto pt-8 sm:pt-20">
+                    <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
                         <button 
                             onClick={() => setShowBulkConfirm(false)}
-                            className="absolute top-8 right-8 text-slate-400 hover:text-slate-600 transition-colors z-50 p-2"
+                            className="absolute top-4 sm:top-8 right-4 sm:right-8 text-slate-400 hover:text-slate-600 transition-colors z-50 p-2"
                             title="Close"
                         >
-                            <X size={24} />
+                            <X size={20} className="sm:w-6 sm:h-6" />
                         </button>
-                        <div className="absolute top-0 right-0 p-8 opacity-5 text-red-600">
-                             <ShieldAlert size={120} />
+                        <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-5 text-red-600">
+                             <ShieldAlert size={80} className="sm:w-[120px] sm:h-[120px]" />
                         </div>
-                        <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mb-8 shadow-inner">
-                            <AlertTriangle size={36} />
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mb-6 sm:mb-8 shadow-inner">
+                            <AlertTriangle size={28} className="sm:w-9 sm:h-9" />
                         </div>
-                        <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Danger Zone</h2>
-                        <p className="text-slate-500 font-bold leading-relaxed mb-8">
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 sm:mb-4 tracking-tight">Danger Zone</h2>
+                        <p className="text-sm sm:text-base text-slate-500 font-bold leading-relaxed mb-6 sm:mb-8">
                             You are about to permanently delete <span className="text-red-600">{members.length} members</span>. This will remove all their data and login access. This action <span className="underline decoration-red-200 decoration-4 underline-offset-4">cannot be undone</span>.
                         </p>
                         
