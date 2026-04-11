@@ -351,20 +351,41 @@ const MeetingList: React.FC = () => {
 
                         {isAdmin ? (
                             <div className="mt-6 flex gap-3">
-                                <Link to={`/admin/meetings/${m.id}`}
-                                    className="flex-1 btn-primary text-xs h-10 px-0 flex justify-center items-center">
-                                    <QrCode size={14} className="mr-1" /> Manage QR
-                                </Link>
+                                {(() => {
+                                    const status = getMeetingTimeStatus(m);
+                                    const isWorkable = status !== "past" && status !== "expired";
+                                    return isWorkable ? (
+                                        <Link to={`/admin/meetings/${m.id}`}
+                                            className="flex-1 btn-primary text-xs h-10 px-0 flex justify-center items-center">
+                                            <QrCode size={14} className="mr-1" /> Manage QR
+                                        </Link>
+                                    ) : (
+                                        <button disabled
+                                            className="flex-1 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed text-xs h-10 px-0 flex justify-center items-center rounded-xl font-bold">
+                                            <Clock size={14} className="mr-1" /> Session Locked
+                                        </button>
+                                    );
+                                })()}
                                 <Link to={`/admin/meetings/${m.id}/attendance`}
-                                    className="flex-1 btn-secondary text-xs h-10 px-0 flex justify-center items-center">
+                                    className="flex-1 btn-secondary text-xs h-10 px-0 flex justify-center items-center transition-all">
                                     <Users size={14} className="mr-1" /> Stats
                                 </Link>
                             </div>
                         ) : (
                             <div className="mt-6">
-                                    <Link to="/member/scan" className="btn-primary w-full h-11 text-sm font-bold shadow-lg shadow-slate-200 active:scale-95 transition-transform flex justify-center items-center">
-                                    <QrCode size={18} className="mr-1" /> Mark Attendance
-                                </Link>
+                                {(() => {
+                                    const status = getMeetingTimeStatus(m);
+                                    const isWorkable = status !== "past" && status !== "expired";
+                                    return isWorkable ? (
+                                        <Link to="/member/scan" className="btn-primary w-full h-11 text-sm font-bold shadow-lg shadow-slate-200 active:scale-95 transition-transform flex justify-center items-center px-4 py-2 rounded-xl">
+                                            <QrCode size={18} className="mr-1" /> Mark Attendance
+                                        </Link>
+                                    ) : (
+                                        <button disabled className="w-full h-11 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed text-sm font-bold flex justify-center items-center rounded-xl opacity-75">
+                                            <Clock size={18} className="mr-1" /> Session Ended
+                                        </button>
+                                    );
+                                })()}
                             </div>
                         )}
                     </div>
