@@ -70,7 +70,8 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Section 2 + 3 Wrapper (Mobile Side-by-Side) */}
-          <div className="grid grid-cols-2 gap-6 md:contents">
+          <div className="grid grid-cols-2 gap-6 items-start md:contents">
+            {" "}
             {/* Section 2 */}
             <div className="flex flex-col items-start text-left w-full">
               <h4 className="text-xs font-black uppercase mb-3">Platform</h4>
@@ -91,7 +92,6 @@ const Footer: React.FC = () => {
                 ))}
               </div>
             </div>
-
             {/* Section 3 */}
             <div className="flex flex-col items-start text-left w-full">
               <h4 className="text-xs font-black uppercase mb-3">
