@@ -37,11 +37,12 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
     <nav
       className="flex md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t border-slate-200/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)]"
       style={{
-        background: "linear-gradient(120deg, #1e3a8a 50%, #ffffff 50%)",
+        background: "linear-gradient(135deg, #1e3a8a 50%, #ffffff 50%)",
       }}
     >
       {/* ✅ FIXED CONTAINER */}
-      <div className="flex items-center justify-between h-16 px-2 gap-8">
+      <div className="flex items-center justify-between h-16 px-6 gap-18">
+        {" "}
         {/* NAV LINKS */}
         {links.map((link) => (
           <NavLink
@@ -70,7 +71,6 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
             )}
           </NavLink>
         ))}
-
         {/* MORE BUTTON */}
         <button
           onClick={onMenuClick}
