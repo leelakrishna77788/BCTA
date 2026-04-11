@@ -23,12 +23,12 @@ const NOTIFICATION_TYPES = [
     { value: "meeting", label: "📅 Meeting Alert", color: "bg-slate-100 text-[#4f46e5]" },
     { value: "payment", label: "💳 Payment Reminder", color: "bg-amber-100 text-amber-700" },
     { value: "block", label: "🚫 Block Notice", color: "bg-red-100 text-red-700" },
-    { value: "emergency", label: "🚨 Emergency Update", color: "bg-rose-100 text-rose-700" },
-    { value: "general", label: "📢 General Announcement", color: "bg-slate-100 text-slate-700" },
+    { value: "emergency", label: "🚨 Emergency", color: "bg-rose-100 text-rose-700" },
+    { value: "general", label: "📢 Announcement", color: "bg-slate-100 text-slate-700" },
 ];
 
 const SendNotification: React.FC = () => {
-    const [form, setForm] = useState<NotificationForm>({ title: "", body: "", type: "general" });
+    const [form, setForm] = useState<NotificationForm>({ title: "", body: "", type: "" });
     const [sending, setSending] = useState<boolean>(false);
     const [sent, setSent] = useState<Notification[]>([]);
 
@@ -43,6 +43,10 @@ const SendNotification: React.FC = () => {
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!form.type) {
+            toast.error("Please select a category first.");
+            return;
+        }
         setSending(true);
         try {
             await addDoc(collection(db, "notifications"), {
@@ -51,7 +55,7 @@ const SendNotification: React.FC = () => {
                 target: "all"
             });
             toast.success("Notification sent to all members!");
-            setForm({ title: "", body: "", type: "general" });
+            setForm({ title: "", body: "", type: "" });
         } catch (err: any) {
             console.error("Failed to send notification:", err);
             toast.error("Failed to send notification");
@@ -108,11 +112,11 @@ const SendNotification: React.FC = () => {
                         <div className="flex-1 space-y-6">
                             <div>
                                 <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-4 block">Select Category</label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
                                     {NOTIFICATION_TYPES.map(t => (
                                         <button key={t.value} type="button"
                                             onClick={() => setForm(p => ({ ...p, type: t.value }))}
-                                            className={`text-xs px-4 py-2.5 rounded-xl font-black uppercase tracking-widest border transition-all duration-300 ${form.type === t.value ? "border-indigo-200 shadow-lg " + t.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}>
+                                            className={`text-[8px] sm:text-xs px-1.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-black uppercase tracking-wider sm:tracking-widest leading-none sm:leading-normal border transition-all duration-300 whitespace-nowrap overflow-hidden text-ellipsis ${form.type === t.value ? "border-indigo-200 shadow-lg " + t.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}>
                                             {t.label}
                                         </button>
                                     ))}
@@ -130,10 +134,19 @@ const SendNotification: React.FC = () => {
                                 <div>
                                     <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">Content*</label>
                                     <textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
-                                        required rows={5} placeholder="Write the main message here..."
-                                        className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-4 resize-none" />
+                                        required rows={2} placeholder="Write the main message here..."
+                                        className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-2 resize-none" />
                                 </div>
                             </div>
+
+                            {/* Broadcast Button */}
+                            <button type="submit" disabled={sending}
+                                className="group w-full py-4 sm:py-5 rounded-2xl text-white font-black uppercase tracking-widest transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                                style={{ background: "var(--gradient-primary)" }}
+                            >
+                                <Send size={18} className="transition-transform group-hover:translate-x-1" />
+                                {sending ? "Processing..." : "Broadcast to All"}
+                            </button>
 
                             {/* Preview */}
                             {form.title && (
@@ -149,22 +162,14 @@ const SendNotification: React.FC = () => {
                             )}
 
                         </div>
-
-                        <button type="submit" disabled={sending}
-                            className="group w-full py-5 rounded-2xl text-white font-black uppercase tracking-widest transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 mt-auto"
-                            style={{ background: "var(--gradient-primary)" }}
-                        >
-                            <Send size={18} className="transition-transform group-hover:translate-x-1" />
-                            {sending ? "Processing..." : "Broadcast to All"}
-                        </button>
                     </form>
                 </div>
 
                 {/* History - Spans 2 columns on xl */}
-                <div className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow"
+                <div className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow h-full"
                     style={{ background: "rgba(255, 255, 255, 0.6)" }}
                 >
-                    <div className="flex items-center justify-between p-6 sm:p-8 border-b border-white/30">
+                    <div className="flex items-center justify-between p-4 sm:p-8 border-b border-white/30">
                         <h2 className="text-base font-black text-slate-900 flex items-center gap-3 tracking-tight">
                             <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
                                 <Bell size={18} />
@@ -181,37 +186,39 @@ const SendNotification: React.FC = () => {
                             </button>
                         )}
                     </div>
-                    <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto min-h-[400px] xl:max-h-none max-h-[600px] scrollbar-hide">
-                        {sent.map((n, i) => {
-                            const t = NOTIFICATION_TYPES.find(x => x.value === n.type) || NOTIFICATION_TYPES[4];
-                            return (
-                                <div key={n.id} className="relative group/notif animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
-                                    <div className={`p-5 rounded-2xl border transition-all duration-300 hover:bg-white/80 ${t.color.split(' ')[1]} ${t.color.split(' ')[0]} border-white/60 relative premium-shadow`}>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <p className="font-black text-[15px] pr-8 tracking-tight leading-tight">{n.title}</p>
-                                            <button
-                                                onClick={() => deleteNotification(n.id)}
-                                                className="absolute top-4 right-4 p-2 rounded-xl bg-white/40 text-rose-500 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover/notif:opacity-100 shadow-sm border border-white/20"
-                                                title="Delete"
-                                            >
-                                                <Trash2 size={13} />
-                                            </button>
-                                        </div>
-                                        <p className="text-[13px] font-medium opacity-80 leading-relaxed mb-4">{n.body}</p>
-                                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-auto pt-3 border-t border-white/20">
-                                            <span className="bg-white/50 px-2.5 py-1 rounded-lg">🕒 {n.sentAt?.toDate?.().toLocaleDateString("en-IN") || "Online"}</span>
-                                            <span className="bg-white/50 px-2.5 py-1 rounded-lg">Target: {n.target || "All"}</span>
+                    <div className="flex-1 relative min-h-[400px] xl:min-h-0">
+                        <div className="absolute inset-0 p-4 sm:p-8 space-y-3 sm:space-y-4 overflow-y-auto scrollbar-hide">
+                            {sent.map((n, i) => {
+                                const t = NOTIFICATION_TYPES.find(x => x.value === n.type) || NOTIFICATION_TYPES[4];
+                                return (
+                                    <div key={n.id} className="relative group/notif animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
+                                        <div className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border transition-all duration-300 hover:bg-white/80 ${t.color.split(' ')[1]} ${t.color.split(' ')[0]} border-white/60 relative premium-shadow`}>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <p className="font-black text-[13px] sm:text-[15px] pr-8 tracking-tight leading-tight">{n.title}</p>
+                                                <button
+                                                    onClick={() => deleteNotification(n.id)}
+                                                    className="absolute top-3 sm:top-4 right-3 sm:right-4 p-1.5 sm:p-2 rounded-xl bg-white/40 text-rose-500 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover/notif:opacity-100 shadow-sm border border-white/20"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
+                                            <p className="text-[11px] sm:text-[13px] font-medium opacity-80 leading-relaxed mb-3 sm:mb-4">{n.body}</p>
+                                            <div className="flex flex-wrap items-center gap-2 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-auto pt-3 border-t border-white/20">
+                                                <span className="bg-white/50 px-2 sm:px-2.5 py-1 rounded-lg">🕒 {n.sentAt?.toDate?.().toLocaleDateString("en-IN") || "Online"}</span>
+                                                <span className="bg-white/50 px-2 sm:px-2.5 py-1 rounded-lg">Target: {n.target || "All"}</span>
+                                            </div>
                                         </div>
                                     </div>
+                                );
+                            })}
+                            {sent.length === 0 && (
+                                <div className="flex flex-col items-center justify-center py-10 sm:py-20 opacity-30">
+                                    <Bell size={40} className="mb-4 sm:w-12 sm:h-12" />
+                                    <p className="text-[10px] sm:text-sm font-black uppercase tracking-widest">No sent logs</p>
                                 </div>
-                            );
-                        })}
-                        {sent.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-20 opacity-30">
-                                <Bell size={48} className="mb-4" />
-                                <p className="text-sm font-black uppercase tracking-widest">No sent logs</p>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
