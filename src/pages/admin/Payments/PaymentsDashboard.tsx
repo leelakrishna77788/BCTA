@@ -55,7 +55,7 @@ const PaymentsDashboard: React.FC = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                     { label: "Total Value", value: `₹${totalRevenue.toLocaleString()}`, color: "bg-[#4f46e5]", icon: CreditCard },
                     { label: "Total Collected", value: `₹${totalPaid.toLocaleString()}`, color: "bg-emerald-500", icon: CheckCircle },
