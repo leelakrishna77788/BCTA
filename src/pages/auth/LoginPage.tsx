@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { assets } from "../../assets/assets";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -75,11 +76,11 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "var(--gradient-primary)" }}>
+    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "var(--surface-base)" }}>
       {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-20 animate-float"
-          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)" }}
         />
         <div className="absolute -bottom-48 -left-48 w-[500px] h-[500px] rounded-full opacity-15"
           style={{ background: "radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)", animation: "floatUp 4s ease-in-out infinite reverse" }}
@@ -101,32 +102,52 @@ const LoginPage: React.FC = () => {
             boxShadow: "0 20px 60px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.1) inset",
           }}
         >
-          
+
           {/* Header with gradient */}
-          <div className="p-6 sm:p-8 text-center relative overflow-hidden" style={{ background: "var(--gradient-primary)" }}>
-            <div className="absolute inset-0 opacity-30" style={{
-              background: "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.4) 0%, transparent 70%)"
-            }} />
-            <div className="relative z-10">
-              <div className="w-16 h-16 bg-white/15 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-3 border border-white/20 shadow-lg">
-                <span className="text-white text-2xl font-bold tracking-tight">BC</span>
+          <div className="p-4 sm:p-4 pb-0 sm:pb-0 relative overflow-hidden">
+
+            <div
+              className="absolute inset-0 opacity-30"
+              style={{
+                background:
+                  "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.4) 0%, transparent 70%)"
+              }}
+            />
+
+            {/* Home Button Left */}
+            <div className="relative z-10 flex justify-start mb-4">
+              <button
+                onClick={() => navigate("/")}
+                className="text-blue-900 font-medium hover:text-blue-700"
+              >
+                🏠︎ Home
+              </button>
+            </div>
+
+            {/* Center Logo + Title */}
+            <div className="relative z-10 text-center">
+              <div className="flex items-center justify-center mx-auto mb-3">
+                <img
+                  src={assets.herologo}
+                  alt="Hero Logo"
+                  className="w-16 h-16 object-contain"
+                />
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+
+              <h1 className="text-xl sm:text-2xl font-bold text-blue-900 tracking-tight">
                 BCTA Management System
               </h1>
-              <p className="text-indigo-200/80 text-xs sm:text-sm mt-1 font-medium">
-                Bhimavaram Cell Phone Technicians Association
-              </p>
             </div>
+
           </div>
 
           {/* Form Section */}
-          <div className="p-6 sm:p-8">
-            <div className="mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          <div className="p-4 sm:p-8 pt-2 sm:pt-4">
+            <div className="mb-4">
+              <h2 className="text-xl sm:text-2xl text-center font-bold text-slate-900 tracking-tight">
                 Welcome Back
               </h2>
-              <p className="text-slate-500 mt-1 text-sm font-medium">
+              <p className="text-slate-500 text-center mt-1 text-sm font-medium">
                 Sign in to access your account
               </p>
             </div>
@@ -204,25 +225,7 @@ const LoginPage: React.FC = () => {
               </button>
             </form>
 
-            {/* Register Link */}
-            <div className="mt-6 pt-5 border-t border-slate-100 text-center">
-              <p className="text-sm text-slate-600">
-                Don't have an account?{" "}
-                <Link
-                  to="/register"
-                  className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors"
-                >
-                  Register Now
-                </Link>
-              </p>
-            </div>
-          </div>
 
-          {/* Footer */}
-          <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-400 font-medium">
-              © {new Date().getFullYear()} BCTA — All rights reserved
-            </p>
           </div>
         </div>
       </div>
