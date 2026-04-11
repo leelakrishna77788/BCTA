@@ -35,7 +35,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t border-slate-200/60 pb-safe md:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.04)]"
+      className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t border-slate-200/60 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)]"
       style={{
         background: "linear-gradient(120deg, #1e3a8a 50%, #ffffff 50%)",
       }}
