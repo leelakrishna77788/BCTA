@@ -90,69 +90,62 @@ const ComplaintsList: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 ml-1 stagger-children">
+            <div className="grid grid-cols-1 gap-2.5 stagger-children">
                 {filtered.map((c, i) => (
-                    <div key={c.id} className="glass-card animate-fade-in border-none rounded-2xl sm:rounded-3xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1.5 premium-shadow group"
-                      style={{ background: "rgba(255, 255, 255, 0.7)" }}
+                    <div key={c.id} className="glass-card animate-fade-in rounded-lg hover:shadow-md transition-all duration-300 border border-slate-200/50 group overflow-hidden"
+                      style={{ background: "linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%)" }}
                     >
-                        <div className="p-4 sm:p-8 flex flex-col md:flex-row gap-5 sm:gap-6 relative">
+                        <div className="p-3 flex gap-2.5 relative">
                             {/* Status indicator bar */}
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-16 rounded-r-full transition-all duration-500 group-hover:h-24"
-                              style={{ background: c.status === "open" ? "var(--gradient-warm)" : "var(--gradient-success)" }}
+                            <div className="absolute left-0 top-0 bottom-0 w-0.5 transition-all duration-300 group-hover:w-1"
+                              style={{ background: c.status === "open" ? "#f59e0b" : "#10b981" }}
                             />
 
-                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg border border-white/50 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3"
-                              style={{ background: c.status === "open" ? "var(--gradient-warm)" : "var(--gradient-success)" }}
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-white"
+                              style={{ background: c.status === "open" ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" : "linear-gradient(135deg, #10b981 0%, #059669 100%)" }}
                             >
-                                <MessageSquareWarning size={24} className="text-white drop-shadow-md" />
+                                <MessageSquareWarning size={16} className="text-white" />
                             </div>
 
                             <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-3 mb-3">
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">{c.submittedByName || "Anonymous Member"}</h3>
-                                    <span className="text-[10px] font-black font-mono text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 uppercase tracking-widest">{c.memberId || "No ID"}</span>
-                                    <span className={`text-[10px] uppercase font-black px-3 py-1 rounded-lg shadow-sm border ${c.status === "open" ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"}`}>
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <h3 className="text-xs font-black text-slate-900">{c.submittedByName || "Anonymous"}</h3>
+                                    <span className="text-[7px] font-black font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">{c.memberId || "N/A"}</span>
+                                    <span className={`text-[7px] uppercase font-black px-1.5 py-0.5 rounded ${c.status === "open" ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
                                         {c.status}
                                     </span>
                                 </div>
-
-                                {c.title && (
-                                    <p className="font-bold text-slate-700 text-sm mb-2 opacity-80 uppercase tracking-wide">{c.title}</p>
-                                )}
                                 
-                                <p className="text-slate-600 leading-relaxed text-[15px] font-medium bg-slate-100/40 p-5 rounded-2xl border border-slate-200/30 mb-5 italic">
+                                <p className="text-slate-700 text-xs font-medium leading-relaxed mb-1.5 break-words">
                                    "{c.description}"
                                 </p>
 
-                                <div className="flex flex-wrap items-center justify-between gap-4 mt-auto pt-2 border-t border-slate-100/50">
-                                    <div className="flex items-center gap-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                                        <span className="flex items-center gap-1.5">📅 {formatDate(c.createdAt)}</span>
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 text-[8px] font-bold text-slate-400">
+                                        <span>📅 {formatDate(c.createdAt)}</span>
                                         {c.imageURL && (
                                             <a href={c.imageURL} target="_blank" rel="noreferrer"
-                                                className="inline-flex items-center gap-2 text-indigo-600 bg-indigo-50/50 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-all border border-indigo-100/50 group/link">
-                                                <Image size={14} className="transition-transform group-hover/link:scale-110" /> 
-                                                <span>View Evidence Image</span>
+                                                className="inline-flex items-center gap-0.5 text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded hover:bg-indigo-100 transition-all" title="Evidence">
+                                                <Image size={10} /> Img
                                             </a>
                                         )}
                                     </div>
 
-                                    <div className="flex items-center gap-2.5">
+                                    <div className="flex items-center gap-1.5">
                                         {c.status === "open" && (
                                             <button onClick={() => resolve(c.id)}
-                                                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all duration-300 shadow-sm border border-emerald-100 group/btn" title="Mark resolved">
-                                                <CheckCircle size={15} className="transition-transform group-hover/btn:scale-110" /> Resolve Issue
+                                                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-emerald-600 text-white text-[8px] font-black uppercase hover:bg-emerald-700 transition-all" title="Resolve">
+                                                <CheckCircle size={10} /> Resolve
                                             </button>
                                         )}
                                         
                                         {c.status === "resolved" && (
-                                            <div className="flex flex-col items-end gap-1 px-3">
-                                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Resolved on {formatDate(c.resolvedAt)}</span>
-                                            </div>
+                                            <span className="text-[7px] font-black text-emerald-700 uppercase px-1">✓</span>
                                         )}
 
                                         <button onClick={() => remove(c.id)}
-                                            className="p-2.5 rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all duration-300 border border-rose-100" title="Delete Complaint">
-                                            <Trash2 size={15} />
+                                            className="p-1 rounded bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all" title="Delete">
+                                            <Trash2 size={11} />
                                         </button>
                                     </div>
                                 </div>
