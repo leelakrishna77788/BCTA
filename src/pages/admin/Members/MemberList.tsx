@@ -132,7 +132,64 @@ const MemberList: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in pb-8">
+        <>
+            {/* Bulk Deletion Modal */}
+            {showBulkConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 backdrop-blur-md animate-fade-in overflow-y-auto pt-8 sm:pt-20">
+                    <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
+                        <button 
+                            onClick={() => setShowBulkConfirm(false)}
+                            className="absolute top-4 sm:top-8 right-4 sm:right-8 text-slate-400 hover:text-slate-600 transition-colors z-50 p-2"
+                            title="Close"
+                        >
+                            <X size={20} className="sm:w-6 sm:h-6" />
+                        </button>
+                        <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-5 text-red-600">
+                             <ShieldAlert size={80} className="sm:w-[120px] sm:h-[120px]" />
+                        </div>
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mb-6 sm:mb-8 shadow-inner">
+                            <AlertTriangle size={28} className="sm:w-9 sm:h-9" />
+                        </div>
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 sm:mb-4 tracking-tight">Danger Zone</h2>
+                        <p className="text-sm sm:text-base text-slate-500 font-bold leading-relaxed mb-6 sm:mb-8">
+                            You are about to permanently delete <span className="text-red-600">{members.length} members</span>. This will remove all their data and login access. This action <span className="underline decoration-red-200 decoration-4 underline-offset-4">cannot be undone</span>.
+                        </p>
+                        
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Type 'DELETE ALL' to verify</label>
+                                <input 
+                                    type="text" 
+                                    value={bulkConfirmText}
+                                    onChange={(e) => setBulkConfirmText(e.target.value)}
+                                    placeholder="Confirm here..."
+                                    className="input-field w-full py-4 px-6 bg-slate-50 border-slate-200 focus:border-red-500 rounded-2xl font-black text-red-600 text-center tracking-widest uppercase transition-all"
+                                />
+                            </div>
+                            
+                            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                                <button 
+                                    onClick={() => { setShowBulkConfirm(false); setBulkConfirmText(""); }}
+                                    className="btn-secondary flex-1 py-4 font-bold rounded-2xl hover:bg-slate-50"
+                                    disabled={isDeleting}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleBulkDelete}
+                                    className="bg-red-600 text-white font-black flex-1 py-4 rounded-2xl shadow-lg shadow-red-100 hover:shadow-red-200 hover:bg-red-700 transition-all flex items-center justify-center gap-2"
+                                    disabled={isDeleting || bulkConfirmText !== "DELETE ALL"}
+                                >
+                                    {isDeleting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trash2 size={20} />}
+                                    {isDeleting ? "Processing..." : "Destroy Records"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        <div className={`space-y-6 animate-fade-in pb-8 ${showBulkConfirm ? 'blur-sm pointer-events-none' : ''}`}>
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-2">
                 <div className="relative">
                     <div className="absolute -left-4 top-0 w-1 bg-indigo-600 h-full rounded-full opacity-0 md:opacity-100" />
@@ -169,7 +226,7 @@ const MemberList: React.FC = () => {
 
             {/* Bulk Deletion Modal */}
             {showBulkConfirm && (
-                <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto pt-8 sm:pt-20">
+                <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 backdrop-blur-md animate-fade-in overflow-y-auto pt-8 sm:pt-20">
                     <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
                         <button 
                             onClick={() => setShowBulkConfirm(false)}
@@ -276,8 +333,7 @@ const MemberList: React.FC = () => {
                                     <th className="table-header py-5 hidden md:table-cell font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Medical</th>
                                     <th className="table-header py-5 hidden lg:table-cell font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Activity</th>
                                     <th className="table-header py-5 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Finances</th>
-                                    <th className="table-header py-5 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Standing</th>
-                                    <th className="table-header pr-10 py-5 text-right font-black text-slate-400 text-[10px] uppercase tracking-[0.2em] w-24">Management</th>
+                                    <th className="table-header pr-10 py-5 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em]">Standing</th>
                                 </tr>
                             </thead>
                             <tbody className="block md:table-row-group md:divide-y md:divide-slate-100 space-y-4 md:space-y-0 p-4 md:p-0">
@@ -339,44 +395,11 @@ const MemberList: React.FC = () => {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="block md:table-cell pr-0 md:pr-10 py-4 md:py-6 text-left md:text-right mt-4 md:mt-0 pt-4 md:pt-6 border-t border-slate-100/50 md:border-0 md:bg-transparent -mx-4 px-4 md:mx-0 md:px-0">
-                                            <div className="flex flex-wrap md:flex-nowrap items-center justify-start md:justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Link to={`/admin/members/${m.id || m.uid}`}
-                                                    className="h-10 md:h-8 px-4 md:w-8 md:px-0 rounded-xl md:rounded-lg flex-1 md:flex-none flex items-center justify-center bg-white border border-slate-200 text-slate-600 md:text-slate-500 hover:text-[#4f46e5] hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm font-bold text-xs md:font-normal"
-                                                    title="View Profile">
-                                                    <Eye size={16} className="md:mr-0 mr-1.5" /> <span className="md:hidden">View</span>
-                                                </Link>
-                                                {m.status === "pending" ? (
-                                                    <button onClick={() => toggleBlock(m)}
-                                                        className="h-10 md:h-8 px-4 md:px-3 rounded-xl md:rounded-lg flex-1 md:flex-none flex items-center justify-center bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-sm font-bold text-xs md:text-[10px] uppercase tracking-wider"
-                                                        title="Approve Member">
-                                                        <UserCheck size={16} className="mr-1.5 md:w-3.5 md:h-3.5 md:mr-1" /> Approve
-                                                    </button>
-                                                ) : m.status === "active" ? (
-                                                    <button onClick={() => toggleBlock(m)}
-                                                        className="h-10 md:h-8 px-4 md:w-8 md:px-0 rounded-xl md:rounded-lg flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm font-bold text-xs"
-                                                        title="Block Member">
-                                                        <UserX size={16} className="md:mr-0 mr-1.5" /> <span className="md:hidden">Block</span>
-                                                    </button>
-                                                ) : (
-                                                    <button onClick={() => toggleBlock(m)}
-                                                        className="h-10 md:h-8 px-4 md:px-3 rounded-xl md:rounded-lg flex-1 md:flex-none flex items-center justify-center bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-sm font-bold text-xs md:text-[10px] uppercase tracking-wider"
-                                                        title="Unblock Member">
-                                                        <UserCheck size={16} className="mr-1.5 md:w-3.5 md:h-3.5 md:mr-1" /> Unblock
-                                                    </button>
-                                                )}
-                                                <button onClick={() => handleDelete(m.id || m.uid, m.name)}
-                                                    className="w-10 h-10 md:w-8 md:h-8 rounded-xl md:rounded-lg flex items-center justify-center bg-white border border-slate-200 text-red-500 md:text-slate-400 hover:text-red-700 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
-                                                    title="Delete Permanently">
-                                                    <Trash2 size={18} className="md:w-4 md:h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
                                     </tr>
                                 ))}
                                 {filtered.length === 0 && (
                                     <tr className="block md:table-row">
-                                        <td colSpan={6} className="block md:table-cell py-16 text-center border border-slate-200 md:border-0 rounded-2xl md:rounded-none shadow-sm md:shadow-none mx-4 md:mx-0 my-4 md:my-0">
+                                        <td colSpan={5} className="block md:table-cell py-16 text-center border border-slate-200 md:border-0 rounded-2xl md:rounded-none shadow-sm md:shadow-none mx-4 md:mx-0 my-4 md:my-0">
                                             <div className="flex flex-col items-center justify-center text-slate-400">
                                                 <span className="text-4xl mb-3 opacity-30">👥</span>
                                                 <p className="font-bold text-slate-600 mb-1">No members found</p>
@@ -391,6 +414,7 @@ const MemberList: React.FC = () => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
