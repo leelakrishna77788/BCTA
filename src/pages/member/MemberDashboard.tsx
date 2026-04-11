@@ -232,7 +232,6 @@ const MemberDashboard: React.FC = () => {
         </div>
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 px-3 sm:px-4 py-3">
-          {" "}
           {loading
             ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
             : [
@@ -358,6 +357,24 @@ const MemberDashboard: React.FC = () => {
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-3 py-4">
                 <div className="flex items-center justify-between">
                   <Link
+                    to="/member/scan"
+                    className="flex flex-col items-center flex-1"
+                  >
+                    <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center">
+                      ⛶
+                    </div>
+                    <span className="text-[11px]">Scan</span>
+                  </Link>
+                  <Link
+                    to="/member/payments"
+                    className="flex flex-col items-center flex-1"
+                  >
+                    <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center">
+                      <CreditCard size={20} />
+                    </div>
+                    <span className="text-[11px]">Payments</span>
+                  </Link>
+                  <Link
                     to="/member/complaint"
                     className="flex flex-col items-center flex-1"
                   >
@@ -376,32 +393,22 @@ const MemberDashboard: React.FC = () => {
                     </div>
                     <span className="text-[11px]">Emergency</span>
                   </Link>
-
-                  <Link
-                    to="/member/payments"
-                    className="flex flex-col items-center flex-1"
-                  >
-                    <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center">
-                      <CreditCard size={20} />
-                    </div>
-                    <span className="text-[11px]">Payments</span>
-                  </Link>
-
-                  <Link
-                    to="/member/scan"
-                    className="flex flex-col items-center flex-1"
-                  >
-                    <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center">
-                      ⛶
-                    </div>
-                    <span className="text-[11px]">Scan</span>
-                  </Link>
                 </div>
               </div>
             </div>
             {/* Secondary Actions Grid */}
             <div className="hidden sm:grid grid-cols-1 sm:grid-cols-3 gap-2">
               {[
+                {
+                  to: "/member/payments",
+                  icon: <CreditCard size={24} />,
+                  title: "Payments",
+                  sub: "View history",
+                  gradient: "from-emerald-500 to-teal-600",
+                  bg: "bg-gradient-to-br from-emerald-50 to-teal-50",
+                  hoverBg:
+                    "group-hover:from-emerald-100 group-hover:to-teal-100",
+                },
                 {
                   to: "/member/complaint",
                   icon: "📝",
@@ -420,16 +427,6 @@ const MemberDashboard: React.FC = () => {
                   gradient: "from-red-500 to-rose-600",
                   bg: "bg-gradient-to-br from-red-50 to-rose-50",
                   hoverBg: "group-hover:from-red-100 group-hover:to-rose-100",
-                },
-                {
-                  to: "/member/payments",
-                  icon: <CreditCard size={24} />,
-                  title: "Payments",
-                  sub: "View history",
-                  gradient: "from-emerald-500 to-teal-600",
-                  bg: "bg-gradient-to-br from-emerald-50 to-teal-50",
-                  hoverBg:
-                    "group-hover:from-emerald-100 group-hover:to-teal-100",
                 },
               ].map((action, idx) => (
                 <Link
