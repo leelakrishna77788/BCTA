@@ -56,7 +56,7 @@ interface CounterProps {
 function Counter({ end, suffix = "" }: CounterProps) {
   const [count, setCount] = useState(0);
   const [ref, visible] = useReveal<HTMLSpanElement>();
-  
+
   useEffect(() => {
     if (!visible) return;
     let n = 0;
@@ -305,7 +305,7 @@ const LandingPage: React.FC = () => {
             <Reveal dy={20} delay={0.2}>
               <h1 className="text-4xl sm:text-6xl md:text-8xl font-black mb-6 sm:mb-8 leading-[1.05] px-2 tracking-tighter">
                 <span className="text-slate-900 drop-shadow-sm">The digital heart of</span>
-                <br/>
+                <br />
                 <span className="gradient-text bg-linear-to-r from-indigo-700 via-violet-700 to-indigo-800 bg-clip-text text-transparent italic">
                   Bhimavaram Technicians
                 </span>
@@ -314,7 +314,7 @@ const LandingPage: React.FC = () => {
 
             <Reveal dy={20} delay={0.4}>
               <p className="text-slate-600 max-w-2xl mx-auto mb-10 sm:mb-12 text-lg sm:text-xl md:text-2xl px-4 font-medium leading-relaxed opacity-90">
-                A unified association portal designed for professional unity, 
+                A unified association portal designed for professional unity,
                 instant communication, and association management.
               </p>
             </Reveal>
@@ -335,17 +335,17 @@ const LandingPage: React.FC = () => {
                 Our Services
               </a>
             </Reveal>
-            
+
             <Reveal dy={20} delay={1} className="mt-16 sm:mt-24">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mb-8">Trusted by associations across the region</p>
               <div className="flex flex-wrap justify-center gap-8 sm:gap-16 opacity-40 grayscale pointer-events-none">
-                 <div className="text-xl font-black tracking-tighter">BCTA HUB</div>
-                 <div className="text-xl font-black tracking-tighter">CELL-NETWORK</div>
-                 <div className="text-xl font-black tracking-tighter">TECH-CONNECT</div>
+                <div className="text-xl font-black tracking-tighter">BCTA HUB</div>
+                <div className="text-xl font-black tracking-tighter">CELL-NETWORK</div>
+                <div className="text-xl font-black tracking-tighter">TECH-CONNECT</div>
               </div>
             </Reveal>
           </div>
-          
+
           {/* Bottom curve */}
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-white to-transparent pointer-events-none" />
         </section>
