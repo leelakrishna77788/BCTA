@@ -40,24 +40,24 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
         background: "linear-gradient(120deg, #1e3a8a 50%, #ffffff 50%)",
       }}
     >
-      <div className="flex items-center justify-around h-16 px-2">
+      {/* ✅ FIXED CONTAINER */}
+      <div className="flex items-center justify-between h-16 px-2 gap-8">
+        {/* NAV LINKS */}
         {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 ${
-                isActive
-                  ? "text-indigo-600 font-bold translate-y-[-2px]"
-                  : "text-slate-500 hover:text-slate-900"
+              `flex flex-col items-center justify-center flex-1 h-full px-1 space-y-1 transition-all duration-200 ${
+                isActive ? "text-indigo-600 font-bold" : "text-slate-500"
               }`
             }
           >
             {({ isActive }) => (
               <>
                 <div
-                  className={`p-1.5 rounded-xl transition-all duration-300 ${
-                    isActive ? "bg-indigo-50 text-indigo-600 shadow-sm" : ""
+                  className={`p-2 rounded-xl transition-all duration-300 ${
+                    isActive ? "bg-indigo-50 text-indigo-600" : ""
                   }`}
                 >
                   <link.icon
@@ -71,12 +71,12 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
           </NavLink>
         ))}
 
-        {/* More / Menu Menu trigger */}
+        {/* MORE BUTTON */}
         <button
           onClick={onMenuClick}
-          className="flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-200 text-slate-500 hover:text-slate-900 focus:outline-none"
+          className="flex flex-col items-center justify-center flex-1 h-full px-1 space-y-1 transition-all duration-200 text-slate-500 hover:text-slate-900 focus:outline-none"
         >
-          <div className="p-1.5 rounded-xl transition-all duration-300">
+          <div className="p-2 rounded-xl transition-all duration-300">
             <Menu size={22} />
           </div>
           <span className="text-[10px] tracking-wide">More</span>
