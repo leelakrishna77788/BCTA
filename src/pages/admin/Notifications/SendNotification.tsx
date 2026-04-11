@@ -101,53 +101,58 @@ const SendNotification: React.FC = () => {
 
             <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
                 {/* Send Form - Spans 3 columns on xl */}
-                <div className="xl:col-span-3 glass-card rounded-2xl sm:rounded-3xl border border-white/40 p-6 sm:p-10 premium-shadow"
-                  style={{ background: "rgba(255, 255, 255, 0.7)" }}
+                <div className="xl:col-span-3 glass-card rounded-2xl sm:rounded-3xl border border-white/40 p-6 sm:p-10 premium-shadow flex flex-col h-full"
+                    style={{ background: "rgba(255, 255, 255, 0.7)" }}
                 >
-                    <form onSubmit={handleSend} className="space-y-6">
-                        <div>
-                            <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-4 block">Select Category</label>
-                            <div className="flex flex-wrap gap-2.5">
-                                {NOTIFICATION_TYPES.map(t => (
-                                    <button key={t.value} type="button"
-                                        onClick={() => setForm(p => ({ ...p, type: t.value }))}
-                                        className={`text-xs px-4 py-2.5 rounded-xl font-black uppercase tracking-widest border transition-all duration-300 ${form.type === t.value ? "border-indigo-200 shadow-lg " + t.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}>
-                                        {t.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-6">
+                    <form onSubmit={handleSend} className="space-y-6 flex flex-col flex-1">
+                        <div className="flex-1 space-y-6">
                             <div>
-                                <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">Heading*</label>
-                                <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                                    required placeholder="What is this about?" 
-                                    className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-4" />
+                                <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-4 block">Select Category</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                    {NOTIFICATION_TYPES.map(t => (
+                                        <button key={t.value} type="button"
+                                            onClick={() => setForm(p => ({ ...p, type: t.value }))}
+                                            className={`text-xs px-4 py-2.5 rounded-xl font-black uppercase tracking-widest border transition-all duration-300 ${form.type === t.value ? "border-indigo-200 shadow-lg " + t.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}>
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">Content*</label>
-                                <textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
-                                    required rows={5} placeholder="Write the main message here..." 
-                                    className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-4 resize-none" />
+                            <div className="grid grid-cols-1 gap-6">
+                                <div>
+                                    <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">Heading*</label>
+                                    <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                                        required placeholder="What is this about?"
+                                        className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-4" />
+                                </div>
+
+                                <div>
+                                    <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">Content*</label>
+                                    <textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
+                                        required rows={5} placeholder="Write the main message here..."
+                                        className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-4 resize-none" />
+                                </div>
                             </div>
+
+                            {/* Preview */}
+                            {form.title && (
+                                <div className="p-6 rounded-2xl border border-dashed transition-all duration-500 opacity-100 translate-y-0"
+                                    style={{ borderColor: selectedType?.color.split(' ')[1] || "#e2e8f0", background: "rgba(255,255,255,0.4)" }}
+                                >
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 text-slate-400">Live Preview</p>
+                                    <div className={`p-4 rounded-xl shadow-sm border ${selectedType?.color || "bg-slate-100"} border-white/40`}>
+                                        <p className="font-black text-sm tracking-tight">{form.title}</p>
+                                        <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed">{form.body || "Message body will appear here..."}</p>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
 
-                        {/* Preview */}
-                        <div className={`p-6 rounded-2xl border border-dashed transition-all duration-500 ${form.title ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}
-                          style={{ borderColor: selectedType?.color.split(' ')[1] || "#e2e8f0", background: "rgba(255,255,255,0.4)" }}
-                        >
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 text-slate-400">Live Preview</p>
-                            <div className={`p-4 rounded-xl shadow-sm border ${selectedType?.color || "bg-slate-100"} border-white/40`}>
-                                <p className="font-black text-sm tracking-tight">{form.title || "Subject Line"}</p>
-                                <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed">{form.body || "Message body will appear here..."}</p>
-                            </div>
-                        </div>
-
-                        <button type="submit" disabled={sending} 
-                          className="group w-full py-5 rounded-2xl text-white font-black uppercase tracking-widest transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
-                          style={{ background: "var(--gradient-primary)" }}
+                        <button type="submit" disabled={sending}
+                            className="group w-full py-5 rounded-2xl text-white font-black uppercase tracking-widest transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 mt-auto"
+                            style={{ background: "var(--gradient-primary)" }}
                         >
                             <Send size={18} className="transition-transform group-hover:translate-x-1" />
                             {sending ? "Processing..." : "Broadcast to All"}
@@ -157,7 +162,7 @@ const SendNotification: React.FC = () => {
 
                 {/* History - Spans 2 columns on xl */}
                 <div className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow"
-                  style={{ background: "rgba(255, 255, 255, 0.6)" }}
+                    style={{ background: "rgba(255, 255, 255, 0.6)" }}
                 >
                     <div className="flex items-center justify-between p-6 sm:p-8 border-b border-white/30">
                         <h2 className="text-base font-black text-slate-900 flex items-center gap-3 tracking-tight">
@@ -167,7 +172,7 @@ const SendNotification: React.FC = () => {
                             Feed History
                         </h2>
                         {sent.length > 0 && (
-                            <button 
+                            <button
                                 onClick={handleClearAll}
                                 disabled={sending}
                                 className="text-[10px] font-black text-rose-500 hover:bg-rose-500 hover:text-white uppercase tracking-[0.15em] px-4 py-2 rounded-xl transition-all border border-rose-100 disabled:opacity-50"
@@ -176,7 +181,7 @@ const SendNotification: React.FC = () => {
                             </button>
                         )}
                     </div>
-                    <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto max-h-[600px] scrollbar-hide">
+                    <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto min-h-[400px] xl:max-h-none max-h-[600px] scrollbar-hide">
                         {sent.map((n, i) => {
                             const t = NOTIFICATION_TYPES.find(x => x.value === n.type) || NOTIFICATION_TYPES[4];
                             return (
