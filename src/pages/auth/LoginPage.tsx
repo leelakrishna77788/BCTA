@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -14,6 +14,7 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetting, setResetting] = useState(false);
@@ -130,7 +131,7 @@ const LoginPage: React.FC = () => {
                 <img
                   src={assets.herologo}
                   alt="Hero Logo"
-                  className="w-16 h-16 object-contain"
+                  className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain"
                 />
               </div>
 
@@ -183,13 +184,21 @@ const LoginPage: React.FC = () => {
                     <Lock size={17} />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="Enter your password"
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all text-sm"
+                    className="w-full pl-11 pr-11 py-3 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all text-sm"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
                 </div>
               </div>
 
@@ -274,21 +283,21 @@ const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowForgotPassword(false);
                     setResetEmail("");
                   }}
-                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
+                  className="w-full sm:flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={resetting}
-                  className="flex-1 py-3 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-70 flex items-center justify-center gap-2 hover:shadow-[0_0_24px_rgba(99,102,241,0.3)]"
+                  className="w-full sm:flex-1 py-3 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-70 flex items-center justify-center gap-2 hover:shadow-[0_0_24px_rgba(99,102,241,0.3)]"
                   style={{ background: "var(--gradient-primary)" }}
                 >
                   {resetting ? (

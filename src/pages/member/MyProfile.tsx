@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "../../firebase/firebaseConfig";
+import { db, storage } from "../../firebase/firebaseConfig";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import {
     AlertCircle,
     BadgeCheck,
@@ -39,13 +40,72 @@ interface ProfileEditForm {
     nomineePhone: string;
 }
 
-const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d{3}$/;
+const buildProfileEditForm = (userProfile: any): ProfileEditForm => ({
+    name: userProfile?.name || "",
+    surname: userProfile?.surname || "",
+    phone: userProfile?.phone || "",
+    age: userProfile?.age ? String(userProfile.age) : "",
+    gender: userProfile?.gender || "",
+    bloodGroup: userProfile?.bloodGroup || "",
+    aadhaarLast4: userProfile?.aadhaarLast4 || "",
+    shopAddress: userProfile?.shopAddress || "",
+    nomineeName: userProfile?.nomineeDetails?.name || "",
+    nomineeRelation: userProfile?.nomineeDetails?.relation || "",
+    nomineePhone: userProfile?.nomineeDetails?.phone || "",
+});
+
+const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d+$/;
+
+const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
+
+const optimizeImageForUpload = async (file: File): Promise<File> => {
+    if (!file.type.startsWith("image/") || file.size < 300 * 1024) return file;
+
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(image);
+        };
+        image.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error("Unable to process selected image."));
+        };
+        image.src = objectUrl;
+    });
+
+    const maxSide = 720;
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const targetWidth = Math.max(1, Math.round(img.width * scale));
+    const targetHeight = Math.max(1, Math.round(img.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+
+    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+    const outputType = "image/jpeg";
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, outputType, 0.65));
+    if (!blob) return file;
+
+    const baseName = file.name.replace(/\.[^/.]+$/, "") || "profile-photo";
+    return new File([blob], `${baseName}.jpg`, { type: outputType });
+};
 
 const MyProfile: React.FC = () => {
     const { userProfile, currentUser, refreshProfile } = useAuth();
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [isPhotoUploading, setIsPhotoUploading] = useState<boolean>(false);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [originalForm, setOriginalForm] = useState<ProfileEditForm | null>(null);
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string>("");
+    const [uploadedPhotoURL, setUploadedPhotoURL] = useState<string>("");
     const [editForm, setEditForm] = useState<ProfileEditForm>({
         name: "",
         surname: "",
@@ -69,6 +129,7 @@ const MyProfile: React.FC = () => {
         ? createdAt.toDate().getFullYear()
         : new Date().getFullYear();
     const profileInitial = (userProfile?.name?.[0] ?? currentUser?.email?.[0] ?? "M").toUpperCase();
+    const activePhotoURL = (isEditing ? photoPreview : "") || userProfile?.photoURL || uploadedPhotoURL || "";
     const paymentTone = userProfile?.paymentStatus === "paid"
         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
         : "bg-amber-50 text-amber-700 border-amber-200";
@@ -89,20 +150,93 @@ const MyProfile: React.FC = () => {
 
     useEffect(() => {
         if (!userProfile) return;
-        setEditForm({
-            name: userProfile.name || "",
-            surname: userProfile.surname || "",
-            phone: userProfile.phone || "",
-            age: userProfile.age ? String(userProfile.age) : "",
-            gender: userProfile.gender || "",
-            bloodGroup: userProfile.bloodGroup || "",
-            aadhaarLast4: userProfile.aadhaarLast4 || "",
-            shopAddress: userProfile.shopAddress || "",
-            nomineeName: userProfile.nomineeDetails?.name || "",
-            nomineeRelation: userProfile.nomineeDetails?.relation || "",
-            nomineePhone: userProfile.nomineeDetails?.phone || "",
-        });
+        const nextForm = buildProfileEditForm(userProfile);
+        setEditForm(nextForm);
+        setOriginalForm(nextForm);
+        setPhotoPreview(userProfile.photoURL || "");
+        setPhotoFile(null);
+        setUploadedPhotoURL("");
+        setIsPhotoUploading(false);
+        setUploadProgress(null);
     }, [userProfile]);
+
+    const isFieldChanged = (field: keyof ProfileEditForm) => {
+        if (!originalForm) return false;
+        return (editForm[field] || "").trim() !== (originalForm[field] || "").trim();
+    };
+
+    const changedFields = (Object.keys(editForm) as Array<keyof ProfileEditForm>)
+        .filter((field) => isFieldChanged(field));
+
+    const changedInputClass = (field: keyof ProfileEditForm) =>
+        `rounded-xl border bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1 ${isFieldChanged(field)
+            ? "border-indigo-400 bg-indigo-50/40"
+            : "border-slate-200"
+        }`;
+
+    const onPickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            toast.error("Please select a valid image file.");
+            return;
+        }
+
+        if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+            toast.error("Image is too large. Please choose an image under 8MB.");
+            return;
+        }
+
+        if (photoPreview.startsWith("blob:")) {
+            URL.revokeObjectURL(photoPreview);
+        }
+
+        setPhotoFile(file);
+        setPhotoPreview(URL.createObjectURL(file));
+
+        if (!currentUser) {
+            toast.error("Please login again and retry.");
+            return;
+        }
+
+        setUploadedPhotoURL("");
+        setIsPhotoUploading(true);
+        setUploadProgress(0);
+        try {
+            const optimizedPhoto = await optimizeImageForUpload(file);
+            const photoRef = ref(storage, `member-photos/${currentUser.uid}/${Date.now()}-${optimizedPhoto.name}`);
+
+            await new Promise<void>((resolve, reject) => {
+                const task = uploadBytesResumable(photoRef, optimizedPhoto, {
+                    contentType: optimizedPhoto.type,
+                    cacheControl: "public,max-age=3600",
+                });
+
+                task.on(
+                    "state_changed",
+                    (snapshot) => {
+                        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                        setUploadProgress(progress);
+                    },
+                    (error) => reject(error),
+                    () => resolve()
+                );
+            });
+
+            const url = await getDownloadURL(photoRef);
+            await updateMember(currentUser.uid, { photoURL: url });
+            setUploadedPhotoURL(url);
+            await refreshProfile();
+            toast.success("Image uploaded and saved.");
+        } catch (error: any) {
+            console.error("Photo upload failed:", error);
+            setUploadedPhotoURL("");
+            toast.error(error?.message || "Image upload failed. Please try another image.");
+        } finally {
+            setIsPhotoUploading(false);
+        }
+    };
 
     const onFormChange = (field: keyof ProfileEditForm, value: string) => {
         setEditForm((prev) => ({ ...prev, [field]: value }));
@@ -111,19 +245,17 @@ const MyProfile: React.FC = () => {
     const onCancelEdit = () => {
         if (!userProfile) return;
         setIsEditing(false);
-        setEditForm({
-            name: userProfile.name || "",
-            surname: userProfile.surname || "",
-            phone: userProfile.phone || "",
-            age: userProfile.age ? String(userProfile.age) : "",
-            gender: userProfile.gender || "",
-            bloodGroup: userProfile.bloodGroup || "",
-            aadhaarLast4: userProfile.aadhaarLast4 || "",
-            shopAddress: userProfile.shopAddress || "",
-            nomineeName: userProfile.nomineeDetails?.name || "",
-            nomineeRelation: userProfile.nomineeDetails?.relation || "",
-            nomineePhone: userProfile.nomineeDetails?.phone || "",
-        });
+        const resetForm = buildProfileEditForm(userProfile);
+        setEditForm(resetForm);
+        setOriginalForm(resetForm);
+        if (photoPreview.startsWith("blob:")) {
+            URL.revokeObjectURL(photoPreview);
+        }
+        setPhotoFile(null);
+        setPhotoPreview(userProfile.photoURL || "");
+        setUploadedPhotoURL("");
+        setIsPhotoUploading(false);
+        setUploadProgress(null);
     };
 
     const onSaveProfile = async () => {
@@ -145,6 +277,12 @@ const MyProfile: React.FC = () => {
 
         setIsSaving(true);
         try {
+            if (photoFile && isPhotoUploading) {
+                toast("Image upload is still in progress. Saving other details now.");
+            }
+
+            const nextPhotoURL = uploadedPhotoURL || userProfile?.photoURL || "";
+
             await updateMember(currentUser.uid, {
                 name: editForm.name.trim(),
                 surname: editForm.surname.trim(),
@@ -159,10 +297,14 @@ const MyProfile: React.FC = () => {
                     relation: editForm.nomineeRelation.trim(),
                     phone: editForm.nomineePhone.trim(),
                 },
+                photoURL: nextPhotoURL,
             });
 
             await refreshProfile();
             setIsEditing(false);
+            setPhotoFile(null);
+            setUploadedPhotoURL("");
+            setUploadProgress(null);
             toast.success("Profile updated from backend.");
         } catch (error: any) {
             console.error("Profile update failed:", error);
@@ -173,11 +315,12 @@ const MyProfile: React.FC = () => {
             }
         } finally {
             setIsSaving(false);
+            setUploadProgress(null);
         }
     };
 
     if (!userProfile) return (
-        <div className="mx-auto w-full max-w-6xl space-y-6 p-0 animate-fade-in">
+        <div className="mx-auto w-full max-w-6xl space-y-6 px-3 sm:px-0 animate-fade-in">
             <LoadingSkeleton height="2rem" width="180px" className="mb-2" />
             <div className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
                 <CardSkeleton />
@@ -204,14 +347,14 @@ const MyProfile: React.FC = () => {
 
     return (
         <div className="mx-auto w-full max-w-6xl space-y-6 p-0 animate-fade-in">
-            <section className="relative overflow-hidden rounded-[2rem] border border-bbluee-100 bg-gradient-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
+            <section className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.22),_transparent_46%)]" />
                 <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
                 <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
                     <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
-                        {userProfile.photoURL ? (
+                        {activePhotoURL ? (
                             <img
-                                src={userProfile.photoURL}
+                                src={activePhotoURL}
                                 alt={`${fullName} profile photo`}
                                 className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
                             />
@@ -275,7 +418,7 @@ const MyProfile: React.FC = () => {
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.85fr)]">
                 <div className="min-w-0 space-y-6">
                     <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
-                        <div className="mb-5 flex items-center justify-between gap-3">
+                        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900">Personal Details</h2>
                                 <p className="text-sm text-slate-500">Key identity, member ID, and contact information.</p>
@@ -284,7 +427,7 @@ const MyProfile: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => (isEditing ? onCancelEdit() : setIsEditing(true))}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                                 >
                                     <Edit3 size={13} /> {isEditing ? "Cancel" : "Edit details"}
                                 </button>
@@ -297,53 +440,119 @@ const MyProfile: React.FC = () => {
                                 <h3 className="text-sm font-semibold text-slate-800">Edit Profile Details</h3>
                                 <p className="mt-1 text-xs text-slate-500">All changes are saved to backend and reflected in your profile.</p>
 
-                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <input value={editForm.name} onChange={(e) => onFormChange("name", e.target.value)} placeholder="First name" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
-                                    <input value={editForm.surname} onChange={(e) => onFormChange("surname", e.target.value)} placeholder="Surname" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
-                                    <input value={editForm.phone} onChange={(e) => onFormChange("phone", e.target.value)} placeholder="Phone" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
-                                    <input value={editForm.age} onChange={(e) => onFormChange("age", e.target.value)} placeholder="Age" inputMode="numeric" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
-
-                                    <select value={editForm.gender} onChange={(e) => onFormChange("gender", e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1">
-                                        <option value="">Gender</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <option value="other">Other</option>
-                                    </select>
-
-                                    <select value={editForm.bloodGroup} onChange={(e) => onFormChange("bloodGroup", e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1">
-                                        <option value="">Blood Group</option>
-                                        <option value="A+">A+</option>
-                                        <option value="A-">A-</option>
-                                        <option value="B+">B+</option>
-                                        <option value="B-">B-</option>
-                                        <option value="AB+">AB+</option>
-                                        <option value="AB-">AB-</option>
-                                        <option value="O+">O+</option>
-                                        <option value="O-">O-</option>
-                                    </select>
-
-                                    <input value={editForm.aadhaarLast4} onChange={(e) => onFormChange("aadhaarLast4", e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="Aadhaar last 4" inputMode="numeric" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
-                                    <input value={editForm.shopAddress} onChange={(e) => onFormChange("shopAddress", e.target.value)} placeholder="Shop address" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
-
-                                    <input value={editForm.nomineeName} onChange={(e) => onFormChange("nomineeName", e.target.value)} placeholder="Nominee name" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
-                                    <input value={editForm.nomineeRelation} onChange={(e) => onFormChange("nomineeRelation", e.target.value)} placeholder="Nominee relation" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+                                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Profile Photo</p>
+                                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                                        {photoPreview ? (
+                                            <img src={photoPreview} alt="Profile preview" className="h-16 w-16 rounded-2xl object-cover border border-slate-200" />
+                                        ) : (
+                                            <div className="h-16 w-16 rounded-2xl border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-xs text-slate-400">No Photo</div>
+                                        )}
+                                        <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                            Choose File
+                                            <input type="file" accept="image/*" onChange={onPickPhoto} className="hidden" />
+                                        </label>
+                                        {photoFile && <span className="text-xs text-indigo-600 font-semibold">Selected: {photoFile.name}</span>}
+                                        {photoFile && uploadedPhotoURL && <span className="text-xs text-emerald-600 font-semibold">Ready to save</span>}
+                                    </div>
+                                    {uploadProgress !== null && photoFile && (
+                                        <div className="mt-3">
+                                            <div className="h-2 w-full rounded-full bg-slate-200">
+                                                <div className="h-2 rounded-full bg-[#000080] transition-all" style={{ width: `${uploadProgress}%` }} />
+                                            </div>
+                                            <p className="mt-1 text-xs text-slate-600">
+                                                {isPhotoUploading ? `Uploading image: ${uploadProgress}%` : `Upload complete: ${uploadProgress}%`}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <input value={editForm.nomineePhone} onChange={(e) => onFormChange("nomineePhone", e.target.value)} placeholder="Nominee phone" className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1" />
+                                <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-3">
+                                    <p className="text-xs font-semibold text-indigo-700">
+                                        Edited fields: {changedFields.length > 0 ? changedFields.join(", ") : "No changes yet"}
+                                    </p>
+                                </div>
+
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">First Name</label>
+                                        <input value={editForm.name} onChange={(e) => onFormChange("name", e.target.value)} placeholder="First name" className={changedInputClass("name")} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Surname</label>
+                                        <input value={editForm.surname} onChange={(e) => onFormChange("surname", e.target.value)} placeholder="Surname" className={changedInputClass("surname")} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Phone</label>
+                                        <input value={editForm.phone} onChange={(e) => onFormChange("phone", e.target.value)} placeholder="Phone" className={changedInputClass("phone")} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Age</label>
+                                        <input value={editForm.age} onChange={(e) => onFormChange("age", e.target.value)} placeholder="Age" inputMode="numeric" className={changedInputClass("age")} />
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Gender</label>
+                                        <select value={editForm.gender} onChange={(e) => onFormChange("gender", e.target.value)} className={changedInputClass("gender")}>
+                                            <option value="">Gender</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Blood Group</label>
+                                        <select value={editForm.bloodGroup} onChange={(e) => onFormChange("bloodGroup", e.target.value)} className={changedInputClass("bloodGroup")}>
+                                            <option value="">Blood Group</option>
+                                            <option value="A+">A+</option>
+                                            <option value="A-">A-</option>
+                                            <option value="B+">B+</option>
+                                            <option value="B-">B-</option>
+                                            <option value="AB+">AB+</option>
+                                            <option value="AB-">AB-</option>
+                                            <option value="O+">O+</option>
+                                            <option value="O-">O-</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Aadhaar Last 4</label>
+                                        <input value={editForm.aadhaarLast4} onChange={(e) => onFormChange("aadhaarLast4", e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="Aadhaar last 4" inputMode="numeric" className={changedInputClass("aadhaarLast4")} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Shop Address</label>
+                                        <input value={editForm.shopAddress} onChange={(e) => onFormChange("shopAddress", e.target.value)} placeholder="Shop address" className={changedInputClass("shopAddress")} />
+                                    </div>
+
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Nominee Name</label>
+                                        <input value={editForm.nomineeName} onChange={(e) => onFormChange("nomineeName", e.target.value)} placeholder="Nominee name" className={changedInputClass("nomineeName")} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Nominee Relation</label>
+                                        <input value={editForm.nomineeRelation} onChange={(e) => onFormChange("nomineeRelation", e.target.value)} placeholder="Nominee relation" className={changedInputClass("nomineeRelation")} />
+                                    </div>
+                                </div>
+
+                                <div className="mt-3">
+                                    <label className="mb-1 block text-xs font-semibold text-slate-600">Nominee Phone</label>
+                                    <input value={editForm.nomineePhone} onChange={(e) => onFormChange("nomineePhone", e.target.value)} placeholder="Nominee phone" className={`w-full ${changedInputClass("nomineePhone")}`} />
+                                </div>
 
                                 <div className="mt-4 flex flex-wrap items-center gap-2">
                                     <button
                                         type="button"
                                         disabled={isSaving}
                                         onClick={onSaveProfile}
-                                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#000080] px-4 py-2 text-xs font-semibold text-white hover:bg-[#000066] disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-[#000080] px-4 py-2 text-xs font-semibold text-white hover:bg-[#000066] disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         <Save size={13} /> {isSaving ? "Saving..." : "Save"}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={onCancelEdit}
-                                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                                     >
                                         Cancel
                                     </button>

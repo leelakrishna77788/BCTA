@@ -21,6 +21,45 @@ import { db, auth } from "../firebase/firebaseConfig";
 import type { Member, CreateMemberInput, MemberStats } from "../types/member.types";
 
 const MEMBERS_PER_PAGE = 20;
+const MEMBER_ID_PATTERN = /^BCTA-(\d{4})-(\d+)$/;
+const MAX_TOTAL_MEMBERS = 999;
+const START_MEMBER_SEQUENCE = 1;
+
+export async function generateSequentialMemberId(): Promise<string> {
+  const currentYear = new Date().getFullYear();
+  const membersSnap = await getDocs(
+    query(collection(db, "users"), where("role", "==", "member"), limit(MAX_TOTAL_MEMBERS + 1))
+  );
+
+  if (membersSnap.size >= MAX_TOTAL_MEMBERS) {
+    throw new Error(`Member limit reached. Only ${MAX_TOTAL_MEMBERS} members are allowed.`);
+  }
+
+  const usedSequences = new Set<number>();
+  membersSnap.forEach((memberDoc) => {
+    const memberId = String(memberDoc.data().memberId || "").trim();
+    const match = memberId.match(MEMBER_ID_PATTERN);
+    if (!match) return;
+
+    const year = Number(match[1]);
+    const sequence = Number(match[2]);
+    if (year === currentYear && !Number.isNaN(sequence) && sequence >= START_MEMBER_SEQUENCE) {
+      usedSequences.add(sequence);
+    }
+  });
+
+  for (let nextSequence = START_MEMBER_SEQUENCE; nextSequence <= MAX_TOTAL_MEMBERS; nextSequence += 1) {
+    if (usedSequences.has(nextSequence)) continue;
+
+    const candidateId = `BCTA-${currentYear}-${String(nextSequence).padStart(3, "0")}`;
+    const existingSnap = await getDocs(
+      query(collection(db, "users"), where("memberId", "==", candidateId), limit(1))
+    );
+    if (existingSnap.empty) return candidateId;
+  }
+
+  throw new Error("No member IDs available in the configured range.");
+}
 
 /** Fetch paginated list of members (role == "member") */
 export async function getMembers(lastDoc?: DocumentSnapshot): Promise<{ members: Member[]; lastVisible: DocumentSnapshot | null }> {
@@ -59,8 +98,7 @@ export async function getMemberById(uid: string): Promise<Member | null> {
  * For admin-driven creation, prefer calling /api/admin (Vercel function).
  */
 export async function createMember(input: CreateMemberInput): Promise<Member> {
-  const memberId =
-    input.memberId || `BCTA-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`;
+  const memberId = input.memberId || await generateSequentialMemberId();
 
   const cred = await createUserWithEmailAndPassword(auth, input.email.trim(), input.password);
 
@@ -149,8 +187,7 @@ export const membersApi = {
   create: async (input: CreateMemberInput) => {
     console.log("[membersApi.create] Creating member:", input.email);
     
-    // Check if memberId is given or generate it
-    const memberId = input.memberId || `BCTA-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`;
+    const memberId = input.memberId || await generateSequentialMemberId();
 
     const profileData = {
       memberId,
