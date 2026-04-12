@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { doc, getDoc, updateDoc, collection, getDocs, query, where, Timestamp, DocumentData } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import {
     ArrowLeft, Edit, UserX, UserCheck, Phone, MapPin,
     Droplet, CreditCard, Activity,
-    ShieldCheck, Mail, AlertTriangle, Package, Trash2, X, QrCode,
+    ShieldCheck, Mail, AlertTriangle, Package, Trash2, X, QrCode, Download,
     BadgeCheck, CheckCircle2, CalendarDays
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -48,6 +48,7 @@ const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d+$/;
 const MemberDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const idCardRef = useRef<HTMLDivElement>(null);
     const [member, setMember] = useState<MemberDoc | null>(null);
     const [attendance, setAttendance] = useState<any[]>([]);
     const [products, setProducts] = useState<ProductDoc[]>([]);
@@ -110,6 +111,31 @@ const MemberDetail: React.FC = () => {
         fetchData();
     }, [id]);
 
+    // Keep page static while Digital ID is open.
+    useEffect(() => {
+        if (!showID) return;
+
+        const preventDefault = (e: Event) => e.preventDefault();
+        const blockKeys = (e: KeyboardEvent) => {
+            const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
+            if (keys.includes(e.key)) e.preventDefault();
+        };
+
+        window.addEventListener("wheel", preventDefault, { passive: false });
+        window.addEventListener("touchmove", preventDefault, { passive: false });
+        window.addEventListener("keydown", blockKeys);
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+
+        return () => {
+            window.removeEventListener("wheel", preventDefault);
+            window.removeEventListener("touchmove", preventDefault);
+            window.removeEventListener("keydown", blockKeys);
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+        };
+    }, [showID]);
+
     const toggleBlock = () => {
         if (!member) return;
         const previousStatus = member.status;
@@ -158,6 +184,103 @@ const MemberDetail: React.FC = () => {
         });
     };
 
+    const handlePrintID = () => {
+        if (!idCardRef.current) return;
+
+        const printWindow = window.open("", "_blank", "width=850,height=1100");
+        if (!printWindow) {
+            toast.error("Unable to open print window. Please allow popups.");
+            return;
+        }
+
+        const cardMarkup = idCardRef.current.outerHTML;
+
+        printWindow.document.write(`
+            <!doctype html>
+            <html>
+                <head>
+                    <meta charset="utf-8" />
+                    <title>BCTA Digital ID</title>
+                    <style>
+                        * { box-sizing: border-box; }
+                        html, body {
+                            margin: 0;
+                            padding: 0;
+                            background: #020617;
+                            min-height: 100%;
+                            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                        }
+                        body {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            padding: 24px;
+                        }
+                        .print-wrap {
+                            width: min(100%, 420px);
+                        }
+                        .print-wrap img {
+                            display: block;
+                            max-width: 100%;
+                            height: auto;
+                        }
+                        @media print {
+                            @page { size: A4 portrait; margin: 12mm; }
+                            body { padding: 0; }
+                            .print-wrap { width: 420px; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-wrap">${cardMarkup}</div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    };
+
+    const handleDownloadID = async () => {
+        if (!idCardRef.current) return;
+
+        try {
+            const { default: html2canvas } = await import("html2canvas");
+            const canvas = await html2canvas(idCardRef.current, {
+                backgroundColor: null,
+                scale: 2,
+                useCORS: true,
+            });
+
+            const link = document.createElement("a");
+            const safeName = `${member?.name || "member"}-${member?.surname || "id"}`.replace(/\s+/g, "-").toLowerCase();
+            link.download = `${safeName}-digital-id.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            toast.success("ID card downloaded");
+        } catch (error) {
+            console.error("Download failed:", error);
+            toast.error("Failed to download ID card");
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="mx-auto w-full max-w-6xl space-y-6 px-3 sm:px-0 animate-fade-in">
+                <LoadingSkeleton height="2rem" width="220px" className="mb-2" />
+                <div className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
+                    <CardSkeleton />
+                    <CardSkeleton />
+                </div>
+                <div className="card space-y-4">
+                    <LoadingSkeleton height="1rem" width="35%" />
+                    <LoadingSkeleton height="220px" borderRadius="1rem" />
+                </div>
+            </div>
+        );
+    }
+
     if (!member) return (
         <div className="max-w-6xl mx-auto p-8 text-center min-h-[60vh] flex items-center justify-center">
             <div className="card shadow-2xl border border-slate-200/60 p-12 max-w-lg bg-white rounded-3xl">
@@ -193,22 +316,6 @@ const MemberDetail: React.FC = () => {
     const paymentTone = derivedPaymentStatus === "paid"
         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
         : "bg-amber-50 text-amber-700 border-amber-200";
-
-    if (loading) {
-        return (
-            <div className="mx-auto w-full max-w-6xl space-y-6 px-3 sm:px-0 animate-fade-in">
-                <LoadingSkeleton height="2rem" width="220px" className="mb-2" />
-                <div className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
-                    <CardSkeleton />
-                    <CardSkeleton />
-                </div>
-                <div className="card space-y-4">
-                    <LoadingSkeleton height="1rem" width="35%" />
-                    <LoadingSkeleton height="220px" borderRadius="1rem" />
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="mx-auto w-full max-w-6xl space-y-6 p-0 animate-fade-in pb-20">
@@ -505,84 +612,111 @@ const MemberDetail: React.FC = () => {
             </div>
 
             {showID && member && (
-                <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md animate-fade-in overflow-y-auto">
-                    <div className="mx-auto flex min-h-full w-full max-w-lg items-center justify-center p-3 sm:p-6">
-                        <div className="w-full relative">
+                <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md animate-fade-in">
+                    <div className="h-full w-full flex items-start justify-center p-3 pt-5 sm:p-4 sm:pt-8">
+                        <div className="w-full max-w-[24rem] relative max-h-[calc(100vh-1.5rem)] overflow-hidden scale-[0.95] sm:scale-100">
                             <button
                                 onClick={() => setShowID(false)}
-                                className="absolute right-0 top-0 z-10 p-2 text-white/70 hover:text-white transition-colors bg-white/10 rounded-full"
+                                className="absolute top-2.5 right-2.5 text-white/70 hover:text-white transition-colors z-50 p-1.5 bg-white/10 rounded-full"
                                 aria-label="Close Digital ID"
                             >
-                                <X size={22} />
+                                <X size={18} />
                             </button>
 
-                            <div className="relative group p-1 pt-12 sm:pt-0 animate-scale-up">
-                                <div className="absolute inset-0 bg-conic-to-r from-indigo-500 via-[#1e1b4b] to-indigo-500 rounded-[2.2rem] animate-spin-slow opacity-50 blur-sm" />
+                            <div className="relative group p-1 animate-scale-up">
+                                <div className="absolute inset-0 bg-conic-to-r from-indigo-500 via-[#1e1b4b] to-indigo-500 rounded-[2.1rem] animate-spin-slow opacity-50 blur-sm" />
 
-                                <div className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[2.1rem] relative">
-                                    <div className="p-5 sm:p-8 pb-4 flex items-center justify-between border-b border-white/5">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                                                <div className="w-4 h-4 bg-indigo-500 rounded-sm rotate-45" />
-                                            </div>
-                                            <span className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</span>
+                                <div ref={idCardRef} className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[1.6rem] relative">
+                                    <div className="p-2.5 sm:p-3 pr-10 sm:pr-12 flex items-center justify-between border-b border-white/5">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                                            <div className="w-4 h-4 bg-indigo-500 rounded-sm rotate-45" />
                                         </div>
-                                        <div className="px-2.5 py-1 bg-white/10 rounded-full border border-white/10 flex items-center gap-1.5">
-                                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                                            <span className="text-[8px] font-black text-white/60 tracking-widest uppercase">Verified</span>
+                                        <div>
+                                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</p>
+                                            <p className="text-[10px] font-semibold text-white/55">Digital Identity Pass</p>
+                                        </div>
+                                    </div>
+                                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold bg-white/10 text-emerald-300 border border-white/10">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                        Verified
+                                    </span>
+                                </div>
+
+                                <div className="p-5 sm:p-6">
+                                    <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:gap-6">
+                                        <div className="flex-shrink-0">
+                                            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-4xl">
+                                                {member.photoURL ? (
+                                                    <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    member.name?.[0]
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 flex flex-col justify-center min-w-0">
+                                            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight break-words leading-tight">
+                                                {member.name} {member.surname}
+                                            </h3>
+                                            <p className="mt-1 text-[11px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.16em] break-all">
+                                                {member.memberId || "MEMBER ID PENDING"}
+                                            </p>
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
+                                                    {member.status || "unknown"}
+                                                </span>
+                                                <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
+                                                    {memberSince}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="p-5 sm:p-8 space-y-6 sm:space-y-8">
-                                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 text-center sm:text-left">
-                                            <div className="mx-auto sm:mx-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl p-1 bg-linear-to-br from-white/20 to-transparent shadow-xl">
-                                                {member.photoURL ? (
-                                                    <img src={member.photoURL} alt="" className="w-full h-full rounded-xl object-cover border border-white/10" />
-                                                ) : (
-                                                    <div className="w-full h-full bg-[#1e1b4b] rounded-xl flex items-center justify-center text-white text-2xl sm:text-3xl font-black">
-                                                        {member.name?.[0]}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight mb-2 break-words">
-                                                    {member.name} {member.surname}
-                                                </h3>
-                                                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] bg-indigo-500/10 px-2 py-1 rounded inline-block break-all">
-                                                    {member.memberId}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="relative flex justify-center py-2 sm:py-4">
-                                            <div className="absolute inset-0 bg-indigo-500/5 rounded-3xl blur-2xl" />
-                                            <div className="relative p-4 sm:p-6 bg-white rounded-3xl shadow-2xl border border-white/5">
+                                    <div className="flex justify-center mb-5">
+                                        <div className="rounded-2xl border border-white/10 bg-white p-5 sm:p-6 shadow-sm">
+                                            <div className="sm:hidden">
                                                 <QRCodeSVG
                                                     value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
-                                                    size={140}
+                                                    size={130}
+                                                    level="H"
+                                                    includeMargin={false}
+                                                    fgColor="#1e1b4b"
+                                                />
+                                            </div>
+                                            <div className="hidden sm:block">
+                                                <QRCodeSVG
+                                                    value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
+                                                    size={160}
                                                     level="H"
                                                     includeMargin={false}
                                                     fgColor="#1e1b4b"
                                                 />
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <p className="text-center text-[10px] text-white/30 font-bold uppercase tracking-widest leading-relaxed">
-                                            Secured through BCTA digital identity
-                                            <br />
+                                    <div className="text-center">
+                                        <p className="text-[9px] text-white/35 font-bold uppercase tracking-[0.16em]">
+                                            Secured Through BCTA Digital Identity
+                                        </p>
+                                        <p className="text-[9px] text-white/35 font-bold uppercase tracking-[0.16em] mt-0.5">
                                             Valid for {new Date().getFullYear()} fiscal year
                                         </p>
                                     </div>
-
-                                    <div className="h-2 bg-linear-to-r from-[#1e1b4b] via-indigo-600 to-[#1e1b4b] opacity-80 shadow-[0_0_20px_rgba(37,99,235,0.3)]" />
+                                </div>
+                                <div className="h-1.5 bg-linear-to-r from-[#1e1b4b] via-indigo-600 to-[#1e1b4b] opacity-90" />
                                 </div>
                             </div>
 
-                            <div className="mt-5 sm:mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <button onClick={() => window.print()} className="w-full py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition-all backdrop-blur-sm border border-white/5">
+                            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                <button onClick={handlePrintID} className="w-full py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all border border-white/10">
                                     Print Pass
                                 </button>
-                                <button onClick={() => setShowID(false)} className="w-full py-3.5 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95 shadow-xl">
+                                <button onClick={handleDownloadID} className="w-full py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all border border-indigo-400/30 inline-flex items-center justify-center gap-1.5">
+                                    <Download size={12} /> Download
+                                </button>
+                                <button onClick={() => setShowID(false)} className="w-full py-2 bg-white text-slate-900 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-slate-100 transition-all">
                                     Close
                                 </button>
                             </div>
