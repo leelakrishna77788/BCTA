@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { assets } from "../../assets/assets";
 import { Bell, Trash2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { auth } from "../../firebase/firebaseConfig";
 import {
   collection,
   query,
@@ -32,6 +33,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   const navigate = useNavigate();
   const [notifs, setNotifs] = useState<NotificationDoc[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -76,6 +78,15 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
       toast.error("Failed to delete notification");
     }
   }, []);
+  const handleLogout = async () => {
+    try {
+      await auth.signOut(); // import auth from firebase
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (err) {
+      toast.error("Logout failed");
+    }
+  };
 
   return (
     <header
@@ -184,13 +195,44 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
 
         {/* User Info */}
         <div
-          className="flex items-center gap-3 pl-1 group cursor-pointer"
-          onClick={() => {
-            const isAdmin = userRole === "admin" || userRole === "superadmin";
-            navigate(isAdmin ? "/admin/dashboard" : "/member/profile");
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowProfileMenu(!showProfileMenu);
           }}
-          title="View Profile"
-        >          <div className="hidden md:block text-right">
+          className="relative flex items-center gap-3 pl-1 group cursor-pointer"
+        >
+          {showProfileMenu && (
+            <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden md:hidden">
+              {/* Profile */}
+              <button
+                onClick={() => {
+                  navigate("/member/Myprofile"); // 👈 PROFILE PATH
+                  setShowProfileMenu(false);
+                }}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                Profile
+              </button>
+              <button
+                onClick={() => {
+                  navigate("/");
+                  setShowProfileMenu(false);
+                }}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                settings
+              </button>
+
+              {/* Logout */}
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+          <div className="block text-right">
             <p className="text-xs font-bold text-slate-800 leading-none group-hover:text-indigo-700 transition-colors tracking-tight">
               {userProfile?.name || currentUser?.displayName || "User"}
             </p>
