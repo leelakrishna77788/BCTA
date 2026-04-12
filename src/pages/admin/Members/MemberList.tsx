@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X } from "lucide-react";
+import React, { useEffect, useState, useCallback } from "react";
+import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { collection, getDocs, query, where, doc, updateDoc, Timestamp, DocumentData } from "firebase/firestore";
@@ -30,6 +30,8 @@ const MemberList: React.FC = () => {
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const [showBulkConfirm, setShowBulkConfirm] = useState<boolean>(false);
     const [bulkConfirmText, setBulkConfirmText] = useState<string>("");
+    // Track which member is currently being toggled (prevents double-clicks)
+    const [togglingId, setTogglingId] = useState<string | null>(null);
 
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [paymentFilter, setPaymentFilter] = useState<string>("all");
@@ -68,31 +70,54 @@ const MemberList: React.FC = () => {
         setFiltered(result);
     }, [statusFilter, paymentFilter, members]);
 
+    /** Optimistically update a member in local state without re-fetching */
+    const updateMemberLocally = useCallback((docId: string, updates: Partial<MemberDoc>) => {
+        setMembers(prev => prev.map(m => (m.id === docId || m.uid === docId) ? { ...m, ...updates } : m));
+    }, []);
+
     const toggleBlock = async (member: MemberDoc) => {
-        const newStatus = member.status === "active" ? "blocked" : "active";
+        const docId = member.id || member.uid;
+        if (!docId) { toast.error("Member ID missing"); return; }
+
+        // Prevent double-clicks
+        if (togglingId === docId) return;
+        setTogglingId(docId);
+
+        const previousStatus = member.status;
+        const newStatus = previousStatus === "active" ? "blocked" : "active";
+
+        const updatePayload: any = { status: newStatus };
+        let actionText = newStatus === "active" ? "unblocked" : "blocked";
+
+        if (previousStatus === "pending" && newStatus === "active") {
+            const year = new Date().getFullYear();
+            const num = Math.floor(Math.random() * 900) + 100;
+            updatePayload.memberId = `BCTA-${year}-${num}`;
+            actionText = "approved";
+        }
+
+        // 1) Optimistic UI update — instant feedback
+        updateMemberLocally(docId, updatePayload);
+        toast.success(`Member ${actionText} successfully`);
+
+        // 2) Persist to Firestore in background
         try {
-            const docId = member.id || member.uid;
-            if (!docId) throw new Error("Member ID missing");
             const memberRef = doc(db, "users", docId);
-            
-            const updatePayload: any = { status: newStatus };
-            let actionText = newStatus === "active" ? "unblocked" : "blocked";
-
-            if (member.status === "pending" && newStatus === "active") {
-                const year = new Date().getFullYear();
-                const num = Math.floor(Math.random() * 900) + 100;
-                updatePayload.memberId = `BCTA-${year}-${num}`;
-                actionText = "approved";
-            }
-
             await updateDoc(memberRef, updatePayload);
+
+            // Fire token revocation in background (don't block UI)
             if (newStatus === "blocked") {
-                await membersApi.revokeTokens(docId);
+                membersApi.revokeTokens(docId).catch(err =>
+                    console.warn("Token revocation failed (non-critical):", err)
+                );
             }
-            toast.success(`Member ${actionText} successfully`);
-            fetchMembers();
-        } catch {
-            toast.error("Failed to update status");
+        } catch (err) {
+            // Rollback on failure
+            console.error("Block/Unblock failed:", err);
+            updateMemberLocally(docId, { status: previousStatus });
+            toast.error("Failed to update status on server. Reverted.");
+        } finally {
+            setTogglingId(null);
         }
     };
 
@@ -329,29 +354,39 @@ const MemberList: React.FC = () => {
                                 </div>
 
                                 {/* Action Buttons */}
+                                {(() => {
+                                    const memberId = m.id || m.uid;
+                                    const isToggling = togglingId === memberId;
+                                    return (
                                 <div className="flex gap-2 md:shrink-0">
-                                    <Link to={`/admin/members/${m.id || m.uid}`}
+                                    <Link to={`/admin/members/${memberId}`}
                                         className="flex-1 md:w-auto h-10 px-4 flex items-center justify-center bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 rounded-xl transition-all shadow-sm font-bold text-xs"
                                         title="View Profile">
                                         <Eye size={16} className="mr-1.5" /> View
                                     </Link>
                                     {m.status === "pending" ? (
                                         <button onClick={() => toggleBlock(m)}
-                                            className="flex-1 md:w-auto h-10 px-4 flex items-center justify-center bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl transition-all shadow-sm font-bold text-xs uppercase tracking-wider"
+                                            disabled={isToggling}
+                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all shadow-sm font-bold text-xs uppercase tracking-wider ${isToggling ? "bg-indigo-400 cursor-not-allowed opacity-70" : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
                                             title="Approve Member">
-                                            <UserCheck size={16} className="mr-1.5" /> Approve
+                                            {isToggling ? <Loader2 size={16} className="mr-1.5 animate-spin" /> : <UserCheck size={16} className="mr-1.5" />}
+                                            {isToggling ? "Processing..." : "Approve"}
                                         </button>
                                     ) : m.status === "active" ? (
                                         <button onClick={() => toggleBlock(m)}
-                                            className="flex-1 md:w-auto h-10 px-4 flex items-center justify-center bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 rounded-xl transition-all shadow-sm font-bold text-xs"
+                                            disabled={isToggling}
+                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all shadow-sm font-bold text-xs ${isToggling ? "bg-slate-100 cursor-not-allowed opacity-70 border border-slate-200" : "bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50"}`}
                                             title="Block Member">
-                                            <UserX size={16} className="mr-1.5" /> Block
+                                            {isToggling ? <Loader2 size={16} className="mr-1.5 animate-spin" /> : <UserX size={16} className="mr-1.5" />}
+                                            {isToggling ? "Blocking..." : "Block"}
                                         </button>
                                     ) : (
                                         <button onClick={() => toggleBlock(m)}
-                                            className="flex-1 md:w-auto h-10 px-4 flex items-center justify-center bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl transition-all shadow-sm font-bold text-xs uppercase tracking-wider"
+                                            disabled={isToggling}
+                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all shadow-sm font-bold text-xs uppercase tracking-wider ${isToggling ? "bg-emerald-400 cursor-not-allowed opacity-70" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
                                             title="Unblock Member">
-                                            <UserCheck size={16} className="mr-1.5" /> Unblock
+                                            {isToggling ? <Loader2 size={16} className="mr-1.5 animate-spin" /> : <UserCheck size={16} className="mr-1.5" />}
+                                            {isToggling ? "Unblocking..." : "Unblock"}
                                         </button>
                                     )}
                                     <button onClick={() => handleDelete(m.id || m.uid, m.name)}
@@ -360,6 +395,8 @@ const MemberList: React.FC = () => {
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
+                                    );
+                                })()}
                             </div>
                         </div>
                     ))
