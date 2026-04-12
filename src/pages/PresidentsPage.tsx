@@ -20,6 +20,7 @@ const DESCRIPTIONS = [
 
 const MEMBERS = ["50+ Members", "120+ Members", "200+ Members", "260+ Members"];
 const ERAS = ["Foundation Era", "Growth Phase", "Digital Transform", "Innovation Era"];
+const STAT_COLORS = ["bg-amber-400", "bg-violet-400", "bg-emerald-400"];
 
 const PresidentsPage: React.FC = () => {
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -57,9 +58,7 @@ const PresidentsPage: React.FC = () => {
           transform: translateY(0);
         }
 
-        .hero-line {
-          overflow: hidden;
-        }
+        .hero-line { overflow: hidden; }
         .hero-line span {
           display: inline-block;
           animation: slideUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -94,66 +93,43 @@ const PresidentsPage: React.FC = () => {
           transform: translateY(-8px) rotate(-1deg);
         }
 
-        .timeline-dot {
-          transition: all 0.3s ease;
-        }
-        .timeline-item:hover .timeline-dot {
-          transform: scale(1.5);
-        }
+        .timeline-dot { transition: all 0.3s ease; }
+        .timeline-item:hover .timeline-dot { transform: scale(1.5); }
       `}</style>
 
       <Navbar />
 
       {/* ── HERO ── */}
       <section className="relative pt-28 pb-16 sm:pt-36 sm:pb-24 px-4 overflow-hidden font-body">
-        {/* Floating color blobs */}
         <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-amber-300/20 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 right-10 w-96 h-96 rounded-full bg-violet-300/20 blur-3xl pointer-events-none" />
 
         <div className="max-w-6xl mx-auto relative">
           <div className="flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-16">
             <div className="flex-1">
-              {/* Label */}
-              <div className="inline-flex items-center gap-2 border border-slate-300 rounded-full px-4 py-1.5 mb-8 bg-white/60 backdrop-blur-sm">
-                <Award size={14} className="text-amber-500" />
-                <span className="text-xs font-semibold text-slate-600 tracking-widest uppercase">BCTA Leadership</span>
-              </div>
-
-              {/* Big heading */}
               <h1 className="font-display text-[clamp(3rem,8vw,7rem)] font-black leading-[0.92] text-slate-900 mb-8">
                 <div className="hero-line"><span>The</span></div>
-                <div className="hero-line"><span className="text-amber-500">Presidents</span></div>
+                <div className="hero-line"><span className="text-blue-900">Presidents</span></div>
                 <div className="hero-line"><span>of BCTA</span></div>
               </h1>
-
               <p className="font-body text-slate-500 text-base sm:text-lg max-w-md leading-relaxed">
                 Four leaders. One vision. The dedicated presidents who have shaped BCTA into a thriving community of mobile repair professionals since its founding.
               </p>
             </div>
 
-            {/* Stats stack */}
-            <div className="flex flex-row lg:flex-col gap-4 lg:gap-3 lg:pb-4 lg:min-w-[200px]">
+            {/* Stats — centered on mobile, column on desktop */}
+            <div className="flex flex-row justify-center lg:flex-col gap-4 lg:gap-3 lg:pb-4 lg:min-w-[200px]">
               {[
-                { value: "6+", label: "Years Active", color: "bg-amber-400" },
-                { value: "4", label: "Presidents", color: "bg-violet-500" },
-                { value: "260+", label: "Members", color: "bg-emerald-500" },
+                { value: "6+",   label: "Years Active" },
+                { value: "4",    label: "Presidents"   },
+                { value: "260+", label: "Members"      },
               ].map((s, i) => (
-                <div key={i} className="flex-1 lg:flex-none bg-white rounded-2xl px-5 py-4 border border-slate-200 shadow-sm flex lg:flex-row items-center gap-3 stat-card">
-                  <div className={`w-2 h-8 rounded-full ${s.color} shrink-0`} />
-                  <div>
-                    <div className="font-display text-2xl font-black text-slate-900 leading-none">{s.value}</div>
-                    <div className="text-xs text-slate-400 font-medium mt-0.5">{s.label}</div>
-                  </div>
+                <div key={i} className="flex-1 lg:flex-none bg-white rounded-2xl px-4 py-3 lg:px-5 lg:py-4 border border-slate-200 shadow-sm stat-card">
+                  <div className="font-display text-xl lg:text-2xl font-black text-slate-900 leading-none">{s.value}</div>
+                  <div className="text-xs text-slate-400 font-medium mt-0.5">{s.label}</div>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Scroll hint */}
-          <div className="mt-12 flex items-center gap-3 text-slate-400">
-            <div className="w-12 h-px bg-slate-300" />
-            <ChevronDown size={16} className="animate-bounce" />
-            <span className="text-xs tracking-widest uppercase">Scroll to explore</span>
           </div>
         </div>
       </section>
@@ -168,38 +144,33 @@ const PresidentsPage: React.FC = () => {
             <div
               key={index}
               ref={(el) => { cardRefs.current[index] = el; }}
-              className={`observe-card card-hover bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-md`}
+              className="observe-card card-hover bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-md"
               style={{ transitionDelay: `${index * 0.08}s` }}
             >
               <div className="flex flex-col sm:flex-row">
 
-                {/* Left: number + image */}
-                <div className="relative sm:w-64 shrink-0">
-
-
-                  {/* Current badge */}
+                {/* Left: image */}
+                <div className="relative w-full sm:w-64 shrink-0">
                   {isLast && (
                     <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wider">
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                       Current
                     </div>
                   )}
-
-                  {/* Image */}
-                  <div className="image-zoom w-full h-72 sm:h-full min-h-[280px] overflow-hidden">
+                  <div className="image-zoom w-full h-56 sm:h-full sm:min-h-[280px] overflow-hidden">
                     <img
                       src={president.image}
                       alt={president.name}
                       className="w-full h-full object-cover object-top"
                     />
-                    <div className={`absolute inset-0 bg-gradient-to-t from-black/40 to-transparent`} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                   </div>
                 </div>
 
                 {/* Right: content */}
                 <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between">
                   <div>
-                    {/* Era badge + year */}
+                    {/* Era badge + year — desktop only */}
                     <div className="hidden sm:flex items-center gap-3 mb-4 flex-wrap">
                       <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${color.badge}`}>
                         {ERAS[index]}
@@ -214,20 +185,22 @@ const PresidentsPage: React.FC = () => {
                     <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 leading-tight mb-1">
                       {president.name}
                     </h2>
-                    {/* Year — visible on mobile only */}
+
+                    {/* Year — mobile only */}
                     <div className="flex sm:hidden items-center gap-1.5 text-slate-400 text-sm font-medium mb-1">
                       <Calendar size={13} />
                       <span>{president.year}</span>
                     </div>
+
                     <p className={`hidden sm:block text-sm font-semibold ${color.text} mb-5`}>President, BCTA</p>
 
-                    {/* Description */}
+                    {/* Description — desktop only */}
                     <p className="hidden sm:block text-slate-500 text-sm sm:text-base leading-relaxed">
                       {DESCRIPTIONS[index]}
                     </p>
                   </div>
 
-                  {/* Footer row */}
+                  {/* Footer row — desktop only */}
                   <div className={`hidden sm:flex mt-6 pt-5 border-t ${color.border} flex-wrap items-center gap-3`}>
                     <div className={`flex items-center gap-2 ${color.light} rounded-xl px-4 py-2`}>
                       <Users size={14} className={color.text} />
@@ -246,15 +219,13 @@ const PresidentsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-
             </div>
           );
         })}
       </section>
 
-      {/* ── TIMELINE ── */}
-      <section className="py-16 sm:py-24 px-4 font-body overflow-hidden relative">
+      {/* ── TIMELINE — desktop only ── */}
+      <section className="hidden sm:block py-16 sm:py-24 px-4 font-body overflow-hidden relative">
         <div className="max-w-4xl mx-auto relative">
           <div className="text-center mb-14">
             <span className="text-xs font-black uppercase tracking-widest text-indigo-500">History</span>
@@ -263,19 +234,17 @@ const PresidentsPage: React.FC = () => {
             </h2>
           </div>
 
-          {/* Vertical line */}
           <div className="relative">
-            <div className="absolute left-6 sm:left-1/2 top-0 bottom-0 w-px bg-slate-200 sm:-translate-x-1/2" />
-
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200 -translate-x-1/2" />
             <div className="space-y-10">
               {presidents.map((president, index) => {
                 const color = ERA_COLORS[index % ERA_COLORS.length];
                 const isRight = index % 2 !== 0;
 
                 return (
-                  <div key={index} className={`timeline-item relative flex items-center gap-6 sm:gap-0 ${isRight ? "sm:flex-row-reverse" : "sm:flex-row"}`}>
+                  <div key={index} className={`timeline-item relative flex items-center ${isRight ? "flex-row-reverse" : "flex-row"}`}>
                     {/* Content */}
-                    <div className={`flex-1 pl-16 sm:pl-0 ${isRight ? "sm:pl-10" : "sm:pr-10"}`}>
+                    <div className={`flex-1 ${isRight ? "pl-10" : "pr-10"}`}>
                       <div className="bg-white rounded-2xl p-5 border border-slate-200 hover:border-slate-300 shadow-sm transition-colors">
                         <div className={`text-[10px] font-black uppercase tracking-widest mb-2 ${color.text}`}>{ERAS[index]}</div>
                         <div className="font-display text-xl font-black text-slate-900">{president.name}</div>
@@ -287,10 +256,10 @@ const PresidentsPage: React.FC = () => {
                     </div>
 
                     {/* Center dot */}
-                    <div className={`absolute left-6 sm:left-1/2 sm:-translate-x-1/2 z-10 timeline-dot w-4 h-4 rounded-full bg-gradient-to-br ${color.bg} border-4 border-white shadow-lg`} />
+                    <div className={`absolute left-1/2 -translate-x-1/2 z-10 timeline-dot w-4 h-4 rounded-full bg-gradient-to-br ${color.bg} border-4 border-white shadow-lg`} />
 
-                    {/* Image — right side on desktop */}
-                    <div className="hidden sm:flex flex-1 items-center justify-center">
+                    {/* Image */}
+                    <div className="flex-1 flex items-center justify-center">
                       <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-slate-200 shadow-xl">
                         <img src={president.image} alt={president.name} className="w-full h-full object-cover" />
                       </div>
