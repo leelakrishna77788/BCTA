@@ -60,6 +60,8 @@ const ShopDetail: React.FC = () => {
 
     // Direct Torch manipulation
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    // 1. Initial configuration and capabilities check when scanning starts
     useEffect(() => {
         if (!isScanning) {
             setTorchSupported(false);
@@ -81,18 +83,43 @@ const ShopDetail: React.FC = () => {
                     setTorchSupported(true);
                 }
                 
-                if (torchOn) {
-                    await track.applyConstraints({
-                        advanced: [{ torch: true }]
-                    } as any);
-                }
+                // Always apply current torch state upon stream init
+                await track.applyConstraints({
+                    advanced: [{ torch: torchOn }]
+                } as any);
             } catch (e) {
                 console.warn("Torch interaction error:", e);
             }
-        }, 1500);
+        }, 1500); // Delay for camera initialization
 
         return () => clearTimeout(timer);
-    }, [isScanning, torchOn]);
+    }, [isScanning]); 
+    // ^ Removed `torchOn` from dependencies to prevent re-triggering the 1.5s timeout on every toggle
+
+    // 2. Instant toggle handling independently
+    useEffect(() => {
+        const toggleTorch = async () => {
+            try {
+                const video = document.querySelector('video');
+                if (!video || !video.srcObject) return;
+                
+                const stream = video.srcObject as MediaStream;
+                const track = stream.getVideoTracks()[0];
+                if (!track) return;
+
+                // Explicitly send torch boolean constraint
+                await track.applyConstraints({
+                    advanced: [{ torch: torchOn }]
+                } as any);
+            } catch (e) {
+                console.warn("Torch toggle error:", e);
+            }
+        };
+
+        if (isScanning) {
+            toggleTorch();
+        }
+    }, [torchOn, isScanning]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -390,9 +417,15 @@ const ShopDetail: React.FC = () => {
                                     onError={(e) => toast.error("Camera error")}
                                     styles={{ container: { height: '100%', width: '100%', backgroundColor: '#0f172a' } }}
                                     constraints={{ facingMode: 'environment' }}
+                                    components={{
+                                        onOff: false,
+                                        torch: false,
+                                        zoom: false,
+                                        finder: false,
+                                    }}
                                 />
 
-                                {/* Torch Toggle Button - Visible on Mobile or if detected */}
+                                {/* Torch Toggle Button - Visible only on Mobile or if explicitly supported */}
                                 {(torchSupported || isMobile) && (
                                     <button 
                                         onClick={(e) => { 

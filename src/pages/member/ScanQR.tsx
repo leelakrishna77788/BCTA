@@ -43,6 +43,7 @@ const ScanQR: React.FC = () => {
     const [torchSupported, setTorchSupported] = useState<boolean>(false);
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+    // 1. Initial configuration and capabilities check when scanning starts
     React.useEffect(() => {
         if (!scanning) {
             setTorchSupported(false);
@@ -64,19 +65,42 @@ const ScanQR: React.FC = () => {
                     setTorchSupported(true);
                 }
                 
-                // Always try applying if torchOn is true, regardless of caps check success
-                if (torchOn) {
-                    await track.applyConstraints({
-                        advanced: [{ torch: true }]
-                    } as any);
-                }
+                // Always apply the stored torch state initially
+                await track.applyConstraints({
+                    advanced: [{ torch: torchOn }]
+                } as any);
             } catch (e) {
                 console.warn("Torch interaction error:", e);
             }
         }, 1500); // Increased delay for slower camera initialization
 
         return () => clearTimeout(timer);
-    }, [scanning, torchOn]);
+    }, [scanning]);
+
+    // 2. Instant toggle handling independently
+    React.useEffect(() => {
+        const toggleTorch = async () => {
+            try {
+                const video = document.querySelector('video');
+                if (!video || !video.srcObject) return;
+                
+                const stream = video.srcObject as MediaStream;
+                const track = stream.getVideoTracks()[0];
+                if (!track) return;
+
+                // Always apply the stored torch state initially
+                await track.applyConstraints({
+                    advanced: [{ torch: torchOn }]
+                } as any);
+            } catch (e) {
+                console.warn("Torch toggle error:", e);
+            }
+        };
+
+        if (scanning) {
+            toggleTorch();
+        }
+    }, [torchOn, scanning]);
 
     const handleScan = (data: IDetectedBarcode[]) => {
         if (data && data.length > 0) {
@@ -304,7 +328,7 @@ const ScanQR: React.FC = () => {
                                             components={{
                                                 onOff: false,
                                                 torch: false,
-                                                zoom: true,
+                                                zoom: false,
                                                 finder: false,
                                             }}
                                             constraints={{
@@ -349,7 +373,7 @@ const ScanQR: React.FC = () => {
                                                     <span className="text-white/60 text-[10px] leading-tight">Keep the QR code within the frame for instant detection</span>
                                                 </div>
                                                 
-                                                {/* Torch Toggle Button - Visible on Mobile or if detected */}
+                                                {/* Torch Toggle Button - Visible only on Mobile or if explicitly supported */}
                                                 {(torchSupported || isMobile) && (
                                                     <button 
                                                         onClick={(e) => { 
