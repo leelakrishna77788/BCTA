@@ -22,11 +22,15 @@ const AboutPage: React.FC = () => {
             />
           </div>
           <h2 className="text-4xl sm:text-5xl font-black text-slate-900 mb-4">
-            Bhimavaram Cell Technician <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Association</span>
+            Bhimavaram Cellphone Technician{" "}
+            <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+              Association
+            </span>
           </h2>
           <p className="text-slate-600/70 text-lg max-w-3xl mx-auto leading-relaxed">
-            A unified platform bringing together mobile repair technicians in Bhimavaram, 
-            fostering collaboration, skill development, and professional growth since 2018.
+            A unified platform bringing together mobile repair technicians in
+            Bhimavaram, fostering collaboration, skill development, and
+            professional growth since 2018.
           </p>
         </div>
 
@@ -36,11 +40,13 @@ const AboutPage: React.FC = () => {
             <div className="w-14 h-14 bg-indigo-600 rounded-xl flex items-center justify-center mb-4">
               <Target size={28} className="text-white" />
             </div>
-            <h3 className="text-2xl font-black text-slate-900 mb-3">Our Mission</h3>
+            <h3 className="text-2xl font-black text-slate-900 mb-3">
+              Our Mission
+            </h3>
             <p className="text-slate-600/70 leading-relaxed">
-              To empower mobile technicians with modern tools, knowledge sharing, and a 
-              collaborative platform that enhances service quality and professional standards 
-              across Bhimavaram.
+              To empower mobile technicians with modern tools, knowledge
+              sharing, and a collaborative platform that enhances service
+              quality and professional standards across Bhimavaram.
             </p>
           </div>
 
@@ -48,24 +54,45 @@ const AboutPage: React.FC = () => {
             <div className="w-14 h-14 bg-violet-600 rounded-xl flex items-center justify-center mb-4">
               <Award size={28} className="text-white" />
             </div>
-            <h3 className="text-2xl font-black text-slate-900 mb-3">Our Vision</h3>
+            <h3 className="text-2xl font-black text-slate-900 mb-3">
+              Our Vision
+            </h3>
             <p className="text-slate-600/70 leading-relaxed">
-              To become the leading association for mobile repair professionals, setting 
-              industry standards and creating opportunities for growth, innovation, and 
-              excellence in mobile technology services.
+              To become the leading association for mobile repair professionals,
+              setting industry standards and creating opportunities for growth,
+              innovation, and excellence in mobile technology services.
             </p>
           </div>
         </div>
 
         {/* Core Values */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 sm:p-12 shadow-xl border-2 border-indigo-100 mb-16">
-          <h3 className="text-3xl font-black text-slate-900 mb-8 text-center">Our Core Values</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="px-4 sm:px-6 py-10 sm:py-14 mb-16">
+          {" "}
+          <h3 className="text-3xl font-black text-slate-900 mb-8 text-center">
+            Our Core Values
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: Users, title: "Unity", desc: "Stronger together as a community" },
-              { icon: Award, title: "Excellence", desc: "Commitment to quality service" },
-              { icon: Heart, title: "Integrity", desc: "Honest and ethical practices" },
-              { icon: Target, title: "Growth", desc: "Continuous learning and improvement" }
+              {
+                icon: Users,
+                title: "Unity",
+                desc: "Stronger together as a community",
+              },
+              {
+                icon: Award,
+                title: "Excellence",
+                desc: "Commitment to quality service",
+              },
+              {
+                icon: Heart,
+                title: "Integrity",
+                desc: "Honest and ethical practices",
+              },
+              {
+                icon: Target,
+                title: "Growth",
+                desc: "Continuous Improvement",
+              },
             ].map((value, i) => (
               <div key={i} className="text-center">
                 <div className="w-16 h-16 bg-linear-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -79,17 +106,60 @@ const AboutPage: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-16">
-          {[
-            { label: "Active Members", value: "260+" },
-            { label: "Years of Service", value: "6+" },
-            { label: "Services Provided", value: "1000+" }
-          ].map((stat, i) => (
-            <div key={i} className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 text-center border-2 border-indigo-200">
-              <div className="text-5xl font-black text-slate-900 mb-2">{stat.value}</div>
-              <p className="text-slate-600 font-medium">{stat.label}</p>
+        <div className="mb-16">
+          {/* ✅ MOBILE LAYOUT */}
+          <div className="flex flex-col items-center gap-6 sm:hidden">
+            {/* Top 2 */}
+            <div className="grid grid-cols-2 gap-4 w-full max-w-md">
+              {[
+                { label: "Active Members", value: "260+" },
+                { label: "Years of Service", value: "6+" },
+              ].map((stat, i) => (
+                <div
+                  key={i}
+                  className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 text-center border-2 border-indigo-200"
+                >
+                  <div className="text-3xl font-black text-slate-900 mb-2">
+                    {stat.value}
+                  </div>
+                  <p className="text-xs text-slate-600 font-medium">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
+
+            {/* Bottom Center */}
+            <div className="w-full max-w-xs">
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 text-center border-2 border-indigo-200">
+                <div className="text-5xl font-black text-slate-900 mb-2">
+                  1000+
+                </div>
+                <p className="text-sm text-slate-600 font-medium">
+                  Services Provided
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ✅ DESKTOP LAYOUT */}
+          <div className="hidden sm:grid grid-cols-3 gap-6">
+            {[
+              { label: "Active Members", value: "260+" },
+              { label: "Years of Service", value: "6+" },
+              { label: "Services Provided", value: "1000+" },
+            ].map((stat, i) => (
+              <div
+                key={i}
+                className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 text-center border-2 border-indigo-200"
+              >
+                <div className="text-5xl font-black text-slate-900 mb-2">
+                  {stat.value}
+                </div>
+                <p className="text-slate-600 font-medium">{stat.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* CTA */}
@@ -98,7 +168,8 @@ const AboutPage: React.FC = () => {
             Join Our Community
           </h3>
           <p className="text-slate-600/70 mb-6 max-w-xl mx-auto">
-            Become part of BCTA and connect with fellow mobile repair professionals
+            Become part of BCTA and connect with fellow mobile repair
+            professionals
           </p>
           <Link
             to="/login"

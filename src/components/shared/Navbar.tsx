@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
 
       <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
         {/* LOGO */}
-        <div className="flex items-center" style={{ marginLeft: "0.25rem" }}>
+        <div className="flex items-center ml-1">
           <Link
             to="/"
             className="flex items-center group"
@@ -57,15 +57,15 @@ const Navbar: React.FC = () => {
               filter: isHome
                 ? "drop-shadow(0 0 20px rgba(99,102,241,0.4))"
                 : "none",
-              transition:
-                "transform 0.5s cubic-bezier(0.16,1,0.3,1), filter 0.5s ease",
+              transition: "all 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
+              willChange: "transform",
               display: "inline-flex",
             }}
           >
             <img
               src={assets.logo}
               alt="BCTA Logo"
-              className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded-xl transition-transform duration-300 group-hover:scale-105"
+              className="w-10 h-10 sm:w-14 sm:h-14 object-contain rounded-xl transition-transform duration-300 group-hover:scale-105 shadow-sm"
             />
           </Link>
         </div>
