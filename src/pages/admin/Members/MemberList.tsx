@@ -34,6 +34,36 @@ const MemberList: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [paymentFilter, setPaymentFilter] = useState<string>("all");
 
+    // Lock ALL scroll when modal is open
+    useEffect(() => {
+        if (!showBulkConfirm) return;
+
+        const preventDefault = (e: Event) => e.preventDefault();
+
+        // Block mouse wheel
+        window.addEventListener("wheel", preventDefault, { passive: false });
+        // Block touch scroll (mobile)
+        window.addEventListener("touchmove", preventDefault, { passive: false });
+        // Block keyboard scroll (arrow keys, space, page up/down)
+        const blockKeys = (e: KeyboardEvent) => {
+            const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
+            if (keys.includes(e.key)) e.preventDefault();
+        };
+        window.addEventListener("keydown", blockKeys);
+
+        // Also lock body/html as fallback
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+
+        return () => {
+            window.removeEventListener("wheel", preventDefault);
+            window.removeEventListener("touchmove", preventDefault);
+            window.removeEventListener("keydown", blockKeys);
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+        };
+    }, [showBulkConfirm]);
+
     const fetchMembers = async () => {
         try {
             setLoading(true);
@@ -136,8 +166,8 @@ const MemberList: React.FC = () => {
             {/* Bulk Deletion Modal */}
             {showBulkConfirm && (
                 <div className="fixed inset-0 z-[100] backdrop-blur-md animate-fade-in">
-                    <div className="absolute inset-0 flex items-start justify-center overflow-y-auto pt-8 sm:pt-20">
-                        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative mx-4">
+                    <div className="absolute inset-0 flex items-start justify-center p-4 pt-8 sm:pt-12">
+                        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
                         <button 
                             onClick={() => setShowBulkConfirm(false)}
                             className="absolute top-4 sm:top-8 right-4 sm:right-8 text-slate-400 hover:text-slate-600 transition-colors z-50 p-2"
