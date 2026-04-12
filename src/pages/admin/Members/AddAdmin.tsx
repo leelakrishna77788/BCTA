@@ -44,9 +44,14 @@ const AddAdmin: React.FC = () => {
     const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
         setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
+    const [provisionStage, setProvisionStage] = useState<string>("");
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         
+        // Prevent double-submit
+        if (loading) return;
+
         if (!form.name.trim()) {
             toast.error("Name is required");
             return;
@@ -65,31 +70,49 @@ const AddAdmin: React.FC = () => {
         }
 
         setLoading(true);
-        try {
-            await adminApi.createAdmin({
-                name: form.name.trim(),
-                email: form.email.trim(),
-                password: form.password
-            });
-            
-            toast.success(`Administrator account for "${form.name}" has been provisioned successfully!`, {
-                duration: 5000,
-                icon: '🛡️'
-            });
+        setProvisionStage("Authenticating session...");
 
-            // Reset form for next admin OR redirect back to list if required
-            setForm({ name: "", email: "", password: "", confirmPassword: "" });
-            
-            // Give immediate feedback that session is preserved
-            console.log("[AddAdmin] Account created. Current session UID:", auth.currentUser?.uid);
-        } catch (err: any) {
-            if (err.code === "auth/email-already-in-use") {
-                toast.error("Email already in use by another account");
-            } else {
-                toast.error(err.message || "Failed to create admin");
+        // Retry wrapper for transient failures
+        const attempt = async (retryCount = 0): Promise<void> => {
+            try {
+                setProvisionStage(retryCount > 0 ? `Retrying... (attempt ${retryCount + 1})` : "Creating admin account...");
+                
+                await adminApi.createAdmin({
+                    name: form.name.trim(),
+                    email: form.email.trim(),
+                    password: form.password
+                });
+                
+                setProvisionStage("Account provisioned!");
+                
+                toast.success(`Administrator account for "${form.name}" has been provisioned successfully!`, {
+                    duration: 5000,
+                    icon: '🛡️'
+                });
+
+                // Reset form for next admin
+                setForm({ name: "", email: "", password: "", confirmPassword: "" });
+                console.log("[AddAdmin] Account created. Current session UID:", auth.currentUser?.uid);
+            } catch (err: any) {
+                // Auto-retry once on network/transient errors
+                if (retryCount < 1 && !err.message?.includes("email-already-in-use") && !err.message?.includes("EMAIL_EXISTS")) {
+                    console.warn("[AddAdmin] First attempt failed, retrying:", err.message);
+                    return attempt(retryCount + 1);
+                }
+                
+                if (err.code === "auth/email-already-in-use" || err.message?.includes("EMAIL_EXISTS")) {
+                    toast.error("Email already in use by another account");
+                } else {
+                    toast.error(err.message || "Failed to create admin");
+                }
             }
+        };
+
+        try {
+            await attempt();
         } finally {
             setLoading(false);
+            setProvisionStage("");
         }
     };
 
@@ -234,15 +257,16 @@ const AddAdmin: React.FC = () => {
                         <button 
                             type="submit" 
                             disabled={loading}
-                            className="bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl shadow-2xl shadow-indigo-200 hover:shadow-indigo-400 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 flex-1 flex items-center justify-center gap-3"
+                            className="bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl shadow-2xl shadow-indigo-200 hover:shadow-indigo-400 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex-1 flex items-center justify-center gap-3"
                         >
                             {loading ? <Loader2 className="animate-spin" size={20} /> : <UserPlus size={20} />}
-                            {loading ? "Authorizing Account..." : "Confirm Provisioning"}
+                            {loading ? (provisionStage || "Processing...") : "Confirm Provisioning"}
                         </button>
                         <button 
                             type="button" 
                             onClick={() => navigate(-1)}
-                            className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl hover:bg-slate-50 transition-all active:scale-95"
+                            disabled={loading}
+                            className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Abort Process
                         </button>
