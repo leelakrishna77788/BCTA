@@ -80,7 +80,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   }, []);
   const handleLogout = async () => {
     try {
-      await auth.signOut(); // import auth from firebase
+      await auth.signOut(); 
       toast.success("Logged out successfully");
       navigate("/login");
     } catch (err) {
