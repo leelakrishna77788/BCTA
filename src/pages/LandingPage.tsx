@@ -112,60 +112,116 @@ function Reveal({
 
 const SERVICES = [
   {
-    id: 1,
-    title: "Mobile Screen Replacement",
+    id: 5,
+    title: "Camera Repair & Replacement",
     description:
-      "Expert screen replacement services for all smartphone brands. We use high-quality original and compatible displays with warranty coverage.",
+      "Fix blurry photos, camera crashes, and hardware issues with professional front and rear camera repair services.",
     features: [
-      "LCD/OLED Replacement",
-      "Touch Digitizer Repair",
-      "Gorilla Glass Installation",
-      "Same Day Service",
+      "Front Camera Replacement",
+      "Rear Camera Repair",
+      "Lens Cleaning & Fix",
+      "Focus & Sensor Fix",
     ],
-    gradient: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-    icon: "📱",
+    gradient: "linear-gradient(135deg, #ec4899, #be185d)",
+    icon: "📸",
   },
   {
-    id: 2,
-    title: "Battery Replacement & Repair",
+    id: 6,
+    title: "Charging Port & Connector Repair",
     description:
-      "Professional battery replacement for all mobile devices. Restore your phone's battery life with genuine and high-capacity batteries.",
+      "Resolve charging issues with precision repair or replacement of charging ports and connectors.",
     features: [
-      "Original Batteries",
-      "Fast Charging Support",
-      "Battery Health Check",
-      "Instant Replacement",
+      "Charging Port Replacement",
+      "Loose Connector Fix",
+      "Fast Charging Repair",
+      "USB Type-C / Lightning Support",
     ],
-    gradient: "linear-gradient(135deg, #10b981, #059669)",
-    icon: "🔋",
+    gradient: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+    icon: "🔌",
   },
   {
-    id: 3,
-    title: "Motherboard & IC Repair",
+    id: 7,
+    title: "Speaker & Microphone Repair",
     description:
-      "Advanced motherboard-level repairs including IC replacement, reballing, and circuit repair. We fix charging issues, network problems, and boot failures.",
+      "Fix audio issues including low sound, no sound, or microphone problems for clear communication.",
     features: [
-      "IC Replacement",
-      "BGA Reballing",
-      "Circuit Repair",
-      "Water Damage Recovery",
+      "Speaker Replacement",
+      "Microphone Fix",
+      "Audio IC Repair",
+      "Noise Issue Fix",
     ],
-    gradient: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
-    icon: "🔧",
+    gradient: "linear-gradient(135deg, #22c55e, #15803d)",
+    icon: "🔊",
   },
   {
-    id: 4,
-    title: "Software & Unlocking Services",
+    id: 8,
+    title: "Water Damage Treatment",
     description:
-      "Complete software solutions including OS installation, unlocking, data recovery, and virus removal. Keep your device running smoothly.",
+      "Advanced cleaning and repair solutions for water-damaged devices to restore functionality.",
     features: [
-      "OS Installation",
-      "Pattern/FRP Unlock",
-      "Data Recovery",
-      "Software Updates",
+      "Liquid Cleaning",
+      "Drying Treatment",
+      "Corrosion Removal",
+      "Component Recovery",
     ],
-    gradient: "linear-gradient(135deg, #f59e0b, #d97706)",
-    icon: "💻",
+    gradient: "linear-gradient(135deg, #06b6d4, #0e7490)",
+    icon: "💧",
+  },
+  {
+    id: 9,
+    title: "Network & Signal Issue Repair",
+    description:
+      "Fix weak signals, no network issues, and SIM detection problems with expert diagnostics.",
+    features: [
+      "No Signal Fix",
+      "SIM Slot Repair",
+      "Antenna Repair",
+      "IMEI Repair",
+    ],
+    gradient: "linear-gradient(135deg, #6366f1, #4338ca)",
+    icon: "📡",
+  },
+  {
+    id: 10,
+    title: "Phone Accessories & Parts",
+    description:
+      "Wide range of mobile accessories and spare parts available including chargers, cases, and more.",
+    features: [
+      "Original Accessories",
+      "Tempered Glass",
+      "Back Covers",
+      "Chargers & Cables",
+    ],
+    gradient: "linear-gradient(135deg, #f43f5e, #be123c)",
+    icon: "🛍️",
+  },
+  {
+    id: 11,
+    title: "Phone Cleaning & Maintenance",
+    description:
+      "Keep your device in top condition with professional internal and external cleaning services.",
+    features: [
+      "Dust Cleaning",
+      "Internal Service",
+      "Thermal Cleaning",
+      "Performance Boost",
+    ],
+    gradient: "linear-gradient(135deg, #14b8a6, #0f766e)",
+    icon: "🧼",
+  },
+  {
+    id: 12,
+    title: "Display Glass Refurbishing",
+    description:
+      "Cost-effective glass replacement without changing the full display using advanced refurbishing technology.",
+    features: [
+      "Glass Only Replacement",
+      "OCA Lamination",
+      "Bubble Removal",
+      "Cost Saving Repair",
+    ],
+    gradient: "linear-gradient(135deg, #a855f7, #6b21a8)",
+    icon: "🪟",
   },
 ];
 
@@ -333,7 +389,7 @@ const LandingPage: React.FC = () => {
             src={assets.herologo}
             alt=""
             loading="lazy"
-            className="absolute w-[400px] sm:w-[550px] md:w-[700px] opacity-[0.10] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            className="absolute w-[550px] sm:w-[750px] md:w-[1000px] opacity-[0.10] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
             style={{ mixBlendMode: "multiply" }}
           />
           <div
@@ -402,9 +458,9 @@ const LandingPage: React.FC = () => {
             </Reveal>
 
             {/* Mobile: Horizontal Scroll */}
-            <div className="md:hidden overflow-x-auto scrollbar-hide pb-4">
-              <div className="flex gap-4 px-2">
-                {presidents.map((p, i) => (
+            <div className="md:hidden overflow-hidden pb-4">
+              <div className="flex gap-4 px-2 animate-marquee 8s linear infinite whitespace-nowrap">
+                {[...presidents, ...presidents].map((p, i) => (
                   <Link
                     key={i}
                     to="/presidents"
