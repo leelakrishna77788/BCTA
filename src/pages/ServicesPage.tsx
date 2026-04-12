@@ -42,6 +42,20 @@ const SERVICES = [
 const ServicesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100">
+      <style>{`
+        @keyframes shootBullet {
+          0%   { width: 6px;  opacity: 0.5; }
+          40%  { width: 40%;  opacity: 1;   }
+          100% { width: 100%; opacity: 1;   }
+        }
+        .bullet-underline {
+          height: 4px;
+          border-radius: 999px;
+          background: linear-gradient(to right, transparent, #6366f1 40%, #4f46e5 60%, transparent);
+          width: 100%;
+        }
+      `}</style>
+
       <Navbar />
 
       {/* Content */}
@@ -56,40 +70,52 @@ const ServicesPage: React.FC = () => {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {SERVICES.map((service) => (
-            <div
-              key={service.id}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-indigo-100 p-6 sm:p-8 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
-            >
-              {/* Icon & Number */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="text-5xl">{service.icon}</div>
-                <div className={`text-5xl font-black bg-linear-to-r ${service.color} bg-clip-text text-transparent`}>
-                  0{service.id}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 sm:gap-6 md:gap-8">
+          {SERVICES.map((service, idx) => (
+            <React.Fragment key={service.id}>
+              <div
+                className="relative bg-transparent shadow-none sm:bg-white/80 sm:shadow-xl sm:backdrop-blur-sm rounded-2xl border-0 sm:border-2 sm:border-indigo-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+              >
+
+
+                <div className="px-4 pt-6 pb-8 sm:p-6 md:p-8">
+                  {/* Icon & Number */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="text-5xl">{service.icon}</div>
+                    <div className={`text-5xl font-black bg-linear-to-r ${service.color} bg-clip-text text-transparent`}>
+                      0{service.id}
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3">
+                    {service.title}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-slate-600/70 text-base mb-6 leading-relaxed">
+                    {service.description}
+                  </p>
+
+                  {/* Features */}
+                  <div className="space-y-3">
+                    {service.features.map((feature, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <CheckCircle size={18} className="text-emerald-500 shrink-0" />
+                        <span className="text-sm font-medium text-slate-900">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Title */}
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3">
-                {service.title}
-              </h3>
-
-              {/* Description */}
-              <p className="text-slate-600/70 text-base mb-6 leading-relaxed">
-                {service.description}
-              </p>
-
-              {/* Features */}
-              <div className="space-y-3">
-                {service.features.map((feature, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <CheckCircle size={18} className="text-emerald-500 shrink-0" />
-                    <span className="text-sm font-medium text-slate-900">{feature}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+              {/* Bullet underline separator — mobile only, between cards */}
+              {idx < SERVICES.length - 1 && (
+                <div className="block sm:hidden px-4 py-1">
+                  <div className="bullet-underline" />
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </div>
 
