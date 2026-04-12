@@ -15,12 +15,6 @@ const ProtectedRoute = memo(({ children, allowedRoles }: ProtectedRouteProps) =>
 
   const normalizedRole = userRole?.toLowerCase().trim() ?? "";
 
-  if (!loading) {
-    console.log(
-      `[ProtectedRoute] Auth check: role='${normalizedRole}', allowed=[${allowedRoles?.join(",")}]`
-    );
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">

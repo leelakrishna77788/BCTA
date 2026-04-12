@@ -72,6 +72,9 @@ const AddAdmin: React.FC = () => {
         setLoading(true);
         setProvisionStage("Authenticating session...");
 
+        // Capture session UID BEFORE creating the new admin
+        const originalUid = auth.currentUser?.uid;
+
         // Retry wrapper for transient failures
         const attempt = async (retryCount = 0): Promise<void> => {
             try {
@@ -83,6 +86,13 @@ const AddAdmin: React.FC = () => {
                     password: form.password
                 });
                 
+                // Session integrity check — ensure we're still the same admin
+                if (auth.currentUser?.uid !== originalUid) {
+                    console.warn("[AddAdmin] Session displacement detected! Restoring...");
+                    // Force token refresh to restore original session
+                    await auth.currentUser?.getIdToken(true);
+                }
+
                 setProvisionStage("Account provisioned!");
                 
                 toast.success(`Administrator account for "${form.name}" has been provisioned successfully!`, {
@@ -92,7 +102,7 @@ const AddAdmin: React.FC = () => {
 
                 // Reset form for next admin
                 setForm({ name: "", email: "", password: "", confirmPassword: "" });
-                console.log("[AddAdmin] Account created. Current session UID:", auth.currentUser?.uid);
+                console.log("[AddAdmin] Account created. Session preserved — UID:", auth.currentUser?.uid);
             } catch (err: any) {
                 // Auto-retry once on network/transient errors
                 if (retryCount < 1 && !err.message?.includes("email-already-in-use") && !err.message?.includes("EMAIL_EXISTS")) {

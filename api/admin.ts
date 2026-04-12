@@ -144,13 +144,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { email, password, profile } = req.body as any;
         if (!email) return res.status(400).json({ error: "Missing email for createUser" });
         if (!password) return res.status(400).json({ error: "Missing password for createUser" });
-        const apiKey = req.body.apiKey;
-        if (!apiKey) return res.status(400).json({ error: "Missing apiKey. Send VITE_FIREBASE_API_KEY from the frontend." });
 
         console.log(`[api/admin] Creating user: ${email}`);
         let newUid;
         try {
-          const authUser = await createAuthUserREST(apiKey, email, password);
+          // Uses Admin Identity Toolkit (service account) — no client tokens generated
+          const authUser = await createAuthUserREST(projectId, accessToken, email, password);
           newUid = authUser.localId;
         } catch (authErr: any) {
           console.error(`[api/admin] createAuthUserREST failed:`, authErr.message);

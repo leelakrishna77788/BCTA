@@ -118,7 +118,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
           </button>
 
           {showNotifs && (
-            <div className="absolute top-full -right-2 sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100/80 py-1 animate-scale-in z-50 overflow-hidden">
+            <div className="absolute top-full -right-2 sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-100/80 py-1 animate-scale-in z-50 overflow-hidden gpu-accelerated">
               {/* Gradient header strip */}
               <div
                 className="h-[3px]"

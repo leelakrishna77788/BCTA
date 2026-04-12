@@ -21,11 +21,6 @@ export const adminApi = {
     }
 
     const idToken = await auth.currentUser.getIdToken();
-    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
-
-    if (!apiKey) {
-      throw new Error("VITE_FIREBASE_API_KEY is missing from environment variables.");
-    }
 
     const profileData = {
       name: input.name,
@@ -45,7 +40,6 @@ export const adminApi = {
         action: "createUser",
         email: input.email.trim(),
         password: input.password,
-        apiKey: apiKey,
         profile: profileData,
       }),
     });
