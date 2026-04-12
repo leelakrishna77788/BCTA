@@ -206,7 +206,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
               {/* Profile */}
               <button
                 onClick={() => {
-                  navigate("/member/Myprofile"); // 👈 PROFILE PATH
+                  navigate("/member/Myprofile");
                   setShowProfileMenu(false);
                 }}
                 className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
