@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { assets } from "../../assets/assets";
 import { Bell, Trash2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useRef } from "react";
 import { auth } from "../../firebase/firebaseConfig";
 import {
   collection,
@@ -34,6 +35,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   const [notifs, setNotifs] = useState<NotificationDoc[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -68,6 +70,25 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [showNotifs]);
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    if (showProfileMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showProfileMenu]);
 
   const deleteNotification = useCallback(async (id: string) => {
     if (!window.confirm("Delete this notification?")) return;
@@ -80,7 +101,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   }, []);
   const handleLogout = async () => {
     try {
-      await auth.signOut(); 
+      await auth.signOut();
       toast.success("Logged out successfully");
       navigate("/login");
     } catch (err) {
@@ -202,8 +223,10 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
           className="relative flex items-center gap-3 pl-1 group cursor-pointer"
         >
           {showProfileMenu && (
-            <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden md:hidden">
-              {/* Profile */}
+            <div
+              ref={profileMenuRef}
+              className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden md:hidden"
+            >
               <button
                 onClick={() => {
                   navigate("/member/Myprofile");
