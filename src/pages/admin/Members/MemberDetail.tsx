@@ -45,6 +45,13 @@ interface ProductDoc extends DocumentData {
 
 const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d+$/;
 
+const escapeHtml = (value: string) => value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
 const MemberDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -195,19 +202,94 @@ const MemberDetail: React.FC = () => {
     };
 
     const handlePrintID = () => {
+        console.log("PRINT CLICKED");
+        console.log("REF:", idCardRef.current);
+
+        const buildCaptureCanvas = async () => {
+            if (!idCardRef.current || !member) return null;
+
+            const qrSvg = idCardRef.current.querySelector("svg")?.outerHTML || "";
+            const fullNameSafe = escapeHtml(`${member.name || ""} ${member.surname || ""}`.trim() || "Member");
+            const memberIdSafe = escapeHtml(member.memberId || "MEMBER ID PENDING");
+            const statusSafe = escapeHtml(member.status || "unknown");
+            const yearSafe = escapeHtml(String(memberSince));
+            const photoUrl = member.photoURL || "";
+
+            const host = document.createElement("div");
+            host.style.position = "fixed";
+            host.style.left = "-99999px";
+            host.style.top = "0";
+            host.style.width = "420px";
+            host.style.height = "auto";
+            host.style.zIndex = "-1";
+            host.style.pointerEvents = "none";
+            host.style.background = "#ffffff";
+
+            host.innerHTML = `
+                <div style="all: initial; box-sizing: border-box; width: 420px; border-radius: 24px; overflow: hidden; border: 1px solid #1e293b; background: #020617; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.12);">
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                            <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.12);"></div>
+                            <div style="min-width:0;">
+                                <div style="font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:#e2e8f0; white-space:nowrap;">BCTA MEMBER</div>
+                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">Digital Identity Pass</div>
+                            </div>
+                        </div>
+                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">Verified</div>
+                    </div>
+
+                    <div style="padding:16px;">
+                        <div style="display:flex; gap:14px; align-items:flex-start;">
+                            <div style="width:88px; height:88px; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.15); background:#1e1b4b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:700; text-transform:uppercase;">
+                                ${photoUrl ? `<img src="${photoUrl}" crossorigin="anonymous" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:cover;"/>` : escapeHtml((member.name?.[0] || "M").toUpperCase())}
+                            </div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.15; word-break:break-word;">${fullNameSafe}</div>
+                                <div style="margin-top:6px; font-size:11px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#a5b4fc; word-break:break-all;">${memberIdSafe}</div>
+                                <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px; text-transform:capitalize;">${statusSafe}</span>
+                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px;">${yearSafe}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; justify-content:center; margin-top:16px;">
+                            <div style="border-radius:16px; border:1px solid rgba(255,255,255,0.2); background:#ffffff; padding:14px;">
+                                ${qrSvg || `<div style='width:140px; height:140px; display:flex; align-items:center; justify-content:center; color:#0f172a; font-size:12px;'>QR</div>`}
+                            </div>
+                        </div>
+
+                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Secured Through BCTA Digital Identity</div>
+                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Valid for ${new Date().getFullYear()} fiscal year</div>
+                    </div>
+                    <div style="height:6px; background:linear-gradient(90deg, #1e1b4b, #4f46e5, #1e1b4b);"></div>
+                </div>
+            `;
+
+            document.body.appendChild(host);
+            try {
+                const { default: html2canvas } = await import("html2canvas");
+                return await html2canvas(host.firstElementChild as HTMLElement, {
+                    backgroundColor: "#ffffff",
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                });
+            } finally {
+                host.remove();
+            }
+        };
+
         const runPrint = async () => {
             if (!idCardRef.current) return;
             try {
-                const { default: html2canvas } = await import("html2canvas");
-                const canvas = await html2canvas(idCardRef.current, {
-                    backgroundColor: null,
-                    scale: Math.max(2, Math.min(window.devicePixelRatio || 1, 3)),
-                    useCORS: true,
-                    logging: false,
-                });
+                const canvas = await buildCaptureCanvas();
+                if (!canvas) return;
 
                 const printWindow = window.open("", "_blank", "width=900,height=1200");
                 if (!printWindow) {
+                    alert("Popup blocked!");
                     toast.error("Unable to open print window. Please allow popups.");
                     return;
                 }
@@ -231,14 +313,37 @@ const MemberDetail: React.FC = () => {
                             </style>
                         </head>
                         <body>
-                            <img src="${imageData}" alt="BCTA Digital ID" />
+                            <img id="printCard" src="${imageData}" alt="BCTA Digital ID" />
+                            <script>
+                                (function () {
+                                    var card = document.getElementById('printCard');
+                                    var printed = false;
+
+                                    function runPrint() {
+                                        if (printed) return;
+                                        printed = true;
+                                        window.focus();
+                                        window.print();
+                                    }
+
+                                    if (card && card.complete) {
+                                        runPrint();
+                                    } else if (card) {
+                                        card.addEventListener('load', runPrint, { once: true });
+                                        card.addEventListener('error', runPrint, { once: true });
+                                    } else {
+                                        runPrint();
+                                    }
+
+                                    window.addEventListener('afterprint', function () {
+                                        window.close();
+                                    }, { once: true });
+                                })();
+                            </script>
                         </body>
                     </html>
                 `);
                 printWindow.document.close();
-                printWindow.focus();
-                printWindow.print();
-                printWindow.close();
             } catch (error) {
                 console.error("Print failed:", error);
                 toast.error("Failed to print ID card");
@@ -249,17 +354,91 @@ const MemberDetail: React.FC = () => {
     };
 
     const handleDownloadID = async () => {
+        console.log("DOWNLOAD CLICKED");
+        console.log("REF:", idCardRef.current);
+
         if (!idCardRef.current) return;
+
+        const buildCaptureCanvas = async () => {
+            if (!idCardRef.current || !member) return null;
+
+            const qrSvg = idCardRef.current.querySelector("svg")?.outerHTML || "";
+            const fullNameSafe = escapeHtml(`${member.name || ""} ${member.surname || ""}`.trim() || "Member");
+            const memberIdSafe = escapeHtml(member.memberId || "MEMBER ID PENDING");
+            const statusSafe = escapeHtml(member.status || "unknown");
+            const yearSafe = escapeHtml(String(memberSince));
+            const photoUrl = member.photoURL || "";
+
+            const host = document.createElement("div");
+            host.style.position = "fixed";
+            host.style.left = "-99999px";
+            host.style.top = "0";
+            host.style.width = "420px";
+            host.style.height = "auto";
+            host.style.zIndex = "-1";
+            host.style.pointerEvents = "none";
+            host.style.background = "#ffffff";
+
+            host.innerHTML = `
+                <div style="all: initial; box-sizing: border-box; width: 420px; border-radius: 24px; overflow: hidden; border: 1px solid #1e293b; background: #020617; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.12);">
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                            <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.12);"></div>
+                            <div style="min-width:0;">
+                                <div style="font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:#e2e8f0; white-space:nowrap;">BCTA MEMBER</div>
+                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">Digital Identity Pass</div>
+                            </div>
+                        </div>
+                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">Verified</div>
+                    </div>
+
+                    <div style="padding:16px;">
+                        <div style="display:flex; gap:14px; align-items:flex-start;">
+                            <div style="width:88px; height:88px; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.15); background:#1e1b4b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:700; text-transform:uppercase;">
+                                ${photoUrl ? `<img src="${photoUrl}" crossorigin="anonymous" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:cover;"/>` : escapeHtml((member.name?.[0] || "M").toUpperCase())}
+                            </div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.15; word-break:break-word;">${fullNameSafe}</div>
+                                <div style="margin-top:6px; font-size:11px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#a5b4fc; word-break:break-all;">${memberIdSafe}</div>
+                                <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px; text-transform:capitalize;">${statusSafe}</span>
+                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px;">${yearSafe}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; justify-content:center; margin-top:16px;">
+                            <div style="border-radius:16px; border:1px solid rgba(255,255,255,0.2); background:#ffffff; padding:14px;">
+                                ${qrSvg || `<div style='width:140px; height:140px; display:flex; align-items:center; justify-content:center; color:#0f172a; font-size:12px;'>QR</div>`}
+                            </div>
+                        </div>
+
+                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Secured Through BCTA Digital Identity</div>
+                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Valid for ${new Date().getFullYear()} fiscal year</div>
+                    </div>
+                    <div style="height:6px; background:linear-gradient(90deg, #1e1b4b, #4f46e5, #1e1b4b);"></div>
+                </div>
+            `;
+
+            document.body.appendChild(host);
+            try {
+                const { default: html2canvas } = await import("html2canvas");
+                return await html2canvas(host.firstElementChild as HTMLElement, {
+                    backgroundColor: "#ffffff",
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                });
+            } finally {
+                host.remove();
+            }
+        };
 
         try {
             setIsDownloadingID(true);
-            const { default: html2canvas } = await import("html2canvas");
-            const canvas = await html2canvas(idCardRef.current, {
-                backgroundColor: null,
-                scale: Math.max(2, Math.min(window.devicePixelRatio || 1, 3)),
-                useCORS: true,
-                logging: false,
-            });
+            const canvas = await buildCaptureCanvas();
+            if (!canvas) return;
             const safeName = `${member?.name || "member"}-${member?.surname || "id"}`.replace(/\s+/g, "-").toLowerCase();
             const fileName = `${safeName}-digital-id.png`;
 
@@ -270,23 +449,14 @@ const MemberDetail: React.FC = () => {
                 }, "image/png");
             });
 
-            const file = new File([blob], fileName, { type: "image/png" });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: "BCTA Digital ID",
-                    text: "Member digital ID card",
-                });
-            } else {
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             toast.success("ID card downloaded");
         } catch (error) {
@@ -658,7 +828,7 @@ const MemberDetail: React.FC = () => {
                             <div className="relative group animate-scale-up">
                                 <div className="absolute inset-0 bg-conic-to-r from-white via-slate-100 to-white rounded-[2.1rem] animate-spin-slow opacity-50 blur-sm" />
 
-                                <div ref={idCardRef} className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[1.6rem] relative">
+                                <div ref={idCardRef} className="card p-0! overflow-hidden bg-black border border-white/10 shadow-2xl rounded-[1.6rem] relative" style={{ backgroundColor: "#020617", color: "#ffffff" }}>
                                     <div className="p-2 sm:p-2.5 pr-10 sm:pr-12 flex items-center justify-between border-b border-white/5">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
