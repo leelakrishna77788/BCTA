@@ -55,6 +55,7 @@ const MemberDetail: React.FC = () => {
     const [meetings, setMeetings] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [showID, setShowID] = useState<boolean>(false);
+    const [isDownloadingID, setIsDownloadingID] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -111,28 +112,37 @@ const MemberDetail: React.FC = () => {
         fetchData();
     }, [id]);
 
-    // Keep page static while Digital ID is open.
+    // Lock background scroll while Digital ID modal is open.
     useEffect(() => {
         if (!showID) return;
 
-        const preventDefault = (e: Event) => e.preventDefault();
-        const blockKeys = (e: KeyboardEvent) => {
-            const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
-            if (keys.includes(e.key)) e.preventDefault();
-        };
+        const scrollY = window.scrollY;
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousBodyPosition = document.body.style.position;
+        const previousBodyTop = document.body.style.top;
+        const previousBodyLeft = document.body.style.left;
+        const previousBodyRight = document.body.style.right;
+        const previousBodyWidth = document.body.style.width;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
 
-        window.addEventListener("wheel", preventDefault, { passive: false });
-        window.addEventListener("touchmove", preventDefault, { passive: false });
-        window.addEventListener("keydown", blockKeys);
+        // Freeze page exactly where it is (prevents background movement on mobile).
         document.body.style.overflow = "hidden";
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.left = "0";
+        document.body.style.right = "0";
+        document.body.style.width = "100%";
         document.documentElement.style.overflow = "hidden";
 
         return () => {
-            window.removeEventListener("wheel", preventDefault);
-            window.removeEventListener("touchmove", preventDefault);
-            window.removeEventListener("keydown", blockKeys);
-            document.body.style.overflow = "";
-            document.documentElement.style.overflow = "";
+            document.body.style.overflow = previousBodyOverflow;
+            document.body.style.position = previousBodyPosition;
+            document.body.style.top = previousBodyTop;
+            document.body.style.left = previousBodyLeft;
+            document.body.style.right = previousBodyRight;
+            document.body.style.width = previousBodyWidth;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            window.scrollTo(0, scrollY);
         };
     }, [showID]);
 
@@ -185,83 +195,105 @@ const MemberDetail: React.FC = () => {
     };
 
     const handlePrintID = () => {
-        if (!idCardRef.current) return;
+        const runPrint = async () => {
+            if (!idCardRef.current) return;
+            try {
+                const { default: html2canvas } = await import("html2canvas");
+                const canvas = await html2canvas(idCardRef.current, {
+                    backgroundColor: null,
+                    scale: Math.max(2, Math.min(window.devicePixelRatio || 1, 3)),
+                    useCORS: true,
+                    logging: false,
+                });
 
-        const printWindow = window.open("", "_blank", "width=850,height=1100");
-        if (!printWindow) {
-            toast.error("Unable to open print window. Please allow popups.");
-            return;
-        }
+                const printWindow = window.open("", "_blank", "width=900,height=1200");
+                if (!printWindow) {
+                    toast.error("Unable to open print window. Please allow popups.");
+                    return;
+                }
 
-        const cardMarkup = idCardRef.current.outerHTML;
+                const imageData = canvas.toDataURL("image/png");
+                printWindow.document.write(`
+                    <!doctype html>
+                    <html>
+                        <head>
+                            <meta charset="utf-8" />
+                            <title>BCTA Digital ID</title>
+                            <style>
+                                html, body { margin: 0; padding: 0; background: #ffffff; }
+                                body { display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+                                img { width: 420px; max-width: 100%; height: auto; display: block; }
+                                @media print {
+                                    @page { size: A4 portrait; margin: 10mm; }
+                                    body { padding: 0; }
+                                    img { width: 420px; }
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <img src="${imageData}" alt="BCTA Digital ID" />
+                        </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            } catch (error) {
+                console.error("Print failed:", error);
+                toast.error("Failed to print ID card");
+            }
+        };
 
-        printWindow.document.write(`
-            <!doctype html>
-            <html>
-                <head>
-                    <meta charset="utf-8" />
-                    <title>BCTA Digital ID</title>
-                    <style>
-                        * { box-sizing: border-box; }
-                        html, body {
-                            margin: 0;
-                            padding: 0;
-                            background: #020617;
-                            min-height: 100%;
-                            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-                        }
-                        body {
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            padding: 24px;
-                        }
-                        .print-wrap {
-                            width: min(100%, 420px);
-                        }
-                        .print-wrap img {
-                            display: block;
-                            max-width: 100%;
-                            height: auto;
-                        }
-                        @media print {
-                            @page { size: A4 portrait; margin: 12mm; }
-                            body { padding: 0; }
-                            .print-wrap { width: 420px; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="print-wrap">${cardMarkup}</div>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+        void runPrint();
     };
 
     const handleDownloadID = async () => {
         if (!idCardRef.current) return;
 
         try {
+            setIsDownloadingID(true);
             const { default: html2canvas } = await import("html2canvas");
             const canvas = await html2canvas(idCardRef.current, {
                 backgroundColor: null,
-                scale: 2,
+                scale: Math.max(2, Math.min(window.devicePixelRatio || 1, 3)),
                 useCORS: true,
+                logging: false,
+            });
+            const safeName = `${member?.name || "member"}-${member?.surname || "id"}`.replace(/\s+/g, "-").toLowerCase();
+            const fileName = `${safeName}-digital-id.png`;
+
+            const blob = await new Promise<Blob>((resolve, reject) => {
+                canvas.toBlob((result) => {
+                    if (result) resolve(result);
+                    else reject(new Error("Unable to generate image blob"));
+                }, "image/png");
             });
 
-            const link = document.createElement("a");
-            const safeName = `${member?.name || "member"}-${member?.surname || "id"}`.replace(/\s+/g, "-").toLowerCase();
-            link.download = `${safeName}-digital-id.png`;
-            link.href = canvas.toDataURL("image/png");
-            link.click();
+            const file = new File([blob], fileName, { type: "image/png" });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: "BCTA Digital ID",
+                    text: "Member digital ID card",
+                });
+            } else {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
             toast.success("ID card downloaded");
         } catch (error) {
             console.error("Download failed:", error);
             toast.error("Failed to download ID card");
+        } finally {
+            setIsDownloadingID(false);
         }
     };
 
@@ -612,9 +644,9 @@ const MemberDetail: React.FC = () => {
             </div>
 
             {showID && member && (
-                <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md animate-fade-in">
-                    <div className="h-full w-full flex items-start justify-center p-3 pt-5 sm:p-4 sm:pt-8">
-                        <div className="w-full max-w-[24rem] relative max-h-[calc(100vh-1.5rem)] overflow-hidden scale-[0.95] sm:scale-100">
+                <div className="fixed inset-0 z-[100] bg-white/70 backdrop-blur-md animate-fade-in overflow-hidden overscroll-none">
+                    <div className="h-full w-full flex items-start justify-center overflow-hidden">
+                        <div className="w-full max-w-[22rem] sm:max-w-[24rem] md:max-w-[26rem] relative overflow-hidden scale-[0.9] sm:scale-100 origin-top">
                             <button
                                 onClick={() => setShowID(false)}
                                 className="absolute top-2.5 right-2.5 text-white/70 hover:text-white transition-colors z-50 p-1.5 bg-white/10 rounded-full"
@@ -623,17 +655,17 @@ const MemberDetail: React.FC = () => {
                                 <X size={18} />
                             </button>
 
-                            <div className="relative group p-1 animate-scale-up">
-                                <div className="absolute inset-0 bg-conic-to-r from-indigo-500 via-[#1e1b4b] to-indigo-500 rounded-[2.1rem] animate-spin-slow opacity-50 blur-sm" />
+                            <div className="relative group animate-scale-up">
+                                <div className="absolute inset-0 bg-conic-to-r from-white via-slate-100 to-white rounded-[2.1rem] animate-spin-slow opacity-50 blur-sm" />
 
                                 <div ref={idCardRef} className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[1.6rem] relative">
-                                    <div className="p-2.5 sm:p-3 pr-10 sm:pr-12 flex items-center justify-between border-b border-white/5">
+                                    <div className="p-2 sm:p-2.5 pr-10 sm:pr-12 flex items-center justify-between border-b border-white/5">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
                                             <div className="w-4 h-4 bg-indigo-500 rounded-sm rotate-45" />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</p>
+                                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA MEMBER</p>
                                             <p className="text-[10px] font-semibold text-white/55">Digital Identity Pass</p>
                                         </div>
                                     </div>
@@ -643,10 +675,10 @@ const MemberDetail: React.FC = () => {
                                     </span>
                                 </div>
 
-                                <div className="p-5 sm:p-6">
-                                    <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:gap-6">
+                                <div className="p-4 sm:p-5">
+                                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:gap-5">
                                         <div className="flex-shrink-0">
-                                            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-4xl">
+                                            <div className="w-18 h-18 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-3xl">
                                                 {member.photoURL ? (
                                                     <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
                                                 ) : (
@@ -656,10 +688,10 @@ const MemberDetail: React.FC = () => {
                                         </div>
 
                                         <div className="flex-1 flex flex-col justify-center min-w-0">
-                                            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight break-words leading-tight">
+                                            <h3 className="text-base sm:text-lg font-black text-white tracking-tight break-words leading-tight">
                                                 {member.name} {member.surname}
                                             </h3>
-                                            <p className="mt-1 text-[11px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.16em] break-all">
+                                            <p className="mt-1 text-[10px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.14em] break-all">
                                                 {member.memberId || "MEMBER ID PENDING"}
                                             </p>
                                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -673,12 +705,12 @@ const MemberDetail: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-center mb-5">
-                                        <div className="rounded-2xl border border-white/10 bg-white p-5 sm:p-6 shadow-sm">
+                                    <div className="flex justify-center mb-4">
+                                        <div className="rounded-2xl border border-white/10 bg-white p-3.5 sm:p-5 shadow-sm">
                                             <div className="sm:hidden">
                                                 <QRCodeSVG
                                                     value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
-                                                    size={130}
+                                                    size={108}
                                                     level="H"
                                                     includeMargin={false}
                                                     fgColor="#1e1b4b"
@@ -687,7 +719,7 @@ const MemberDetail: React.FC = () => {
                                             <div className="hidden sm:block">
                                                 <QRCodeSVG
                                                     value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
-                                                    size={160}
+                                                    size={140}
                                                     level="H"
                                                     includeMargin={false}
                                                     fgColor="#1e1b4b"
@@ -697,10 +729,10 @@ const MemberDetail: React.FC = () => {
                                     </div>
 
                                     <div className="text-center">
-                                        <p className="text-[9px] text-white/35 font-bold uppercase tracking-[0.16em]">
+                                        <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em]">
                                             Secured Through BCTA Digital Identity
                                         </p>
-                                        <p className="text-[9px] text-white/35 font-bold uppercase tracking-[0.16em] mt-0.5">
+                                        <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em] mt-0.5">
                                             Valid for {new Date().getFullYear()} fiscal year
                                         </p>
                                     </div>
@@ -709,14 +741,21 @@ const MemberDetail: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                                <button onClick={handlePrintID} className="w-full py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all border border-white/10">
-                                    Print Pass
+                            <div className="mt-2 grid grid-cols-3 gap-2 pb-1">
+                                <button onClick={handlePrintID} className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-white text-slate-800 rounded-lg font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none transition-all border border-slate-300 hover:bg-slate-50">
+                                    <span className="truncate block sm:hidden">Print</span>
+                                    <span className="truncate hidden sm:block">Print Pass</span>
                                 </button>
-                                <button onClick={handleDownloadID} className="w-full py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all border border-indigo-400/30 inline-flex items-center justify-center gap-1.5">
-                                    <Download size={12} /> Download
+                                <button
+                                    onClick={handleDownloadID}
+                                    disabled={isDownloadingID}
+                                    className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-slate-900 text-white rounded-lg font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none transition-all border border-slate-900 inline-flex items-center justify-center gap-1 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    <Download size={11} className="shrink-0" />
+                                    <span className="truncate sm:hidden">{isDownloadingID ? "Saving" : "Save"}</span>
+                                    <span className="truncate hidden sm:inline">{isDownloadingID ? "Saving..." : "Download"}</span>
                                 </button>
-                                <button onClick={() => setShowID(false)} className="w-full py-2 bg-white text-slate-900 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-slate-100 transition-all">
+                                <button onClick={() => setShowID(false)} className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-white text-slate-900 rounded-lg font-black text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none hover:bg-slate-100 transition-all border border-slate-300">
                                     Close
                                 </button>
                             </div>
