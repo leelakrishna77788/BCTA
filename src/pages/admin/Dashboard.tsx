@@ -133,22 +133,18 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = useCallback(async () => {
     try {
-      const membersSnap = await getDocs(
-        query(collection(db, "users"), where("role", "==", "member")),
-      );
+      // Fire all queries in PARALLEL — saves ~1-2s vs sequential
+      const [membersSnap, meetingsSnap, complaintsSnap] = await Promise.all([
+        getDocs(query(collection(db, "users"), where("role", "==", "member"))),
+        getDocs(query(collection(db, "meetings"), orderBy("date", "desc"))),
+        getDocs(query(collection(db, "complaints"), where("status", "==", "open"))),
+      ]);
+
       const members = membersSnap.docs.map(
         (d) => ({ uid: d.id, ...d.data() }) as MemberStat,
       );
-
-      const meetingsSnap = await getDocs(
-        query(collection(db, "meetings"), orderBy("date", "desc")),
-      );
       const meetings = meetingsSnap.docs.map(
         (d) => ({ id: d.id, ...d.data() }) as MeetingStat,
-      );
-
-      const complaintsSnap = await getDocs(
-        query(collection(db, "complaints"), where("status", "==", "open")),
       );
 
       let active = 0,
@@ -222,7 +218,7 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 60000);
+    const interval = setInterval(fetchStats, 300000); // Refresh every 5 min (was 60s)
     return () => clearInterval(interval);
   }, [fetchStats]);
 

@@ -197,20 +197,32 @@ export async function getFirestoreDocREST(projectId: string, accessToken: string
 }
 
 /**
- * Creates a user via Firebase Identity Toolkit REST API
+ * Creates a user via Firebase Admin Identity Toolkit REST API.
+ * Uses the service account access token (NOT the public signUp endpoint)
+ * to avoid generating client-side auth tokens that could displace the
+ * current admin's session.
  */
-export async function createAuthUserREST(apiKey: string, email: string, password?: string) {
-  const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`;
+export async function createAuthUserREST(projectId: string, accessToken: string, email: string, password?: string) {
+  const url = `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, returnSecureToken: true })
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      email,
+      password,
+      emailVerified: false,
+      disabled: false
+    })
   });
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.error?.message || `REST createAuthUser failed: ${JSON.stringify(data)}`);
   }
-  return data; // contains localId (which is the uid)
+  // Admin endpoint returns { localId } directly
+  return { localId: data.localId || data.uid || data.users?.[0]?.localId };
 }
 
 /**

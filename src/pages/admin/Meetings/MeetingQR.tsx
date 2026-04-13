@@ -54,6 +54,7 @@ const MeetingQR: React.FC = () => {
 
     // Direct Torch manipulation
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // 1. Initial configuration and capabilities check when scanning starts
     useEffect(() => {
         if (!memberScanning) {
             setTorchSupported(false);
@@ -75,18 +76,42 @@ const MeetingQR: React.FC = () => {
                     setTorchSupported(true);
                 }
                 
-                if (torchOn) {
-                    await track.applyConstraints({
-                        advanced: [{ torch: true }]
-                    } as any);
-                }
+                // Always apply the stored torch state initially
+                await track.applyConstraints({
+                    advanced: [{ torch: torchOn }]
+                } as any);
             } catch (e) {
                 console.warn("Torch interaction error:", e);
             }
-        }, 1500);
+        }, 1500); // Increased delay for slower camera initialization
 
         return () => clearTimeout(timer);
-    }, [memberScanning, torchOn]);
+    }, [memberScanning]);
+
+    // 2. Instant toggle handling independently
+    useEffect(() => {
+        const toggleTorch = async () => {
+            try {
+                const video = document.querySelector('video');
+                if (!video || !video.srcObject) return;
+                
+                const stream = video.srcObject as MediaStream;
+                const track = stream.getVideoTracks()[0];
+                if (!track) return;
+
+                // Explicitly apply the current boolean state
+                await track.applyConstraints({
+                    advanced: [{ torch: torchOn }]
+                } as any);
+            } catch (e) {
+                console.warn("Torch toggle error:", e);
+            }
+        };
+
+        if (memberScanning) {
+            toggleTorch();
+        }
+    }, [torchOn, memberScanning]);
 
     const stopAttendance = useCallback(async () => {
         if (!id) return;
@@ -430,6 +455,12 @@ const MeetingQR: React.FC = () => {
                                         onError={(e) => { toast.error("Camera Error"); setMemberScanning(false); }}
                                         styles={{ container: { height: '100%', width: '100%', backgroundColor: '#0f172a' } }}
                                         constraints={{ facingMode: 'environment' }}
+                                        components={{
+                                            onOff: false,
+                                            torch: false,
+                                            zoom: false,
+                                            finder: false,
+                                        }}
                                     />
                                     
                                     {/* HUD Overlays */}
@@ -438,7 +469,7 @@ const MeetingQR: React.FC = () => {
                                         <span className="text-[10px] font-black text-white/90 uppercase tracking-widest">Scanning Mode</span>
                                     </div>
 
-                                    {/* Torch Toggle Button - Visible on Mobile or if detected */}
+                                    {/* Torch Toggle Button - Visible only on Mobile or if explicitly supported */}
                                     {(torchSupported || isMobile) && (
                                         <button 
                                             onClick={(e) => { 

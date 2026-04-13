@@ -10,6 +10,21 @@ import {
   setFirestoreDocREST
 } from "./adminUtils";
 
+// ── In-memory access token cache (survives across warm requests on Vercel) ──
+let cachedAccessToken: string | null = null;
+let cachedTokenExpiry = 0;
+
+async function getCachedAccessToken(serviceAccount: any, scopes: string[]): Promise<string> {
+  const now = Date.now();
+  // Reuse token if it has >60s left before expiry
+  if (cachedAccessToken && cachedTokenExpiry > now + 60_000) {
+    return cachedAccessToken;
+  }
+  cachedAccessToken = await getGoogleAccessToken(serviceAccount, scopes);
+  cachedTokenExpiry = now + 3500_000; // ~58 min (tokens last 1hr)
+  return cachedAccessToken;
+}
+
 // Define local types if @vercel/node is missing
 interface VercelRequest {
   method?: string;
@@ -62,22 +77,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const projectId = serviceAccount.project_id;
 
-    // A. Verify client token
-    let decoded;
-    try {
-      decoded = await verifyIdTokenSimple(idToken, projectId);
-      console.log("[api/admin] Token verified for UID:", decoded.user_id);
-    } catch (err: any) {
-      console.error("[api/admin] Token verification failed:", err.message);
-      return res.status(401).json({ error: "Invalid or expired token" });
-    }
-
-    // B. Get Google Access Token for REST calls
-    console.log("[api/admin] Obtaining Google Access Token...");
-    const accessToken = await getGoogleAccessToken(serviceAccount, [
+    // A+B. Verify client token AND get Google Access Token in PARALLEL
+    const scopes = [
       'https://www.googleapis.com/auth/identitytoolkit',
       'https://www.googleapis.com/auth/datastore'
-    ]);
+    ];
+    let decoded: any;
+    let accessToken: string;
+    try {
+      const [decodedResult, tokenResult] = await Promise.all([
+        verifyIdTokenSimple(idToken, projectId),
+        getCachedAccessToken(serviceAccount, scopes)
+      ]);
+      decoded = decodedResult;
+      accessToken = tokenResult;
+      console.log("[api/admin] Token verified for UID:", decoded.user_id);
+    } catch (err: any) {
+      console.error("[api/admin] Auth/token error:", err.message);
+      return res.status(401).json({ error: err.message || "Invalid or expired token" });
+    }
 
     // C. Verify caller has admin/superadmin role in Firestore via REST
     console.log("[api/admin] Verifying caller role via REST...");
@@ -126,13 +144,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const { email, password, profile } = req.body as any;
         if (!email) return res.status(400).json({ error: "Missing email for createUser" });
         if (!password) return res.status(400).json({ error: "Missing password for createUser" });
-        const apiKey = req.body.apiKey;
-        if (!apiKey) return res.status(400).json({ error: "Missing apiKey. Send VITE_FIREBASE_API_KEY from the frontend." });
 
         console.log(`[api/admin] Creating user: ${email}`);
         let newUid;
         try {
-          const authUser = await createAuthUserREST(apiKey, email, password);
+          // Uses Admin Identity Toolkit (service account) — no client tokens generated
+          const authUser = await createAuthUserREST(projectId, accessToken, email, password);
           newUid = authUser.localId;
         } catch (authErr: any) {
           console.error(`[api/admin] createAuthUserREST failed:`, authErr.message);

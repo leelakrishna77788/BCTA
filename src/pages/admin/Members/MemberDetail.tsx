@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { doc, getDoc, updateDoc, collection, getDocs, query, where, Timestamp, DocumentData } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { 
-    ArrowLeft, Edit, UserX, UserCheck, Phone, MapPin, 
-    Droplet, Calendar, CreditCard, Activity, Award, 
-    TrendingUp, ShieldCheck, Mail, AlertTriangle, Package, Trash2, X, QrCode
+import {
+    ArrowLeft, Edit, UserX, UserCheck, Phone, MapPin,
+    Droplet, CreditCard, Activity,
+    ShieldCheck, Mail, AlertTriangle, Package, Trash2, X, QrCode, Download,
+    BadgeCheck, CheckCircle2, CalendarDays
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { membersApi } from "../../../services/membersService";
-import LoadingSkeleton, { CardSkeleton, TableSkeleton } from "../../../components/shared/LoadingSkeleton";
+import LoadingSkeleton, { CardSkeleton } from "../../../components/shared/LoadingSkeleton";
 
 interface MemberDoc extends DocumentData {
     id: string;
@@ -23,6 +24,7 @@ interface MemberDoc extends DocumentData {
     phone?: string;
     bloodGroup?: string;
     age?: number | string;
+    paymentStatus?: string;
     shopAddress?: string;
     createdAt?: Timestamp;
     nomineeDetails?: {
@@ -41,9 +43,12 @@ interface ProductDoc extends DocumentData {
     distributedAt?: Timestamp;
 }
 
+const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d+$/;
+
 const MemberDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const idCardRef = useRef<HTMLDivElement>(null);
     const [member, setMember] = useState<MemberDoc | null>(null);
     const [attendance, setAttendance] = useState<any[]>([]);
     const [products, setProducts] = useState<ProductDoc[]>([]);
@@ -73,44 +78,70 @@ const MemberDetail: React.FC = () => {
                 if (memberData) {
                     setMember(memberData);
                     const canonicalId = memberData.id;
-                    
+
                     try {
                         const attSnap = await getDocs(query(collection(db, "attendance"), where("memberUID", "==", canonicalId)));
-                        setAttendance(attSnap.docs.map(d => d.data()));
+                        setAttendance(attSnap.docs.map((d) => d.data()));
                     } catch (err) {
-                        console.error("⚠️ Attendance Fetch Error:", err);
+                        console.error("Attendance fetch error:", err);
                     }
 
                     try {
                         const prodSnap = await getDocs(query(collection(db, "products"), where("memberUID", "==", canonicalId)));
-                        setProducts(prodSnap.docs.map(d => d.data() as ProductDoc));
+                        setProducts(prodSnap.docs.map((d) => d.data() as ProductDoc));
                     } catch (err) {
-                        console.error("⚠️ Products Fetch Error:", err);
+                        console.error("Products fetch error:", err);
                     }
 
                     try {
                         const meetSnap = await getDocs(collection(db, "meetings"));
-                        setMeetings(meetSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                        setMeetings(meetSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
                     } catch (err) {
-                        console.error("⚠️ Meetings Fetch Error:", err);
+                        console.error("Meetings fetch error:", err);
                     }
                 }
             } catch (err) {
-                console.error("❌ Profile Load Error:", err);
+                console.error("Profile load error:", err);
                 toast.error("Failed to load member profile");
             } finally {
                 setLoading(false);
             }
         };
+
         fetchData();
     }, [id]);
+
+    // Keep page static while Digital ID is open.
+    useEffect(() => {
+        if (!showID) return;
+
+        const preventDefault = (e: Event) => e.preventDefault();
+        const blockKeys = (e: KeyboardEvent) => {
+            const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
+            if (keys.includes(e.key)) e.preventDefault();
+        };
+
+        window.addEventListener("wheel", preventDefault, { passive: false });
+        window.addEventListener("touchmove", preventDefault, { passive: false });
+        window.addEventListener("keydown", blockKeys);
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+
+        return () => {
+            window.removeEventListener("wheel", preventDefault);
+            window.removeEventListener("touchmove", preventDefault);
+            window.removeEventListener("keydown", blockKeys);
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+        };
+    }, [showID]);
 
     const toggleBlock = () => {
         if (!member) return;
         const previousStatus = member.status;
         const newStatus = previousStatus === "active" ? "blocked" : "active";
-        
-        let updatePayload: any = { status: newStatus };
+
+        const updatePayload: any = { status: newStatus };
         let actionText = newStatus === "active" ? "unblocked" : "blocked";
 
         if (previousStatus === "pending" && newStatus === "active") {
@@ -119,12 +150,10 @@ const MemberDetail: React.FC = () => {
             updatePayload.memberId = `BCTA-${year}-${num}`;
             actionText = "approved";
         }
-        
-        // Optimistic update
-        setMember(p => p ? { ...p, ...updatePayload } : null);
+
+        setMember((p) => (p ? { ...p, ...updatePayload } : null));
         toast.success(`Member ${actionText}`);
 
-        // Fire and forget
         (async () => {
             try {
                 const memberRef = doc(db, "users", member.id);
@@ -133,8 +162,8 @@ const MemberDetail: React.FC = () => {
                     await membersApi.revokeTokens(member.id);
                 }
             } catch (err) {
-                console.error("Block/Unblock failed:", err);
-                setMember(p => p ? { ...p, status: previousStatus } : null);
+                console.error("Block/unblock failed:", err);
+                setMember((p) => (p ? { ...p, status: previousStatus } : null));
                 toast.error("Failed to update status on server. Reverted.");
             }
         })();
@@ -143,12 +172,10 @@ const MemberDetail: React.FC = () => {
     const handleDelete = () => {
         if (!member) return;
         if (!window.confirm("Permanently delete this member? All login access and data records will be destroyed.")) return;
-        
-        // Optimistic navigation
+
         toast.success("Deleting member in background...");
         navigate("/admin/members");
 
-        // Fire and forget
         membersApi.delete(member.id).then(() => {
             toast.success("Member record destroyed successfully");
         }).catch((err: any) => {
@@ -157,7 +184,102 @@ const MemberDetail: React.FC = () => {
         });
     };
 
-    // Removed full-page blocking loader
+    const handlePrintID = () => {
+        if (!idCardRef.current) return;
+
+        const printWindow = window.open("", "_blank", "width=850,height=1100");
+        if (!printWindow) {
+            toast.error("Unable to open print window. Please allow popups.");
+            return;
+        }
+
+        const cardMarkup = idCardRef.current.outerHTML;
+
+        printWindow.document.write(`
+            <!doctype html>
+            <html>
+                <head>
+                    <meta charset="utf-8" />
+                    <title>BCTA Digital ID</title>
+                    <style>
+                        * { box-sizing: border-box; }
+                        html, body {
+                            margin: 0;
+                            padding: 0;
+                            background: #020617;
+                            min-height: 100%;
+                            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                        }
+                        body {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            padding: 24px;
+                        }
+                        .print-wrap {
+                            width: min(100%, 420px);
+                        }
+                        .print-wrap img {
+                            display: block;
+                            max-width: 100%;
+                            height: auto;
+                        }
+                        @media print {
+                            @page { size: A4 portrait; margin: 12mm; }
+                            body { padding: 0; }
+                            .print-wrap { width: 420px; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-wrap">${cardMarkup}</div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    };
+
+    const handleDownloadID = async () => {
+        if (!idCardRef.current) return;
+
+        try {
+            const { default: html2canvas } = await import("html2canvas");
+            const canvas = await html2canvas(idCardRef.current, {
+                backgroundColor: null,
+                scale: 2,
+                useCORS: true,
+            });
+
+            const link = document.createElement("a");
+            const safeName = `${member?.name || "member"}-${member?.surname || "id"}`.replace(/\s+/g, "-").toLowerCase();
+            link.download = `${safeName}-digital-id.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            toast.success("ID card downloaded");
+        } catch (error) {
+            console.error("Download failed:", error);
+            toast.error("Failed to download ID card");
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="mx-auto w-full max-w-6xl space-y-6 px-3 sm:px-0 animate-fade-in">
+                <LoadingSkeleton height="2rem" width="220px" className="mb-2" />
+                <div className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
+                    <CardSkeleton />
+                    <CardSkeleton />
+                </div>
+                <div className="card space-y-4">
+                    <LoadingSkeleton height="1rem" width="35%" />
+                    <LoadingSkeleton height="220px" borderRadius="1rem" />
+                </div>
+            </div>
+        );
+    }
 
     if (!member) return (
         <div className="max-w-6xl mx-auto p-8 text-center min-h-[60vh] flex items-center justify-center">
@@ -166,8 +288,8 @@ const MemberDetail: React.FC = () => {
                     <AlertTriangle size={40} />
                 </div>
                 <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">Record Not Found</h2>
-                <p className="text-slate-500 mb-8 font-medium leading-relaxed">The member record you're attempting to access doesn't exist or has been permanently removed from our secure database.</p>
-                    <button onClick={() => navigate("/admin/members")} className="btn-primary w-full py-4 text-base shadow-xl shadow-slate-200 hover:shadow-slate-300 transition-all font-bold rounded-2xl">
+                <p className="text-slate-500 mb-8 font-medium leading-relaxed">The member record you are trying to access does not exist or has been removed.</p>
+                <button onClick={() => navigate("/admin/members")} className="btn-primary w-full py-4 text-base shadow-xl shadow-slate-200 hover:shadow-slate-300 transition-all font-bold rounded-2xl">
                     Back to Directory
                 </button>
             </div>
@@ -179,350 +301,248 @@ const MemberDetail: React.FC = () => {
     const totalDue = products.reduce((s, p) => s + (p.remainingAmount || 0), 0);
     const attendanceRate = meetings.length > 0 ? Math.round((attendance.length / meetings.length) * 100) : 0;
     const paymentProgress = totalSpent > 0 ? Math.round((totalPaid / totalSpent) * 100) : 100;
+    const fullName = `${member.name ?? ""} ${member.surname ?? ""}`.trim();
+    const memberId = member.memberId?.trim() || "";
+    const hasMemberId = memberId.length > 0;
+    const memberIdVerified = hasMemberId && MEMBER_ID_PATTERN.test(memberId);
+    const profileInitial = (member.name?.[0] ?? member.email?.[0] ?? "M").toUpperCase();
+    const memberSince = member.createdAt && typeof member.createdAt.toDate === "function"
+        ? member.createdAt.toDate().getFullYear()
+        : new Date().getFullYear();
+    const derivedPaymentStatus = member.paymentStatus || (totalDue <= 0 ? "paid" : "unpaid");
+    const statusTone = member.status === "active"
+        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+        : "bg-red-50 text-red-700 border-red-200";
+    const paymentTone = derivedPaymentStatus === "paid"
+        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+        : "bg-amber-50 text-amber-700 border-amber-200";
 
     return (
-        <div className="space-y-8 animate-fade-in pb-20 max-w-7xl mx-auto px-4 sm:px-6">
-            {/* Action Bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-5">
+        <div className="mx-auto w-full max-w-6xl space-y-6 p-0 animate-fade-in pb-20">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-[#4f46e5] hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm hover:shadow-lg hover:-translate-x-1"
+                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                     >
-                        <ArrowLeft size={22} />
+                        <ArrowLeft size={18} />
                     </button>
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Executive Profile</h1>
-                            {member.status === "active" ? (
-                                <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-100 shadow-sm">
-                                    <ShieldCheck size={12} /> Verified Member
-                                </span>
-                            ) : (
-                                <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-200 shadow-sm">
-                                    <UserX size={12} /> Restricted Access
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-1 opacity-70">BCTA Management System • {new Date().getFullYear()}</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Member Profile</h1>
+                        <p className="text-sm text-slate-500">Admin view with profile and account controls.</p>
                     </div>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                    <Link to={`/admin/members/${member.id}/edit`} className="btn-secondary py-3 px-6 rounded-2xl font-bold flex items-center gap-2 hover:bg-slate-50 transition-all border-slate-200 shadow-sm hover:shadow-md">
-                        <Edit size={18} /> Edit Records
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <Link to={`/admin/members/${member.id}/edit`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                        <Edit size={14} /> Edit
                     </Link>
-                    <button 
+                    <button
                         onClick={() => setShowID(true)}
-                        className="py-3 px-6 bg-slate-900 text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-md group relative overflow-hidden"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                     >
-                        <div className="absolute inset-0 bg-linear-to-r from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <QrCode size={18} className="text-indigo-400" /> Digital ID
+                        <QrCode size={14} /> Digital ID
                     </button>
                     {member.status === "pending" ? (
-                        <button onClick={toggleBlock}
-                            className="py-3 px-6 bg-indigo-600 text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-md">
-                            <UserCheck size={18} /> Approve Member
+                        <button onClick={toggleBlock} className="inline-flex items-center gap-1.5 rounded-lg bg-[#000080] px-3 py-2 text-xs font-semibold text-white hover:bg-[#000066]">
+                            <UserCheck size={14} /> Approve
                         </button>
                     ) : (
-                        <button onClick={toggleBlock}
-                            className={`py-3 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg ${member.status === "active" ? "bg-white text-red-600 border border-red-100 hover:bg-red-50" : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200"}`}>
-                            {member.status === "active" ? <><UserX size={18} /> Block Member</> : <><UserCheck size={18} /> Unblock Member</>}
+                        <button
+                            onClick={toggleBlock}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold ${member.status === "active" ? "border border-red-200 bg-white text-red-700 hover:bg-red-50" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
+                        >
+                            {member.status === "active" ? <><UserX size={14} /> Block</> : <><UserCheck size={14} /> Unblock</>}
                         </button>
                     )}
-                    <button onClick={handleDelete}
-                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-red-100 text-red-500 hover:bg-red-50 transition-all shadow-sm">
-                        <Trash2 size={20} />
+                    <button
+                        onClick={handleDelete}
+                        className="h-9 w-9 flex items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50"
+                    >
+                        <Trash2 size={15} />
                     </button>
                 </div>
             </div>
 
-            {/* Profile Hero Card */}
-            <div className="relative group p-1">
-                <div className="absolute inset-0 bg-linear-to-r from-indigo-600/10 to-indigo-600/10 rounded-[2.5rem] blur-3xl opacity-50"></div>
-                <div className="card p-0! overflow-hidden bg-white border border-slate-200/60 shadow-xl rounded-[2.5rem] relative">
-                    {/* Visual Decor */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-32 -mt-32 opacity-40"></div>
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-50/50 rounded-full -ml-24 -mb-24 opacity-30"></div>
-
-                    <div className="p-8 sm:p-12 flex flex-col lg:flex-row gap-10 items-center lg:items-start text-center lg:text-left relative z-10">
-                        {/* Avatar Section */}
-                        <div className="relative">
-                            <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-[3rem] p-1.5 bg-linear-to-br from-indigo-500 via-indigo-500 to-purple-500 shadow-2xl">
-                                {loading ? (
-                                    <div className="w-full h-full rounded-[2.75rem] bg-slate-800 animate-pulse border-4 border-white"></div>
-                                ) : member?.photoURL ? (
-                                    <img src={member.photoURL} alt="" loading="lazy" className="w-full h-full rounded-[2.75rem] object-cover border-4 border-white" />
-                                ) : (
-                                    <div className="w-full h-full bg-slate-900 rounded-[2.75rem] flex items-center justify-center text-white text-6xl font-black border-4 border-white relative overflow-hidden group">
-                                        <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                        {member?.name?.[0]}
-                                    </div>
-                                )}
+            <section className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.22),_transparent_46%)]" />
+                <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
+                <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
+                    <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
+                        {member.photoURL ? (
+                            <img
+                                src={member.photoURL}
+                                alt={`${fullName} profile photo`}
+                                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
+                            />
+                        ) : (
+                            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
+                                {profileInitial}
                             </div>
-                            {!loading && (
-                                <div className={`absolute -bottom-3 -right-3 w-12 h-12 rounded-2xl border-4 border-white shadow-xl flex items-center justify-center ${member?.status === "active" ? "bg-emerald-500 text-white" : "bg-slate-400 text-white"}`}>
-                                    {member?.status === "active" ? <ShieldCheck size={24} /> : <UserX size={24} />}
+                        )}
+
+                        <div className="min-w-0 space-y-4">
+                            <div className="space-y-1">
+                                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{fullName || member.name}</h2>
+                                <p className="text-sm text-white/80">{member.email || "No email on file"}</p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${statusTone}`}>
+                                    <ShieldCheck size={12} /> {member.status || "unknown"}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+                                    <Droplet size={12} /> {member.bloodGroup || "Blood group not set"}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+                                    <BadgeCheck size={12} /> {hasMemberId ? memberId : "Member ID pending"}
+                                </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
+                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-semibold ${memberIdVerified ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100" : "border-amber-300/40 bg-amber-400/10 text-amber-100"}`}>
+                                    {memberIdVerified ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+                                    {memberIdVerified ? "Member ID verified" : "Member ID pending check"}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-white/80">
+                                    Joined {memberSince}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Meetings</p>
+                            <p className="mt-2 text-3xl font-bold">{attendance.length}</p>
+                            <p className="mt-1 text-xs text-white/65">attended</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Payment</p>
+                            <p className={`mt-2 text-2xl font-bold capitalize ${derivedPaymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
+                                {derivedPaymentStatus}
+                            </p>
+                            <p className="mt-1 text-xs text-white/65">current status</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur sm:col-span-2 xl:col-span-1">
+                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Member since</p>
+                            <p className="mt-2 text-3xl font-bold">{memberSince}</p>
+                            <p className="mt-1 text-xs text-white/65">joined the portal</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.85fr)]">
+                <div className="min-w-0 space-y-6">
+                    <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+                        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Personal Details</h2>
+                                <p className="text-sm text-slate-500">Identity, account, and member-specific profile details.</p>
+                            </div>
+                            <Activity className="text-[#000080]" size={20} />
+                        </div>
+
+                        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            {[
+                                { label: "Member ID", value: hasMemberId ? memberId : "Pending assignment", icon: BadgeCheck },
+                                { label: "Full Name", value: fullName || "-" },
+                                { label: "Age", value: member.age ? `${member.age} years` : "-" },
+                                { label: "Blood Group", value: member.bloodGroup || "-", icon: Droplet },
+                                { label: "Email", value: member.email || "-", icon: Mail },
+                                { label: "Phone", value: member.phone || "-", icon: Phone },
+                                { label: "Attendance", value: `${attendance.length} / ${meetings.length || 0} meetings` },
+                                { label: "Consistency", value: `${attendanceRate}%`, icon: CalendarDays },
+                                { label: "Balance Due", value: `Rs. ${totalDue.toLocaleString()}`, icon: CreditCard },
+                            ].map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <div key={item.label} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                        <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                            {Icon ? <Icon size={13} className="text-[#000080]" /> : null}
+                                            {item.label}
+                                        </dt>
+                                        <dd className="mt-2 text-sm font-semibold text-slate-900 break-words">{item.value}</dd>
+                                    </div>
+                                );
+                            })}
+                        </dl>
+                    </div>
+
+                    <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+                        <div className="mb-5 flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Shop and Nominee</h2>
+                                <p className="text-sm text-slate-500">Address and emergency contact details.</p>
+                            </div>
+                            <MapPin className="text-[#000080]" size={20} />
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-0.5 rounded-xl bg-[#000080]/10 p-2 text-[#000080]">
+                                        <MapPin size={16} />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Shop address</p>
+                                        <p className="mt-1 text-sm font-medium text-slate-800 leading-6">{member.shopAddress || "No address on file"}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {member.nomineeDetails?.name ? (
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Nominee</p>
+                                    <div className="mt-3 space-y-1">
+                                        <p className="text-sm font-semibold text-slate-900">{member.nomineeDetails.name}</p>
+                                        <p className="text-sm text-slate-600">{member.nomineeDetails.relation || "Relation not set"}</p>
+                                        <p className="text-sm text-slate-600">{member.nomineeDetails.phone || "Phone not set"}</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-4 text-sm text-slate-500">
+                                    No nominee details have been added yet.
                                 </div>
                             )}
                         </div>
-
-                        {/* Info Section */}
-                        <div className="flex-1 space-y-6">
-                            <div>
-                                {loading ? (
-                                    <>
-                                        <div className="h-10 w-64 bg-slate-100 rounded animate-pulse mb-4"></div>
-                                        <div className="h-4 w-48 bg-slate-50 rounded animate-pulse"></div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-3">
-                                            <h2 className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-none">{member?.name} {member?.surname}</h2>
-                                            <div className="px-4 py-1.5 bg-[#4f46e5] text-white text-xs font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-slate-200">
-                                                {member?.memberId}
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-slate-500">
-                                            <span className="flex items-center gap-2 font-bold text-sm">
-                                                <Mail size={16} className="text-[#4f46e5]" /> {member?.email}
-                                            </span>
-                                            <span className="flex items-center gap-2 font-bold text-sm">
-                                                <Phone size={16} className="text-indigo-500" /> {member?.phone || "N/A"}
-                                            </span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
-                                {loading ? (
-                                    Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 w-24 bg-slate-50 rounded-xl animate-pulse"></div>)
-                                ) : (
-                                    <>
-                                        <div className="flex items-center gap-2 bg-red-50 text-red-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-red-100 shadow-sm">
-                                            <Droplet size={14} /> {member?.bloodGroup || "O+"}
-                                        </div>
-                                        <div className="flex items-center gap-2 bg-slate-50 text-slate-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-                                            <Calendar size={14} /> {member?.age} Yrs
-                                        </div>
-                                        <div className="flex items-center gap-2 bg-slate-50 text-[#4f46e5] font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-                                            <Activity size={14} /> {attendanceRate}% consistency
-                                        </div>
-                                        <div className="flex items-center gap-2 bg-amber-50 text-amber-700 font-black text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl border border-amber-100 shadow-sm">
-                                            <Package size={14} /> {products.length} Items Received
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                            
-                            <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
-                                <div className="flex -space-x-3 overflow-hidden">
-                                     {[...Array(5)].map((_, i) => (
-                                         <div key={i} className={`inline-block h-8 w-8 rounded-full ring-2 ring-white ${i < Math.floor(attendanceRate/20) ? 'bg-[#4f46e5]' : 'bg-slate-200'}`}></div>
-                                     ))}
-                                </div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Global Ranking: <span className="text-[#4f46e5]">Top 15%</span></p>
-                            </div>
-                        </div>
-
-                        {/* Highlight Stats */}
-                        <div className="w-full lg:w-64 space-y-4">
-                             <div className="bg-slate-900 rounded-3xl p-6 text-white shadow-2xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform">
-                                    <TrendingUp size={80} />
-                                </div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4 flex items-center gap-2 leading-none">
-                                    <div className="w-1 h-1 rounded-full bg-[#4f46e5]"></div> Total Value
-                                </p>
-                                <p className="text-4xl font-black tracking-tight mb-2 leading-none">₹{totalSpent}</p>
-                                <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
-                                    <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                                        <span>DUE BALANCE</span>
-                                        <span className="text-red-400">₹{totalDue}</span>
-                                    </div>
-                                    <div className="w-full bg-white/10 rounded-full h-1.5 p-0.5">
-                                        <div className="bg-[#4f46e5] h-full rounded-full transition-all duration-1000" style={{ width: `${paymentProgress}%` }}></div>
-                                    </div>
-                                </div>
-                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Secondary Sidebar Stats */}
-                <div className="space-y-8">
-                    {/* Contact Detail Card */}
-                    <div className="card p-8! bg-white border border-slate-200/60 shadow-lg rounded-4xl hover:shadow-xl transition-shadow relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-2 h-full bg-[#4f46e5]"></div>
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                             <MapPin size={14} className="text-[#4f46e5]" /> Location Profile
-                        </h3>
-                        <div className="space-y-10">
-                            <div>
-                                <p className="text-[10px] font-black text-[#4f46e5] uppercase tracking-widest mb-2">Shop Residence</p>
-                                <p className="text-base font-bold text-slate-800 leading-relaxed pr-6">{member.shopAddress || "Primary address not provided"}</p>
-                            </div>
-                            <div className="pt-8 border-t border-slate-100">
-                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-4">Official Nominee</p>
-                                {member.nomineeDetails?.name ? (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-bold text-lg">
-                                                {member.nomineeDetails.name[0]}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-black text-slate-800 leading-none">{member.nomineeDetails.name}</p>
-                                                <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1.5 bg-indigo-50 px-2 py-0.5 rounded-md inline-block">{member.nomineeDetails.relation}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 text-slate-500 font-bold text-sm bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                            <Phone size={14} /> {member.nomineeDetails.phone}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center">
-                                        <p className="text-xs font-bold text-slate-400">No nominee record on file</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
                     </div>
 
-                    {/* Quick Stats Card */}
-                    <div className="card p-8! bg-slate-900 border-none shadow-2xl rounded-4xl text-white">
-                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-6">Historical Logs</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
-                                <div className="flex items-center gap-3">
-                                    <Calendar size={18} className="text-indigo-400" />
-                                    <span className="text-xs font-bold text-slate-300">Member Since</span>
-                                </div>
-                                <span className="text-xs font-black">
-                                    {member.createdAt && typeof member.createdAt.toDate === "function" ? member.createdAt.toDate().getFullYear() : "2024"}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
-                                <div className="flex items-center gap-3">
-                                    <Activity size={18} className="text-emerald-400" />
-                                    <span className="text-xs font-bold text-slate-300">Last Scanned</span>
-                                </div>
-                                <span className="text-xs font-black">
-                                    {attendance.length > 0 ? "2 Days Ago" : "Never"}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content Sections */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Insights Hub */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="card p-6! bg-white border border-slate-200/60 shadow-lg rounded-4xl flex flex-col items-center text-center group hover:bg-[#4f46e5] transition-all duration-300">
-                                <div className="w-14 h-14 bg-slate-50 text-[#4f46e5] rounded-[1.25rem] flex items-center justify-center mb-4 group-hover:bg-white/10 group-hover:text-white transition-colors">
-                                    <Activity size={24} />
-                                </div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 group-hover:text-white">Consistency</p>
-                            <p className="text-3xl font-black text-slate-800 group-hover:text-white">{attendanceRate}%</p>
-                        </div>
-                        <div className="card p-6! bg-white border border-slate-200/60 shadow-lg rounded-4xl flex flex-col items-center text-center group hover:bg-emerald-600 transition-all duration-300">
-                            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-[1.25rem] flex items-center justify-center mb-4 group-hover:bg-white/10 group-hover:text-white transition-colors">
-                                <Award size={24} />
-                            </div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 group-hover:text-emerald-100">Participation</p>
-                            <p className="text-3xl font-black text-slate-800 group-hover:text-white">{attendance.length}</p>
-                        </div>
-                        <div className="card p-6! bg-white border border-slate-200/60 shadow-lg rounded-4xl flex flex-col items-center text-center group hover:bg-indigo-600 transition-all duration-300">
-                            <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-[1.25rem] flex items-center justify-center mb-4 group-hover:bg-white/10 group-hover:text-white transition-colors">
-                                <Package size={24} />
-                            </div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 group-hover:text-indigo-100">Allocations</p>
-                            <p className="text-3xl font-black text-slate-800 group-hover:text-white">{products.length}</p>
-                        </div>
-                    </div>
-
-                    {/* Allocation History Table */}
-                    <div className="card p-0! overflow-hidden bg-white border border-slate-200/60 shadow-xl rounded-4xl">
-                        <div className="p-8 sm:p-10 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                            <div>
-                                <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-                                    <CreditCard size={24} className="text-[#4f46e5]" /> Distribution Ledger
-                                </h3>
-                                <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Tracking item flow and financial dues</p>
-                            </div>
-                            <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-200">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ledger Items:</span>
-                                <span className="text-xs font-black text-slate-800">{products.length}</span>
-                            </div>
+                    <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm overflow-hidden">
+                        <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
+                            <h2 className="text-lg font-bold text-slate-900">Distribution Ledger</h2>
+                            <p className="text-sm text-slate-500">Products allocated and corresponding payment tracking.</p>
                         </div>
 
                         {products.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-24 text-slate-400 px-6 text-center">
-                                <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-4xl flex items-center justify-center mb-6 shadow-inner border border-slate-100">
-                                    <Package size={36} />
-                                </div>
-                                <p className="text-lg font-black text-slate-600 mb-2">No Allocation History</p>
-                                <p className="text-sm font-medium max-w-xs mx-auto text-slate-400 uppercase tracking-widest leading-loose">This member record hasn't been linked to any inventory distributions yet.</p>
+                            <div className="p-10 text-center text-slate-500">
+                                <Package size={28} className="mx-auto mb-3 text-slate-300" />
+                                No allocation history found for this member.
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse block md:table">
-                                    <thead className="hidden md:table-header-group">
-                                        <tr className="bg-slate-50/80">
-                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Asset Details</th>
-                                            <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Volume</th>
-                                            <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Financial Status</th>
-                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Commitment Date</th>
+                                <table className="w-full min-w-[640px] text-left text-sm">
+                                    <thead className="bg-slate-50 text-slate-500">
+                                        <tr>
+                                            <th className="px-5 py-3 font-semibold">Product</th>
+                                            <th className="px-5 py-3 font-semibold">Quantity</th>
+                                            <th className="px-5 py-3 font-semibold">Paid</th>
+                                            <th className="px-5 py-3 font-semibold">Due</th>
+                                            <th className="px-5 py-3 font-semibold">Date</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="block md:table-row-group divide-y md:divide-slate-100">
+                                    <tbody className="divide-y divide-slate-100">
                                         {products.map((p, i) => (
-                                            <tr key={i} className="block md:table-row bg-white md:bg-transparent border border-slate-100 md:border-0 rounded-2xl md:rounded-none mb-4 md:mb-0 shadow-sm md:shadow-none hover:bg-slate-50 transition-colors p-6 md:p-0">
-                                                <td className="block md:table-cell md:px-8 md:py-6 mb-4 md:mb-0">
-                                                    <div className="flex justify-between items-start md:block">
-                                                        <span className="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">Asset Details</span>
-                                                        <div className="text-right md:text-left">
-                                                            <p className="text-base font-black text-slate-800 leading-none">{p.productName}</p>
-                                                            <p className="text-[10px] font-bold text-[#4f46e5] mt-1.5 uppercase tracking-widest">Distributor: Internal System</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="block md:table-cell md:px-6 md:py-6 mb-4 md:mb-0 text-right md:text-center">
-                                                    <div className="flex justify-between items-center md:block">
-                                                        <span className="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">Volume</span>
-                                                        <span className="bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-xl border-2 border-white shadow-md inline-block min-w-14">
-                                                            {p.quantity} UNIT
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="block md:table-cell md:px-6 md:py-6 mb-4 md:mb-0">
-                                                    <div className="flex flex-col md:block">
-                                                        <span className="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Financial Status</span>
-                                                        <div className="space-y-1.5">
-                                                            <div className="flex justify-between items-end gap-6 mb-1">
-                                                                <span className="text-sm font-black text-slate-800">₹{p.paidAmount} <span className="text-[10px] font-bold text-slate-400">PAID</span></span>
-                                                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${(p.remainingAmount ?? 0) <= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                                                                    {(p.remainingAmount ?? 0) <= 0 ? 'Settled' : `₹${p.remainingAmount} DUE`}
-                                                                </span>
-                                                            </div>
-                                                            <div className="w-full md:w-32 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                                                <div className={`h-full rounded-full ${(p.remainingAmount ?? 0) <= 0 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
-                                                                     style={{ width: `${Math.min(100, ((p.paidAmount || 0) / (p.totalAmount || 1)) * 100)}%` }}></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="block md:table-cell md:px-8 md:py-6 text-right border-t border-slate-100 md:border-0 pt-4 md:pt-0 mt-2 md:mt-0">
-                                                    <div className="flex justify-between items-center md:block">
-                                                        <span className="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">Commitment Date</span>
-                                                        <p className="text-sm font-black text-slate-800">
-                                                            {p.distributedAt && typeof p.distributedAt.toDate === "function" ? p.distributedAt.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : "—"}
-                                                        </p>
-                                                    </div>
+                                            <tr key={i} className="hover:bg-slate-50/70">
+                                                <td className="px-5 py-3 font-medium text-slate-800">{p.productName || "-"}</td>
+                                                <td className="px-5 py-3 text-slate-700">{p.quantity ?? 0}</td>
+                                                <td className="px-5 py-3 text-slate-700">Rs. {(p.paidAmount || 0).toLocaleString()}</td>
+                                                <td className="px-5 py-3 text-slate-700">Rs. {(p.remainingAmount || 0).toLocaleString()}</td>
+                                                <td className="px-5 py-3 text-slate-700">
+                                                    {p.distributedAt && typeof p.distributedAt.toDate === "function"
+                                                        ? p.distributedAt.toDate().toLocaleDateString()
+                                                        : "-"}
                                                 </td>
                                             </tr>
                                         ))}
@@ -532,99 +552,174 @@ const MemberDetail: React.FC = () => {
                         )}
                     </div>
                 </div>
-            </div>
-            {/* Premium Digital ID Card Modal */}
-            {showID && member && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md animate-fade-in">
-                    <div className="w-full max-w-sm relative">
-                        {/* Close Button */}
-                        <button 
-                            onClick={() => setShowID(false)}
-                            className="absolute -top-12 right-0 p-2 text-white/50 hover:text-white transition-colors bg-white/10 rounded-full"
-                        >
-                            <X size={24} />
-                        </button>
 
-                        {/* The Pass Card */}
-                        <div className="relative group p-1 animate-scale-up">
-                             {/* Shimmer Border */}
-                            <div className="absolute inset-0 bg-conic-to-r from-indigo-500 via-[#1e1b4b] to-indigo-500 rounded-[2.5rem] animate-spin-slow opacity-50 blur-sm"></div>
-                            
-                            <div className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[2.4rem] relative">
-                                {/* Pass Header */}
-                                <div className="p-8 pb-4 flex items-center justify-between border-b border-white/5">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                                            <div className="w-4 h-4 bg-indigo-50/500 rounded-sm rotate-45"></div>
-                                        </div>
-                                        <span className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</span>
-                                    </div>
-                                    <div className="px-2.5 py-1 bg-white/10 rounded-full border border-white/10 flex items-center gap-1.5">
-                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                                        <span className="text-[8px] font-black text-white/60 tracking-widest uppercase">Verified</span>
-                                    </div>
-                                </div>
-
-                                <div className="p-8 space-y-8">
-                                    {/* Member Info */}
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-24 h-24 rounded-2xl p-1 bg-linear-to-br from-white/20 to-transparent shadow-xl">
-                                            {member.photoURL ? (
-                                                <img src={member.photoURL} alt="" className="w-full h-full rounded-xl object-cover border border-white/10" />
-                                            ) : (
-                                                <div className="w-full h-full bg-[#1e1b4b] rounded-xl flex items-center justify-center text-white text-3xl font-black">
-                                                    {member.name?.[0]}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-2xl font-black text-white tracking-tight leading-none mb-2">
-                                                {member.name}<br />{member.surname}
-                                            </h3>
-                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] bg-indigo-50/500/10 px-2 py-1 rounded inline-block">
-                                                {member.memberId}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Premium QR Section */}
-                                    <div className="relative group/qr flex justify-center py-4">
-                                        <div className="absolute inset-0 bg-indigo-50/500/5 rounded-3xl blur-2xl group-hover/qr:bg-indigo-50/500/10 transition-all duration-500"></div>
-                                        <div className="relative p-6 bg-white rounded-3xl shadow-2xl border border-white/5 group-hover/qr:scale-105 transition-transform duration-500">
-                                            <QRCodeSVG
-                                                value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
-                                                size={160}
-                                                level="H"
-                                                includeMargin={false}
-                                                fgColor="#1e1b4b"
-                                            />
-                                            {/* Corner Accents */}
-                                            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#1e1b4b]/20 rounded-tl-lg"></div>
-                                            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#1e1b4b]/20 rounded-tr-lg"></div>
-                                            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#1e1b4b]/20 rounded-bl-lg"></div>
-                                            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#1e1b4b]/20 rounded-br-lg"></div>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-center text-[10px] text-white/30 font-bold uppercase tracking-widest leading-relaxed">
-                                        🔒 SECURED THROUGH BCTA BLOCKCHAIN IDENTITY<br />
-                                        VALID FOR {new Date().getFullYear()} FISCAL YEAR
-                                    </p>
-                                </div>
-                                
-                                {/* Security Strip */}
-                                <div className="h-2 bg-linear-to-r from-[#1e1b4b] via-indigo-600 to-[#1e1b4b] opacity-80 shadow-[0_0_20px_rgba(37,99,235,0.3)]"></div>
+                <aside className="min-w-0 space-y-6">
+                    <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+                        <div className="mb-5 flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Membership Snapshot</h2>
+                                <p className="text-sm text-slate-500">Quick account and ID verification status.</p>
                             </div>
+                            <CalendarDays className="text-[#000080]" size={20} />
                         </div>
 
-                        {/* ID Controls */}
-                        <div className="flex gap-3 mt-8">
-                             <button onClick={() => window.print()} className="flex-1 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition-all backdrop-blur-sm border border-white/5">
-                                Print Pass
-                             </button>
-                             <button onClick={() => setShowID(false)} className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95 shadow-xl">
-                                Close
-                             </button>
+                        <div className="space-y-3">
+                            <div className={`rounded-2xl border p-4 ${statusTone}`}>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em]">Account status</p>
+                                <p className="mt-1 text-lg font-bold capitalize">{member.status || "unknown"}</p>
+                            </div>
+                            <div className={`rounded-2xl border p-4 ${memberIdVerified ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Member ID check</p>
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    <p className="font-mono text-sm font-semibold text-slate-900 break-all">{hasMemberId ? memberId : "Member ID pending"}</p>
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${memberIdVerified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                                        {memberIdVerified ? <CheckCircle2 size={11} /> : <AlertTriangle size={11} />}
+                                        {memberIdVerified ? "Verified" : "Needs check"}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className={`rounded-2xl border p-4 ${paymentTone}`}>
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em]">Payment status</p>
+                                <p className="mt-1 text-lg font-bold capitalize">{derivedPaymentStatus}</p>
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Joined year</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900">{memberSince}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                        <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Meetings attended</p>
+                            <p className="mt-2 text-3xl font-bold text-[#000080]">{attendance.length}</p>
+                            <p className="mt-1 text-sm text-slate-500">Attendance summary from meeting records.</p>
+                        </div>
+                        <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payments collected</p>
+                            <p className="mt-2 text-3xl font-bold text-emerald-600">Rs. {totalPaid.toLocaleString()}</p>
+                            <p className="mt-1 text-sm text-slate-500">{paymentProgress}% of total allocation value paid.</p>
+                        </div>
+                        <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Quick contact</p>
+                            <div className="mt-3 space-y-2 text-sm text-slate-700">
+                                <p className="flex items-center gap-2 break-words"><Mail size={14} className="text-[#000080]" /> {member.email || "-"}</p>
+                                <p className="flex items-center gap-2 break-words"><Phone size={14} className="text-[#000080]" /> {member.phone || "-"}</p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            {showID && member && (
+                <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md animate-fade-in">
+                    <div className="h-full w-full flex items-start justify-center p-3 pt-5 sm:p-4 sm:pt-8">
+                        <div className="w-full max-w-[24rem] relative max-h-[calc(100vh-1.5rem)] overflow-hidden scale-[0.95] sm:scale-100">
+                            <button
+                                onClick={() => setShowID(false)}
+                                className="absolute top-2.5 right-2.5 text-white/70 hover:text-white transition-colors z-50 p-1.5 bg-white/10 rounded-full"
+                                aria-label="Close Digital ID"
+                            >
+                                <X size={18} />
+                            </button>
+
+                            <div className="relative group p-1 animate-scale-up">
+                                <div className="absolute inset-0 bg-conic-to-r from-indigo-500 via-[#1e1b4b] to-indigo-500 rounded-[2.1rem] animate-spin-slow opacity-50 blur-sm" />
+
+                                <div ref={idCardRef} className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[1.6rem] relative">
+                                    <div className="p-2.5 sm:p-3 pr-10 sm:pr-12 flex items-center justify-between border-b border-white/5">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                                            <div className="w-4 h-4 bg-indigo-500 rounded-sm rotate-45" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</p>
+                                            <p className="text-[10px] font-semibold text-white/55">Digital Identity Pass</p>
+                                        </div>
+                                    </div>
+                                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold bg-white/10 text-emerald-300 border border-white/10">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                        Verified
+                                    </span>
+                                </div>
+
+                                <div className="p-5 sm:p-6">
+                                    <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:gap-6">
+                                        <div className="flex-shrink-0">
+                                            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-4xl">
+                                                {member.photoURL ? (
+                                                    <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    member.name?.[0]
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 flex flex-col justify-center min-w-0">
+                                            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight break-words leading-tight">
+                                                {member.name} {member.surname}
+                                            </h3>
+                                            <p className="mt-1 text-[11px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.16em] break-all">
+                                                {member.memberId || "MEMBER ID PENDING"}
+                                            </p>
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
+                                                    {member.status || "unknown"}
+                                                </span>
+                                                <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
+                                                    {memberSince}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-center mb-5">
+                                        <div className="rounded-2xl border border-white/10 bg-white p-5 sm:p-6 shadow-sm">
+                                            <div className="sm:hidden">
+                                                <QRCodeSVG
+                                                    value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
+                                                    size={130}
+                                                    level="H"
+                                                    includeMargin={false}
+                                                    fgColor="#1e1b4b"
+                                                />
+                                            </div>
+                                            <div className="hidden sm:block">
+                                                <QRCodeSVG
+                                                    value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
+                                                    size={160}
+                                                    level="H"
+                                                    includeMargin={false}
+                                                    fgColor="#1e1b4b"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <p className="text-[9px] text-white/35 font-bold uppercase tracking-[0.16em]">
+                                            Secured Through BCTA Digital Identity
+                                        </p>
+                                        <p className="text-[9px] text-white/35 font-bold uppercase tracking-[0.16em] mt-0.5">
+                                            Valid for {new Date().getFullYear()} fiscal year
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="h-1.5 bg-linear-to-r from-[#1e1b4b] via-indigo-600 to-[#1e1b4b] opacity-90" />
+                                </div>
+                            </div>
+
+                            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                <button onClick={handlePrintID} className="w-full py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all border border-white/10">
+                                    Print Pass
+                                </button>
+                                <button onClick={handleDownloadID} className="w-full py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all border border-indigo-400/30 inline-flex items-center justify-center gap-1.5">
+                                    <Download size={12} /> Download
+                                </button>
+                                <button onClick={() => setShowID(false)} className="w-full py-2 bg-white text-slate-900 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-slate-100 transition-all">
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -89,7 +89,8 @@
     min-height: 100vh;
     overscroll-behavior: none;
     background-image: var(--gradient-mesh);
-    background-attachment: fixed;
+    /* NOTE: background-attachment:fixed removed intentionally.
+       It causes severe scroll jank on mobile by forcing full-page repaints. */
   }
 
   ::selection {
@@ -147,7 +148,13 @@
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    contain: layout paint;
     @apply p-3.5 sm:p-6 lg:p-8;
+  }
+
+  /* Premium Shadow — shared elevated card shadow */
+  .premium-shadow {
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.1);
   }
 
   /* Glass Dark */
@@ -634,6 +641,18 @@
   
   .text-responsive {
     font-size: 0.875rem;
+  }
+
+  /* Reduce blur on mobile for smoother rendering on low-end devices */
+  .glass-card {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .glass,
+  .glass-strong {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 }
 
