@@ -113,7 +113,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
     <header
       className="h-16 overflow-visible shrink-0 relative z-30 px-3 sm:px-8 flex items-center justify-between transition-all duration-300 shadow-sm"
       style={{
-        background: "linear-gradient(135deg, white 50%, #1e3a8a 50%)",
+        background: "linear-gradient(135deg, white 10%, #1e3a8a 50%)",
       }}
     >
       {" "}
@@ -122,7 +122,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
         <img
           src={assets.herologo}
           alt="Logo"
-          className="h-full max-h-12 object-contain block sm:hidden"
+          className="h-full w-full max-h-20 object-contain block sm:hidden"
         />
       </div>
       {/* Gradient bottom accent */}
@@ -235,15 +235,6 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                 className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
               >
                 Profile
-              </button>
-              <button
-                onClick={() => {
-                  navigate("/");
-                  setShowProfileMenu(false);
-                }}
-                className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-              >
-                settings
               </button>
 
               {/* Logout */}
