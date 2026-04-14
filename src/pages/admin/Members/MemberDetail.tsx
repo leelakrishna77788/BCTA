@@ -571,37 +571,45 @@ const MemberDetail: React.FC = () => {
                 <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
                 <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
                     <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
-                        {member.photoURL ? (
-                            <img
-                                src={member.photoURL}
-                                alt={`${fullName} profile photo`}
-                                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
-                            />
-                        ) : (
-                            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
-                                {profileInitial}
-                            </div>
-                        )}
+                        {/* Mobile: centered avatar, SM+: left-aligned */}
+                        <div className="flex justify-center sm:justify-start">
+                            {member.photoURL ? (
+                                <img
+                                    src={member.photoURL}
+                                    alt={`${fullName} profile photo`}
+                                    className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
+                                />
+                            ) : (
+                                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
+                                    {profileInitial}
+                                </div>
+                            )}
+                        </div>
 
                         <div className="min-w-0 space-y-4">
-                            <div className="space-y-1">
+                            <div className="space-y-1 text-center sm:text-left">
                                 <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{fullName || member.name}</h2>
                                 <p className="text-sm text-white/80">{member.email || "No email on file"}</p>
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${statusTone}`}>
+                            {/* Mobile: blood + member ID + member since, SM+: add active status */}
+                            <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
+                                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold" style={{...(statusTone ? {borderColor: 'inherit'} : {})}}>
                                     <ShieldCheck size={12} /> {member.status || "unknown"}
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
-                                    <Droplet size={12} /> {member.bloodGroup || "Blood group not set"}
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
+                                    <Droplet size={10} className="sm:w-3 sm:h-3" /> {member.bloodGroup || "Blood group"}
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
-                                    <BadgeCheck size={12} /> {hasMemberId ? memberId : "Member ID pending"}
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
+                                    <BadgeCheck size={10} className="sm:w-3 sm:h-3" /> {hasMemberId ? memberId : "Member ID pending"}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:hidden">
+                                    <CalendarDays size={10} /> {memberSince}
                                 </span>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
+                            {/* Mobile hidden, SM+ visible */}
+                            <div className="hidden sm:flex flex-wrap items-center gap-2 text-xs text-white/70">
                                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-semibold ${memberIdVerified ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100" : "border-amber-300/40 bg-amber-400/10 text-amber-100"}`}>
                                     {memberIdVerified ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
                                     {memberIdVerified ? "Member ID verified" : "Member ID pending check"}
@@ -613,23 +621,24 @@ const MemberDetail: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Meetings</p>
-                            <p className="mt-2 text-3xl font-bold">{attendance.length}</p>
-                            <p className="mt-1 text-xs text-white/65">attended</p>
+                    {/* Mobile: 3 columns compact, SM: 2 cols, LG: 3 cols */}
+                    <div className="grid gap-2 grid-cols-3 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Meetings</p>
+                            <p className="mt-1 text-xl font-bold sm:text-3xl">{attendance.length}</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">attended</p>
                         </div>
-                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Payment</p>
-                            <p className={`mt-2 text-2xl font-bold capitalize ${derivedPaymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Payment</p>
+                            <p className={`mt-1 text-lg font-bold capitalize sm:text-2xl ${derivedPaymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
                                 {derivedPaymentStatus}
                             </p>
-                            <p className="mt-1 text-xs text-white/65">current status</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">status</p>
                         </div>
-                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur sm:col-span-2 xl:col-span-1">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Member since</p>
-                            <p className="mt-2 text-3xl font-bold">{memberSince}</p>
-                            <p className="mt-1 text-xs text-white/65">joined the portal</p>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4 sm:col-span-2 xl:col-span-1">
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Member since</p>
+                            <p className="mt-1 text-xl font-bold sm:text-3xl">{memberSince}</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">year</p>
                         </div>
                     </div>
                 </div>
