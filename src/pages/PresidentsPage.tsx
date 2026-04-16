@@ -100,7 +100,7 @@ const PresidentsPage: React.FC = () => {
       <Navbar />
 
       {/* ── HERO ── */}
-      <section className="relative pt-28 pb-16 sm:pt-36 sm:pb-24 px-4 overflow-hidden font-body">
+      <section className="relative pt-28 pb-8 sm:pt-36 sm:pb-12 px-4 overflow-hidden font-body">
         <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-amber-300/20 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 right-10 w-96 h-96 rounded-full bg-violet-300/20 blur-3xl pointer-events-none" />
 
@@ -135,93 +135,128 @@ const PresidentsPage: React.FC = () => {
       </section>
 
       {/* ── PRESIDENTS CARDS ── */}
-      <section className="max-w-6xl mx-auto px-4 py-16 sm:py-24 space-y-8 font-body">
-        {presidents.map((president, index) => {
-          const color = ERA_COLORS[index % ERA_COLORS.length];
-          const isLast = index === presidents.length - 1;
+      <section className="max-w-6xl mx-auto px-4 py-8 sm:py-12 font-body">
 
-          return (
-            <div
-              key={index}
-              ref={(el) => { cardRefs.current[index] = el; }}
-              className="observe-card card-hover bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-md"
-              style={{ transitionDelay: `${index * 0.08}s` }}
-            >
-              <div className="flex flex-col sm:flex-row">
+        {/* Mobile: 2-column image grid — reversed so current president is first */}
+        <div className="grid grid-cols-2 gap-4 sm:hidden mb-8">
+          {[...presidents].reverse().map((president, index) => {
+            const originalIndex = presidents.length - 1 - index;
+            const color = ERA_COLORS[originalIndex % ERA_COLORS.length];
+            const isLast = originalIndex === presidents.length - 1;
 
-                {/* Left: image */}
-                <div className="relative w-full sm:w-64 shrink-0">
-                  {isLast && (
-                    <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wider">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                      Current
-                    </div>
-                  )}
-                  <div className="image-zoom w-full h-56 sm:h-full sm:min-h-[280px] overflow-hidden">
-                    <img
-                      src={president.image}
-                      alt={president.name}
-                      className="w-full h-full object-cover object-top"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            return (
+              <div
+                key={index}
+                className="relative rounded-2xl overflow-hidden shadow-md bg-white border border-slate-100"
+              >
+                {isLast && (
+                  <div className="absolute top-2 right-2 z-20 flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    Current
                   </div>
+                )}
+                <div className="image-zoom w-full aspect-[3/4] overflow-hidden">
+                  <img
+                    src={president.image}
+                    alt={president.name}
+                    className="w-full h-full object-cover object-top"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                 </div>
-
-                {/* Right: content */}
-                <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between">
-                  <div>
-                    {/* Era badge + year — desktop only */}
-                    <div className="hidden sm:flex items-center gap-3 mb-4 flex-wrap">
-                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${color.badge}`}>
-                        {ERAS[index]}
-                      </span>
-                      <span className="flex items-center gap-1.5 text-slate-400 text-sm font-medium">
-                        <Calendar size={13} />
-                        {president.year}
-                      </span>
-                    </div>
-
-                    {/* Name */}
-                    <h2 className="font-display text-3xl sm:text-4xl font-black text-slate-900 leading-tight mb-1">
-                      {president.name}
-                    </h2>
-
-                    {/* Year — mobile only */}
-                    <div className="flex sm:hidden items-center gap-1.5 text-slate-400 text-sm font-medium mb-1">
-                      <Calendar size={13} />
-                      <span>{president.year}</span>
-                    </div>
-
-                    <p className={`hidden sm:block text-sm font-semibold ${color.text} mb-5`}>President, BCTA</p>
-
-                    {/* Description — desktop only */}
-                    <p className="hidden sm:block text-slate-500 text-sm sm:text-base leading-relaxed">
-                      {DESCRIPTIONS[index]}
-                    </p>
-                  </div>
-
-                  {/* Footer row — desktop only */}
-                  <div className={`hidden sm:flex mt-6 pt-5 border-t ${color.border} flex-wrap items-center gap-3`}>
-                    <div className={`flex items-center gap-2 ${color.light} rounded-xl px-4 py-2`}>
-                      <Users size={14} className={color.text} />
-                      <span className={`text-xs font-black ${color.text}`}>{MEMBERS[index]}</span>
-                    </div>
-                    <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-2">
-                      <TrendingUp size={14} className="text-slate-500" />
-                      <span className="text-xs font-black text-slate-600">{ERAS[index]}</span>
-                    </div>
-                    {isLast && (
-                      <div className="ml-auto flex items-center gap-1.5 text-emerald-600 text-xs font-black">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        In office
-                      </div>
-                    )}
+                {/* Name + meta overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <h3 className="font-display text-sm font-black text-white leading-tight">
+                    {president.name}
+                  </h3>
+                  <div className="flex items-center gap-1 text-white/70 text-[10px] font-medium mt-0.5">
+                    <Calendar size={10} />
+                    <span>{president.year}</span>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        {/* Desktop: full cards list */}
+        <div className="hidden sm:flex flex-col space-y-8">
+          {[...presidents].reverse().map((president, index) => {
+            const originalIndex = presidents.length - 1 - index;
+            const color = ERA_COLORS[originalIndex % ERA_COLORS.length];
+            const isLast = originalIndex === presidents.length - 1;
+
+            return (
+              <div
+                key={index}
+                ref={(el) => { cardRefs.current[index] = el; }}
+                className="observe-card card-hover bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-md"
+                style={{ transitionDelay: `${index * 0.08}s` }}
+              >
+                <div className="flex flex-row">
+
+                  {/* Left: image */}
+                  <div className="relative w-64 shrink-0">
+                    {isLast && (
+                      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wider">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        Current
+                      </div>
+                    )}
+                    <div className="image-zoom w-full h-full min-h-[280px] overflow-hidden">
+                      <img
+                        src={president.image}
+                        alt={president.name}
+                        className="w-full h-full object-cover object-top"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    </div>
+                  </div>
+
+                  {/* Right: content */}
+                  <div className="flex-1 p-8 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-4 flex-wrap">
+                        <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${color.badge}`}>
+                          {ERAS[index]}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-slate-400 text-sm font-medium">
+                          <Calendar size={13} />
+                          {president.year}
+                        </span>
+                      </div>
+
+                      <h2 className="font-display text-4xl font-black text-slate-900 leading-tight mb-1">
+                        {president.name}
+                      </h2>
+                      <p className={`text-sm font-semibold ${color.text} mb-5`}>President, BCTA</p>
+                      <p className="text-slate-500 text-base leading-relaxed">
+                        {DESCRIPTIONS[index]}
+                      </p>
+                    </div>
+
+                    <div className={`flex mt-6 pt-5 border-t ${color.border} flex-wrap items-center gap-3`}>
+                      <div className={`flex items-center gap-2 ${color.light} rounded-xl px-4 py-2`}>
+                        <Users size={14} className={color.text} />
+                        <span className={`text-xs font-black ${color.text}`}>{MEMBERS[index]}</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-2">
+                        <TrendingUp size={14} className="text-slate-500" />
+                        <span className="text-xs font-black text-slate-600">{ERAS[index]}</span>
+                      </div>
+                      {isLast && (
+                        <div className="ml-auto flex items-center gap-1.5 text-emerald-600 text-xs font-black">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          In office
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
       </section>
 
       {/* ── TIMELINE — desktop only ── */}

@@ -350,38 +350,46 @@ const MyProfile: React.FC = () => {
             <section className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.22),_transparent_46%)]" />
                 <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
-                <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
+                <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center sm:grid-cols-none">
                     <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
-                        {activePhotoURL ? (
-                            <img
-                                src={activePhotoURL}
-                                alt={`${fullName} profile photo`}
-                                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
-                            />
-                        ) : (
-                            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
-                                {profileInitial}
-                            </div>
-                        )}
+                        {/* Mobile: centered avatar, SM+: left-aligned */}
+                        <div className="flex justify-center sm:justify-start">
+                            {activePhotoURL ? (
+                                <img
+                                    src={activePhotoURL}
+                                    alt={`${fullName} profile photo`}
+                                    className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
+                                />
+                            ) : (
+                                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
+                                    {profileInitial}
+                                </div>
+                            )}
+                        </div>
 
                         <div className="min-w-0 space-y-4">
-                            <div className="space-y-1">
+                            <div className="space-y-1 text-center sm:text-left">
                                 <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{fullName || userProfile.name}</h1>
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${statusTone}`}>
+                            {/* Mobile: blood + member ID + member since, SM+: add active status */}
+                            <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
+                                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold" style={{...(statusTone ? {borderColor: 'inherit'} : {})}}>
                                     <ShieldCheck size={12} /> {userProfile.status}
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
-                                    <Droplet size={12} /> {userProfile.bloodGroup || "Blood group not set"}
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
+                                    <Droplet size={10} className="sm:w-3 sm:h-3" /> {userProfile.bloodGroup || "Blood group"}
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
-                                    <BadgeCheck size={12} /> {hasMemberId ? memberId : "Member ID pending"}
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
+                                    <BadgeCheck size={10} className="sm:w-3 sm:h-3" /> {hasMemberId ? memberId : "Member ID pending"}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:hidden">
+                                    <CalendarDays size={10} /> {memberSince}
                                 </span>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
+                            {/* Mobile hidden, SM+ visible */}
+                            <div className="hidden sm:flex flex-wrap items-center gap-2 text-xs text-white/70">
                                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-semibold ${memberIdVerified ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100" : "border-amber-300/40 bg-amber-400/10 text-amber-100"}`}>
                                     {memberIdVerified ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
                                     {memberIdVerified ? "Member ID verified" : "Member ID pending check"}
@@ -393,23 +401,24 @@ const MyProfile: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Meetings</p>
-                            <p className="mt-2 text-3xl font-bold">{attendance.length}</p>
-                            <p className="mt-1 text-xs text-white/65">attended</p>
+                    {/* Mobile: 3 columns compact, SM: 2 cols, LG: 3 cols */}
+                    <div className="grid gap-2 grid-cols-3 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Meetings</p>
+                            <p className="mt-1 text-xl font-bold sm:text-3xl">{attendance.length}</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">attended</p>
                         </div>
-                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Payment</p>
-                            <p className={`mt-2 text-2xl font-bold capitalize ${userProfile.paymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Payment</p>
+                            <p className={`mt-1 text-lg font-bold capitalize sm:text-2xl ${userProfile.paymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
                                 {userProfile.paymentStatus}
                             </p>
-                            <p className="mt-1 text-xs text-white/65">current status</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">status</p>
                         </div>
-                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur sm:col-span-2 xl:col-span-1">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Member since</p>
-                            <p className="mt-2 text-3xl font-bold">{memberSince}</p>
-                            <p className="mt-1 text-xs text-white/65">joined the portal</p>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4 sm:col-span-2 xl:col-span-1">
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Member since</p>
+                            <p className="mt-1 text-xl font-bold sm:text-3xl">{memberSince}</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">year</p>
                         </div>
                     </div>
                 </div>
@@ -436,123 +445,149 @@ const MyProfile: React.FC = () => {
                         </div>
 
                         {isEditing && (
-                            <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-                                <h3 className="text-sm font-semibold text-slate-800">Edit Profile Details</h3>
-                                <p className="mt-1 text-xs text-slate-500">All changes are saved to backend and reflected in your profile.</p>
+                            <div className="mb-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 sm:p-6">
+                                <h3 className="text-base font-bold text-slate-900">Edit Profile Details</h3>
+                                <p className="mt-0.5 text-xs text-slate-600">Make changes below and save to update your profile.</p>
 
-                                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Profile Photo</p>
-                                    <div className="mt-3 flex flex-wrap items-center gap-3">
-                                        {photoPreview ? (
-                                            <img src={photoPreview} alt="Profile preview" className="h-16 w-16 rounded-2xl object-cover border border-slate-200" />
-                                        ) : (
-                                            <div className="h-16 w-16 rounded-2xl border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-xs text-slate-400">No Photo</div>
-                                        )}
-                                        <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                                            Choose File
-                                            <input type="file" accept="image/*" onChange={onPickPhoto} className="hidden" />
-                                        </label>
-                                        {photoFile && <span className="text-xs text-indigo-600 font-semibold">Selected: {photoFile.name}</span>}
-                                        {photoFile && uploadedPhotoURL && <span className="text-xs text-emerald-600 font-semibold">Ready to save</span>}
+                                {/* Profile Photo Section */}
+                                <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+                                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-700">Profile Photo</p>
+                                    <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+                                        <div className="flex-shrink-0">
+                                            {photoPreview ? (
+                                                <img src={photoPreview} alt="Profile preview" className="h-20 w-20 rounded-xl object-cover border-2 border-slate-200 shadow-sm" />
+                                            ) : (
+                                                <div className="h-20 w-20 rounded-xl border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center text-xs text-slate-400 font-semibold">No Photo</div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 w-full">
+                                            <label className="flex items-center justify-center w-full sm:w-auto cursor-pointer rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 px-4 py-2.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition">
+                                                + Choose Photo
+                                                <input type="file" accept="image/*" onChange={onPickPhoto} className="hidden" />
+                                            </label>
+                                            {photoFile && <p className="mt-2 text-xs text-indigo-600 font-semibold">✓ Selected: {photoFile.name}</p>}
+                                            {photoFile && uploadedPhotoURL && <p className="text-xs text-emerald-600 font-semibold">✓ Ready to save</p>}
+                                        </div>
                                     </div>
                                     {uploadProgress !== null && photoFile && (
-                                        <div className="mt-3">
-                                            <div className="h-2 w-full rounded-full bg-slate-200">
-                                                <div className="h-2 rounded-full bg-[#000080] transition-all" style={{ width: `${uploadProgress}%` }} />
+                                        <div className="mt-4">
+                                            <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                                                <div className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all" style={{ width: `${uploadProgress}%` }} />
                                             </div>
-                                            <p className="mt-1 text-xs text-slate-600">
-                                                {isPhotoUploading ? `Uploading image: ${uploadProgress}%` : `Upload complete: ${uploadProgress}%`}
+                                            <p className="mt-2 text-xs font-semibold text-slate-600">
+                                                {isPhotoUploading ? `Uploading: ${uploadProgress}%` : `Complete: ${uploadProgress}%`}
                                             </p>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-3">
-                                    <p className="text-xs font-semibold text-indigo-700">
-                                        Edited fields: {changedFields.length > 0 ? changedFields.join(", ") : "No changes yet"}
-                                    </p>
+                                {/* Changed Fields Badge */}
+                                {changedFields.length > 0 && (
+                                    <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5">
+                                        <p className="text-xs font-bold text-blue-800">
+                                            {changedFields.length === 1 ? "1 field changed" : `${changedFields.length} fields changed`}: {changedFields.join(", ")}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Form Fields Grid */}
+                                <div className="mt-5 space-y-3">
+                                    {/* Row 1: Name Fields */}
+                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">First Name</label>
+                                            <input value={editForm.name} onChange={(e) => onFormChange("name", e.target.value)} placeholder="First name" className={`w-full ${changedInputClass("name")}`} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Surname</label>
+                                            <input value={editForm.surname} onChange={(e) => onFormChange("surname", e.target.value)} placeholder="Surname" className={`w-full ${changedInputClass("surname")}`} />
+                                        </div>
+                                    </div>
+
+                                    {/* Row 2: Phone & Age */}
+                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Phone</label>
+                                            <input value={editForm.phone} onChange={(e) => onFormChange("phone", e.target.value)} placeholder="Phone" className={`w-full ${changedInputClass("phone")}`} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Age</label>
+                                            <input value={editForm.age} onChange={(e) => onFormChange("age", e.target.value)} placeholder="Age" inputMode="numeric" className={`w-full ${changedInputClass("age")}`} />
+                                        </div>
+                                    </div>
+
+                                    {/* Row 3: Gender & Blood Group */}
+                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Gender</label>
+                                            <select value={editForm.gender} onChange={(e) => onFormChange("gender", e.target.value)} className={`w-full ${changedInputClass("gender")}`}>
+                                                <option value="">Select Gender</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Blood Group</label>
+                                            <select value={editForm.bloodGroup} onChange={(e) => onFormChange("bloodGroup", e.target.value)} className={`w-full ${changedInputClass("bloodGroup")}`}>
+                                                <option value="">Select Blood Group</option>
+                                                <option value="A+">A+</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B+">B+</option>
+                                                <option value="B-">B-</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="AB-">AB-</option>
+                                                <option value="O+">O+</option>
+                                                <option value="O-">O-</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Row 4: Aadhaar & Shop Address */}
+                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Aadhaar Last 4</label>
+                                            <input value={editForm.aadhaarLast4} onChange={(e) => onFormChange("aadhaarLast4", e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="Aadhaar last 4" inputMode="numeric" className={`w-full ${changedInputClass("aadhaarLast4")}`} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Shop Address</label>
+                                            <input value={editForm.shopAddress} onChange={(e) => onFormChange("shopAddress", e.target.value)} placeholder="Shop address" className={`w-full ${changedInputClass("shopAddress")}`} />
+                                        </div>
+                                    </div>
+
+                                    {/* Row 5: Nominee Info */}
+                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Nominee Name</label>
+                                            <input value={editForm.nomineeName} onChange={(e) => onFormChange("nomineeName", e.target.value)} placeholder="Nominee name" className={`w-full ${changedInputClass("nomineeName")}`} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Nominee Relation</label>
+                                            <input value={editForm.nomineeRelation} onChange={(e) => onFormChange("nomineeRelation", e.target.value)} placeholder="Nominee relation" className={`w-full ${changedInputClass("nomineeRelation")}`} />
+                                        </div>
+                                    </div>
+
+                                    {/* Full Width: Nominee Phone */}
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-slate-700">Nominee Phone</label>
+                                        <input value={editForm.nomineePhone} onChange={(e) => onFormChange("nomineePhone", e.target.value)} placeholder="Nominee phone" className={`w-full ${changedInputClass("nomineePhone")}`} />
+                                    </div>
                                 </div>
 
-                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">First Name</label>
-                                        <input value={editForm.name} onChange={(e) => onFormChange("name", e.target.value)} placeholder="First name" className={changedInputClass("name")} />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Surname</label>
-                                        <input value={editForm.surname} onChange={(e) => onFormChange("surname", e.target.value)} placeholder="Surname" className={changedInputClass("surname")} />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Phone</label>
-                                        <input value={editForm.phone} onChange={(e) => onFormChange("phone", e.target.value)} placeholder="Phone" className={changedInputClass("phone")} />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Age</label>
-                                        <input value={editForm.age} onChange={(e) => onFormChange("age", e.target.value)} placeholder="Age" inputMode="numeric" className={changedInputClass("age")} />
-                                    </div>
-
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Gender</label>
-                                        <select value={editForm.gender} onChange={(e) => onFormChange("gender", e.target.value)} className={changedInputClass("gender")}>
-                                            <option value="">Gender</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Blood Group</label>
-                                        <select value={editForm.bloodGroup} onChange={(e) => onFormChange("bloodGroup", e.target.value)} className={changedInputClass("bloodGroup")}>
-                                            <option value="">Blood Group</option>
-                                            <option value="A+">A+</option>
-                                            <option value="A-">A-</option>
-                                            <option value="B+">B+</option>
-                                            <option value="B-">B-</option>
-                                            <option value="AB+">AB+</option>
-                                            <option value="AB-">AB-</option>
-                                            <option value="O+">O+</option>
-                                            <option value="O-">O-</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Aadhaar Last 4</label>
-                                        <input value={editForm.aadhaarLast4} onChange={(e) => onFormChange("aadhaarLast4", e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="Aadhaar last 4" inputMode="numeric" className={changedInputClass("aadhaarLast4")} />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Shop Address</label>
-                                        <input value={editForm.shopAddress} onChange={(e) => onFormChange("shopAddress", e.target.value)} placeholder="Shop address" className={changedInputClass("shopAddress")} />
-                                    </div>
-
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Nominee Name</label>
-                                        <input value={editForm.nomineeName} onChange={(e) => onFormChange("nomineeName", e.target.value)} placeholder="Nominee name" className={changedInputClass("nomineeName")} />
-                                    </div>
-                                    <div>
-                                        <label className="mb-1 block text-xs font-semibold text-slate-600">Nominee Relation</label>
-                                        <input value={editForm.nomineeRelation} onChange={(e) => onFormChange("nomineeRelation", e.target.value)} placeholder="Nominee relation" className={changedInputClass("nomineeRelation")} />
-                                    </div>
-                                </div>
-
-                                <div className="mt-3">
-                                    <label className="mb-1 block text-xs font-semibold text-slate-600">Nominee Phone</label>
-                                    <input value={editForm.nomineePhone} onChange={(e) => onFormChange("nomineePhone", e.target.value)} placeholder="Nominee phone" className={`w-full ${changedInputClass("nomineePhone")}`} />
-                                </div>
-
-                                <div className="mt-4 flex flex-wrap items-center gap-2">
+                                {/* Action Buttons */}
+                                <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-start">
                                     <button
                                         type="button"
                                         disabled={isSaving}
                                         onClick={onSaveProfile}
-                                        className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-[#000080] px-4 py-2 text-xs font-semibold text-white hover:bg-[#000066] disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#000080] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#000066] disabled:cursor-not-allowed disabled:opacity-60 transition shadow-md hover:shadow-lg"
                                     >
-                                        <Save size={13} /> {isSaving ? "Saving..." : "Save"}
+                                        <Save size={14} /> {isSaving ? "Saving..." : "Save Changes"}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={onCancelEdit}
-                                        className="w-full sm:w-auto rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        className="rounded-lg border-2 border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
                                     >
                                         Cancel
                                     </button>

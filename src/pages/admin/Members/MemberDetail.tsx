@@ -45,6 +45,13 @@ interface ProductDoc extends DocumentData {
 
 const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d+$/;
 
+const escapeHtml = (value: string) => value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
 const MemberDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -55,6 +62,7 @@ const MemberDetail: React.FC = () => {
     const [meetings, setMeetings] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [showID, setShowID] = useState<boolean>(false);
+    const [isDownloadingID, setIsDownloadingID] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -111,28 +119,37 @@ const MemberDetail: React.FC = () => {
         fetchData();
     }, [id]);
 
-    // Keep page static while Digital ID is open.
+    // Lock background scroll while Digital ID modal is open.
     useEffect(() => {
         if (!showID) return;
 
-        const preventDefault = (e: Event) => e.preventDefault();
-        const blockKeys = (e: KeyboardEvent) => {
-            const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
-            if (keys.includes(e.key)) e.preventDefault();
-        };
+        const scrollY = window.scrollY;
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousBodyPosition = document.body.style.position;
+        const previousBodyTop = document.body.style.top;
+        const previousBodyLeft = document.body.style.left;
+        const previousBodyRight = document.body.style.right;
+        const previousBodyWidth = document.body.style.width;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
 
-        window.addEventListener("wheel", preventDefault, { passive: false });
-        window.addEventListener("touchmove", preventDefault, { passive: false });
-        window.addEventListener("keydown", blockKeys);
+        // Freeze page exactly where it is (prevents background movement on mobile).
         document.body.style.overflow = "hidden";
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.left = "0";
+        document.body.style.right = "0";
+        document.body.style.width = "100%";
         document.documentElement.style.overflow = "hidden";
 
         return () => {
-            window.removeEventListener("wheel", preventDefault);
-            window.removeEventListener("touchmove", preventDefault);
-            window.removeEventListener("keydown", blockKeys);
-            document.body.style.overflow = "";
-            document.documentElement.style.overflow = "";
+            document.body.style.overflow = previousBodyOverflow;
+            document.body.style.position = previousBodyPosition;
+            document.body.style.top = previousBodyTop;
+            document.body.style.left = previousBodyLeft;
+            document.body.style.right = previousBodyRight;
+            document.body.style.width = previousBodyWidth;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            window.scrollTo(0, scrollY);
         };
     }, [showID]);
 
@@ -185,83 +202,268 @@ const MemberDetail: React.FC = () => {
     };
 
     const handlePrintID = () => {
-        if (!idCardRef.current) return;
+        console.log("PRINT CLICKED");
+        console.log("REF:", idCardRef.current);
 
-        const printWindow = window.open("", "_blank", "width=850,height=1100");
-        if (!printWindow) {
-            toast.error("Unable to open print window. Please allow popups.");
-            return;
-        }
+        const buildCaptureCanvas = async () => {
+            if (!idCardRef.current || !member) return null;
 
-        const cardMarkup = idCardRef.current.outerHTML;
+            const qrSvg = idCardRef.current.querySelector("svg")?.outerHTML || "";
+            const fullNameSafe = escapeHtml(`${member.name || ""} ${member.surname || ""}`.trim() || "Member");
+            const memberIdSafe = escapeHtml(member.memberId || "MEMBER ID PENDING");
+            const statusSafe = escapeHtml(member.status || "unknown");
+            const yearSafe = escapeHtml(String(memberSince));
+            const photoUrl = member.photoURL || "";
 
-        printWindow.document.write(`
-            <!doctype html>
-            <html>
-                <head>
-                    <meta charset="utf-8" />
-                    <title>BCTA Digital ID</title>
-                    <style>
-                        * { box-sizing: border-box; }
-                        html, body {
-                            margin: 0;
-                            padding: 0;
-                            background: #020617;
-                            min-height: 100%;
-                            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-                        }
-                        body {
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            padding: 24px;
-                        }
-                        .print-wrap {
-                            width: min(100%, 420px);
-                        }
-                        .print-wrap img {
-                            display: block;
-                            max-width: 100%;
-                            height: auto;
-                        }
-                        @media print {
-                            @page { size: A4 portrait; margin: 12mm; }
-                            body { padding: 0; }
-                            .print-wrap { width: 420px; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="print-wrap">${cardMarkup}</div>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+            const host = document.createElement("div");
+            host.style.position = "fixed";
+            host.style.left = "-99999px";
+            host.style.top = "0";
+            host.style.width = "420px";
+            host.style.height = "auto";
+            host.style.zIndex = "-1";
+            host.style.pointerEvents = "none";
+            host.style.background = "#ffffff";
+
+            host.innerHTML = `
+                <div style="all: initial; box-sizing: border-box; width: 420px; border-radius: 24px; overflow: hidden; border: 1px solid #1e293b; background: #020617; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.12);">
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                            <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.12);"></div>
+                            <div style="min-width:0;">
+                                <div style="font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:#e2e8f0; white-space:nowrap;">BCTA MEMBER</div>
+                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">Digital Identity Pass</div>
+                            </div>
+                        </div>
+                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">Verified</div>
+                    </div>
+
+                    <div style="padding:16px;">
+                        <div style="display:flex; gap:14px; align-items:flex-start;">
+                            <div style="width:88px; height:88px; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.15); background:#1e1b4b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:700; text-transform:uppercase;">
+                                ${photoUrl ? `<img src="${photoUrl}" crossorigin="anonymous" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:cover;"/>` : escapeHtml((member.name?.[0] || "M").toUpperCase())}
+                            </div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.15; word-break:break-word;">${fullNameSafe}</div>
+                                <div style="margin-top:6px; font-size:11px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#a5b4fc; word-break:break-all;">${memberIdSafe}</div>
+                                <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px; text-transform:capitalize;">${statusSafe}</span>
+                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px;">${yearSafe}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; justify-content:center; margin-top:16px;">
+                            <div style="border-radius:16px; border:1px solid rgba(255,255,255,0.2); background:#ffffff; padding:14px;">
+                                ${qrSvg || `<div style='width:140px; height:140px; display:flex; align-items:center; justify-content:center; color:#0f172a; font-size:12px;'>QR</div>`}
+                            </div>
+                        </div>
+
+                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Secured Through BCTA Digital Identity</div>
+                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Valid for ${new Date().getFullYear()} fiscal year</div>
+                    </div>
+                    <div style="height:6px; background:linear-gradient(90deg, #1e1b4b, #4f46e5, #1e1b4b);"></div>
+                </div>
+            `;
+
+            document.body.appendChild(host);
+            try {
+                const { default: html2canvas } = await import("html2canvas");
+                return await html2canvas(host.firstElementChild as HTMLElement, {
+                    backgroundColor: "#ffffff",
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                });
+            } finally {
+                host.remove();
+            }
+        };
+
+        const runPrint = async () => {
+            if (!idCardRef.current) return;
+            try {
+                const canvas = await buildCaptureCanvas();
+                if (!canvas) return;
+
+                const printWindow = window.open("", "_blank", "width=900,height=1200");
+                if (!printWindow) {
+                    alert("Popup blocked!");
+                    toast.error("Unable to open print window. Please allow popups.");
+                    return;
+                }
+
+                const imageData = canvas.toDataURL("image/png");
+                printWindow.document.write(`
+                    <!doctype html>
+                    <html>
+                        <head>
+                            <meta charset="utf-8" />
+                            <title>BCTA Digital ID</title>
+                            <style>
+                                html, body { margin: 0; padding: 0; background: #ffffff; }
+                                body { display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
+                                img { width: 420px; max-width: 100%; height: auto; display: block; }
+                                @media print {
+                                    @page { size: A4 portrait; margin: 10mm; }
+                                    body { padding: 0; }
+                                    img { width: 420px; }
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <img id="printCard" src="${imageData}" alt="BCTA Digital ID" />
+                            <script>
+                                (function () {
+                                    var card = document.getElementById('printCard');
+                                    var printed = false;
+
+                                    function runPrint() {
+                                        if (printed) return;
+                                        printed = true;
+                                        window.focus();
+                                        window.print();
+                                    }
+
+                                    if (card && card.complete) {
+                                        runPrint();
+                                    } else if (card) {
+                                        card.addEventListener('load', runPrint, { once: true });
+                                        card.addEventListener('error', runPrint, { once: true });
+                                    } else {
+                                        runPrint();
+                                    }
+
+                                    window.addEventListener('afterprint', function () {
+                                        window.close();
+                                    }, { once: true });
+                                })();
+                            </script>
+                        </body>
+                    </html>
+                `);
+                printWindow.document.close();
+            } catch (error) {
+                console.error("Print failed:", error);
+                toast.error("Failed to print ID card");
+            }
+        };
+
+        void runPrint();
     };
 
     const handleDownloadID = async () => {
+        console.log("DOWNLOAD CLICKED");
+        console.log("REF:", idCardRef.current);
+
         if (!idCardRef.current) return;
 
+        const buildCaptureCanvas = async () => {
+            if (!idCardRef.current || !member) return null;
+
+            const qrSvg = idCardRef.current.querySelector("svg")?.outerHTML || "";
+            const fullNameSafe = escapeHtml(`${member.name || ""} ${member.surname || ""}`.trim() || "Member");
+            const memberIdSafe = escapeHtml(member.memberId || "MEMBER ID PENDING");
+            const statusSafe = escapeHtml(member.status || "unknown");
+            const yearSafe = escapeHtml(String(memberSince));
+            const photoUrl = member.photoURL || "";
+
+            const host = document.createElement("div");
+            host.style.position = "fixed";
+            host.style.left = "-99999px";
+            host.style.top = "0";
+            host.style.width = "420px";
+            host.style.height = "auto";
+            host.style.zIndex = "-1";
+            host.style.pointerEvents = "none";
+            host.style.background = "#ffffff";
+
+            host.innerHTML = `
+                <div style="all: initial; box-sizing: border-box; width: 420px; border-radius: 24px; overflow: hidden; border: 1px solid #1e293b; background: #020617; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.12);">
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                            <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.12);"></div>
+                            <div style="min-width:0;">
+                                <div style="font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:#e2e8f0; white-space:nowrap;">BCTA MEMBER</div>
+                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">Digital Identity Pass</div>
+                            </div>
+                        </div>
+                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">Verified</div>
+                    </div>
+
+                    <div style="padding:16px;">
+                        <div style="display:flex; gap:14px; align-items:flex-start;">
+                            <div style="width:88px; height:88px; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.15); background:#1e1b4b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:700; text-transform:uppercase;">
+                                ${photoUrl ? `<img src="${photoUrl}" crossorigin="anonymous" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:cover;"/>` : escapeHtml((member.name?.[0] || "M").toUpperCase())}
+                            </div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.15; word-break:break-word;">${fullNameSafe}</div>
+                                <div style="margin-top:6px; font-size:11px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#a5b4fc; word-break:break-all;">${memberIdSafe}</div>
+                                <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px; text-transform:capitalize;">${statusSafe}</span>
+                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px;">${yearSafe}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; justify-content:center; margin-top:16px;">
+                            <div style="border-radius:16px; border:1px solid rgba(255,255,255,0.2); background:#ffffff; padding:14px;">
+                                ${qrSvg || `<div style='width:140px; height:140px; display:flex; align-items:center; justify-content:center; color:#0f172a; font-size:12px;'>QR</div>`}
+                            </div>
+                        </div>
+
+                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Secured Through BCTA Digital Identity</div>
+                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Valid for ${new Date().getFullYear()} fiscal year</div>
+                    </div>
+                    <div style="height:6px; background:linear-gradient(90deg, #1e1b4b, #4f46e5, #1e1b4b);"></div>
+                </div>
+            `;
+
+            document.body.appendChild(host);
+            try {
+                const { default: html2canvas } = await import("html2canvas");
+                return await html2canvas(host.firstElementChild as HTMLElement, {
+                    backgroundColor: "#ffffff",
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                });
+            } finally {
+                host.remove();
+            }
+        };
+
         try {
-            const { default: html2canvas } = await import("html2canvas");
-            const canvas = await html2canvas(idCardRef.current, {
-                backgroundColor: null,
-                scale: 2,
-                useCORS: true,
+            setIsDownloadingID(true);
+            const canvas = await buildCaptureCanvas();
+            if (!canvas) return;
+            const safeName = `${member?.name || "member"}-${member?.surname || "id"}`.replace(/\s+/g, "-").toLowerCase();
+            const fileName = `${safeName}-digital-id.png`;
+
+            const blob = await new Promise<Blob>((resolve, reject) => {
+                canvas.toBlob((result) => {
+                    if (result) resolve(result);
+                    else reject(new Error("Unable to generate image blob"));
+                }, "image/png");
             });
 
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            const safeName = `${member?.name || "member"}-${member?.surname || "id"}`.replace(/\s+/g, "-").toLowerCase();
-            link.download = `${safeName}-digital-id.png`;
-            link.href = canvas.toDataURL("image/png");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
             toast.success("ID card downloaded");
         } catch (error) {
             console.error("Download failed:", error);
             toast.error("Failed to download ID card");
+        } finally {
+            setIsDownloadingID(false);
         }
     };
 
@@ -369,37 +571,45 @@ const MemberDetail: React.FC = () => {
                 <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
                 <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
                     <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
-                        {member.photoURL ? (
-                            <img
-                                src={member.photoURL}
-                                alt={`${fullName} profile photo`}
-                                className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
-                            />
-                        ) : (
-                            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
-                                {profileInitial}
-                            </div>
-                        )}
+                        {/* Mobile: centered avatar, SM+: left-aligned */}
+                        <div className="flex justify-center sm:justify-start">
+                            {member.photoURL ? (
+                                <img
+                                    src={member.photoURL}
+                                    alt={`${fullName} profile photo`}
+                                    className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
+                                />
+                            ) : (
+                                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
+                                    {profileInitial}
+                                </div>
+                            )}
+                        </div>
 
                         <div className="min-w-0 space-y-4">
-                            <div className="space-y-1">
+                            <div className="space-y-1 text-center sm:text-left">
                                 <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{fullName || member.name}</h2>
                                 <p className="text-sm text-white/80">{member.email || "No email on file"}</p>
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
-                                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${statusTone}`}>
+                            {/* Mobile: blood + member ID + member since, SM+: add active status */}
+                            <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
+                                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold" style={{...(statusTone ? {borderColor: 'inherit'} : {})}}>
                                     <ShieldCheck size={12} /> {member.status || "unknown"}
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
-                                    <Droplet size={12} /> {member.bloodGroup || "Blood group not set"}
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
+                                    <Droplet size={10} className="sm:w-3 sm:h-3" /> {member.bloodGroup || "Blood group"}
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
-                                    <BadgeCheck size={12} /> {hasMemberId ? memberId : "Member ID pending"}
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
+                                    <BadgeCheck size={10} className="sm:w-3 sm:h-3" /> {hasMemberId ? memberId : "Member ID pending"}
+                                </span>
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:hidden">
+                                    <CalendarDays size={10} /> {memberSince}
                                 </span>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-white/70">
+                            {/* Mobile hidden, SM+ visible */}
+                            <div className="hidden sm:flex flex-wrap items-center gap-2 text-xs text-white/70">
                                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-semibold ${memberIdVerified ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100" : "border-amber-300/40 bg-amber-400/10 text-amber-100"}`}>
                                     {memberIdVerified ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
                                     {memberIdVerified ? "Member ID verified" : "Member ID pending check"}
@@ -411,23 +621,24 @@ const MemberDetail: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Meetings</p>
-                            <p className="mt-2 text-3xl font-bold">{attendance.length}</p>
-                            <p className="mt-1 text-xs text-white/65">attended</p>
+                    {/* Mobile: 3 columns compact, SM: 2 cols, LG: 3 cols */}
+                    <div className="grid gap-2 grid-cols-3 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Meetings</p>
+                            <p className="mt-1 text-xl font-bold sm:text-3xl">{attendance.length}</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">attended</p>
                         </div>
-                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Payment</p>
-                            <p className={`mt-2 text-2xl font-bold capitalize ${derivedPaymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Payment</p>
+                            <p className={`mt-1 text-lg font-bold capitalize sm:text-2xl ${derivedPaymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
                                 {derivedPaymentStatus}
                             </p>
-                            <p className="mt-1 text-xs text-white/65">current status</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">status</p>
                         </div>
-                        <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur sm:col-span-2 xl:col-span-1">
-                            <p className="text-xs uppercase tracking-[0.22em] text-white/60">Member since</p>
-                            <p className="mt-2 text-3xl font-bold">{memberSince}</p>
-                            <p className="mt-1 text-xs text-white/65">joined the portal</p>
+                        <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4 sm:col-span-2 xl:col-span-1">
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Member since</p>
+                            <p className="mt-1 text-xl font-bold sm:text-3xl">{memberSince}</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">year</p>
                         </div>
                     </div>
                 </div>
@@ -612,9 +823,9 @@ const MemberDetail: React.FC = () => {
             </div>
 
             {showID && member && (
-                <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-md animate-fade-in">
-                    <div className="h-full w-full flex items-start justify-center p-3 pt-5 sm:p-4 sm:pt-8">
-                        <div className="w-full max-w-[24rem] relative max-h-[calc(100vh-1.5rem)] overflow-hidden scale-[0.95] sm:scale-100">
+                <div className="fixed inset-0 z-[100] bg-white/70 backdrop-blur-md animate-fade-in overflow-hidden overscroll-none">
+                    <div className="h-full w-full flex items-start justify-center overflow-hidden">
+                        <div className="w-full max-w-[22rem] sm:max-w-[24rem] md:max-w-[26rem] relative overflow-hidden scale-[0.9] sm:scale-100 origin-top">
                             <button
                                 onClick={() => setShowID(false)}
                                 className="absolute top-2.5 right-2.5 text-white/70 hover:text-white transition-colors z-50 p-1.5 bg-white/10 rounded-full"
@@ -623,17 +834,17 @@ const MemberDetail: React.FC = () => {
                                 <X size={18} />
                             </button>
 
-                            <div className="relative group p-1 animate-scale-up">
-                                <div className="absolute inset-0 bg-conic-to-r from-indigo-500 via-[#1e1b4b] to-indigo-500 rounded-[2.1rem] animate-spin-slow opacity-50 blur-sm" />
+                            <div className="relative group animate-scale-up">
+                                <div className="absolute inset-0 bg-conic-to-r from-white via-slate-100 to-white rounded-[2.1rem] animate-spin-slow opacity-50 blur-sm" />
 
-                                <div ref={idCardRef} className="card p-0! overflow-hidden bg-slate-950 border border-white/10 shadow-2xl rounded-[1.6rem] relative">
-                                    <div className="p-2.5 sm:p-3 pr-10 sm:pr-12 flex items-center justify-between border-b border-white/5">
+                                <div ref={idCardRef} className="card p-0! overflow-hidden bg-black border border-white/10 shadow-2xl rounded-[1.6rem] relative" style={{ backgroundColor: "#020617", color: "#ffffff" }}>
+                                    <div className="p-2 sm:p-2.5 pr-10 sm:pr-12 flex items-center justify-between border-b border-white/5">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
                                             <div className="w-4 h-4 bg-indigo-500 rounded-sm rotate-45" />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA EXECUTIVE</p>
+                                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA MEMBER</p>
                                             <p className="text-[10px] font-semibold text-white/55">Digital Identity Pass</p>
                                         </div>
                                     </div>
@@ -643,10 +854,10 @@ const MemberDetail: React.FC = () => {
                                     </span>
                                 </div>
 
-                                <div className="p-5 sm:p-6">
-                                    <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:gap-6">
+                                <div className="p-4 sm:p-5">
+                                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:gap-5">
                                         <div className="flex-shrink-0">
-                                            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-4xl">
+                                            <div className="w-18 h-18 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-3xl">
                                                 {member.photoURL ? (
                                                     <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
                                                 ) : (
@@ -656,10 +867,10 @@ const MemberDetail: React.FC = () => {
                                         </div>
 
                                         <div className="flex-1 flex flex-col justify-center min-w-0">
-                                            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight break-words leading-tight">
+                                            <h3 className="text-base sm:text-lg font-black text-white tracking-tight break-words leading-tight">
                                                 {member.name} {member.surname}
                                             </h3>
-                                            <p className="mt-1 text-[11px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.16em] break-all">
+                                            <p className="mt-1 text-[10px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.14em] break-all">
                                                 {member.memberId || "MEMBER ID PENDING"}
                                             </p>
                                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -673,12 +884,12 @@ const MemberDetail: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-center mb-5">
-                                        <div className="rounded-2xl border border-white/10 bg-white p-5 sm:p-6 shadow-sm">
+                                    <div className="flex justify-center mb-4">
+                                        <div className="rounded-2xl border border-white/10 bg-white p-3.5 sm:p-5 shadow-sm">
                                             <div className="sm:hidden">
                                                 <QRCodeSVG
                                                     value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
-                                                    size={130}
+                                                    size={108}
                                                     level="H"
                                                     includeMargin={false}
                                                     fgColor="#1e1b4b"
@@ -687,7 +898,7 @@ const MemberDetail: React.FC = () => {
                                             <div className="hidden sm:block">
                                                 <QRCodeSVG
                                                     value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
-                                                    size={160}
+                                                    size={140}
                                                     level="H"
                                                     includeMargin={false}
                                                     fgColor="#1e1b4b"
@@ -697,10 +908,10 @@ const MemberDetail: React.FC = () => {
                                     </div>
 
                                     <div className="text-center">
-                                        <p className="text-[9px] text-white/35 font-bold uppercase tracking-[0.16em]">
+                                        <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em]">
                                             Secured Through BCTA Digital Identity
                                         </p>
-                                        <p className="text-[9px] text-white/35 font-bold uppercase tracking-[0.16em] mt-0.5">
+                                        <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em] mt-0.5">
                                             Valid for {new Date().getFullYear()} fiscal year
                                         </p>
                                     </div>
@@ -709,14 +920,21 @@ const MemberDetail: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                                <button onClick={handlePrintID} className="w-full py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all border border-white/10">
-                                    Print Pass
+                            <div className="mt-2 grid grid-cols-3 gap-2 pb-1">
+                                <button onClick={handlePrintID} className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-white text-slate-800 rounded-lg font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none transition-all border border-slate-300 hover:bg-slate-50">
+                                    <span className="truncate block sm:hidden">Print</span>
+                                    <span className="truncate hidden sm:block">Print Pass</span>
                                 </button>
-                                <button onClick={handleDownloadID} className="w-full py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 rounded-xl font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all border border-indigo-400/30 inline-flex items-center justify-center gap-1.5">
-                                    <Download size={12} /> Download
+                                <button
+                                    onClick={handleDownloadID}
+                                    disabled={isDownloadingID}
+                                    className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-slate-900 text-white rounded-lg font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none transition-all border border-slate-900 inline-flex items-center justify-center gap-1 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    <Download size={11} className="shrink-0" />
+                                    <span className="truncate sm:hidden">{isDownloadingID ? "Saving" : "Save"}</span>
+                                    <span className="truncate hidden sm:inline">{isDownloadingID ? "Saving..." : "Download"}</span>
                                 </button>
-                                <button onClick={() => setShowID(false)} className="w-full py-2 bg-white text-slate-900 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-slate-100 transition-all">
+                                <button onClick={() => setShowID(false)} className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-white text-slate-900 rounded-lg font-black text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none hover:bg-slate-100 transition-all border border-slate-300">
                                     Close
                                 </button>
                             </div>

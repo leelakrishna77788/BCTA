@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { assets } from "../../assets/assets";
 import { Bell, Trash2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useRef } from "react";
+import { auth } from "../../firebase/firebaseConfig";
 import {
   collection,
   query,
@@ -32,6 +34,8 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   const navigate = useNavigate();
   const [notifs, setNotifs] = useState<NotificationDoc[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -66,6 +70,25 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [showNotifs]);
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    if (showProfileMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showProfileMenu]);
 
   const deleteNotification = useCallback(async (id: string) => {
     if (!window.confirm("Delete this notification?")) return;
@@ -76,12 +99,21 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
       toast.error("Failed to delete notification");
     }
   }, []);
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (err) {
+      toast.error("Logout failed");
+    }
+  };
 
   return (
     <header
       className="h-16 overflow-visible shrink-0 relative z-30 px-3 sm:px-8 flex items-center justify-between transition-all duration-300 shadow-sm"
       style={{
-        background: "linear-gradient(135deg, white 50%, #1e3a8a 50%)",
+        background: "linear-gradient(135deg, white 10%, #1e3a8a 50%)",
       }}
     >
       {" "}
@@ -90,7 +122,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
         <img
           src={assets.herologo}
           alt="Logo"
-          className="h-full max-h-12 object-contain block sm:hidden"
+          className="h-full w-full max-h-20 object-contain block sm:hidden"
         />
       </div>
       {/* Gradient bottom accent */}
@@ -184,13 +216,37 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
 
         {/* User Info */}
         <div
-          className="flex items-center gap-3 pl-1 group cursor-pointer"
-          onClick={() => {
-            const isAdmin = userRole === "admin" || userRole === "superadmin";
-            navigate(isAdmin ? "/admin/dashboard" : "/member/profile");
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowProfileMenu(!showProfileMenu);
           }}
-          title="View Profile"
-        >          <div className="hidden md:block text-right">
+          className="relative flex items-center gap-3 pl-1 group cursor-pointer"
+        >
+          {showProfileMenu && (
+            <div
+              ref={profileMenuRef}
+              className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden md:hidden"
+            >
+              <button
+                onClick={() => {
+                  navigate("/member/Myprofile");
+                  setShowProfileMenu(false);
+                }}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                Profile
+              </button>
+
+              {/* Logout */}
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+          <div className="block text-right">
             <p className="text-xs font-bold text-slate-800 leading-none group-hover:text-indigo-700 transition-colors tracking-tight">
               {userProfile?.name || currentUser?.displayName || "User"}
             </p>

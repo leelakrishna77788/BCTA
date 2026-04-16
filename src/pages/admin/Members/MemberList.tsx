@@ -281,8 +281,8 @@ const MemberList: React.FC = () => {
                 </div>
             </div>
 
-            <div className="glass-card rounded-2xl sm:rounded-3xl border border-white/40 p-3.5 sm:p-4 premium-shadow"
-              style={{ background: "rgba(255, 255, 255, 0.6)" }}
+                        <div className="glass-card rounded-2xl sm:rounded-3xl border border-white/15 p-3.5 sm:p-4"
+                            style={{ background: "rgba(255, 255, 255, 0.18)" }}
             >
                 <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                     <div className="flex items-center gap-2 text-slate-400">
@@ -292,7 +292,7 @@ const MemberList: React.FC = () => {
                     <div className="flex gap-3 sm:w-auto w-full">
                         <div className="relative flex-1 sm:w-44">
                             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                                className="w-full h-11 pl-4 pr-10 appearance-none bg-white/80 border border-slate-200 rounded-2xl font-bold text-slate-700 cursor-pointer shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                                className="w-full h-11 pl-4 pr-10 appearance-none bg-white/35 border border-slate-200/50 rounded-2xl font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
                                 <option value="all">All Status</option>
                                 <option value="active">Active Members</option>
                                 <option value="blocked">Blocked Members</option>
@@ -304,7 +304,7 @@ const MemberList: React.FC = () => {
                         </div>
                         <div className="relative flex-1 sm:w-44">
                             <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}
-                                className="w-full h-11 pl-4 pr-10 appearance-none bg-white/80 border border-slate-200 rounded-2xl font-bold text-slate-700 cursor-pointer shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                                className="w-full h-11 pl-4 pr-10 appearance-none bg-white/35 border border-slate-200/50 rounded-2xl font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
                                 <option value="all">All Payments</option>
                                 <option value="paid">Fully Paid</option>
                                 <option value="unpaid">Unpaid</option>
@@ -318,8 +318,7 @@ const MemberList: React.FC = () => {
                 </div>
             </div>
 
-            <div className="glass-card rounded-4xl border border-white/40 overflow-hidden premium-shadow"
-              style={{ background: "rgba(255, 255, 255, 0.7)" }}
+            <div className="rounded-4xl overflow-hidden"
             >
             <div className="space-y-4">
                 {loading ? (
@@ -327,14 +326,14 @@ const MemberList: React.FC = () => {
                         <TableSkeleton rows={8} />
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="glass-card text-center py-20 rounded-3xl border border-dashed border-slate-300 flex flex-col items-center justify-center gap-4">
+                    <div className="text-center py-20 rounded-3xl border border-dashed flex flex-col items-center justify-center gap-4">
                         <span className="text-6xl opacity-20">👥</span>
                         <p className="font-bold text-slate-600 mb-1">No members found</p>
                         <p className="text-sm font-medium text-slate-400">Try adjusting your filters.</p>
                     </div>
                 ) : (
                     filtered.map(m => (
-                        <div key={m.id || m.uid} className="glass-card bg-white/60 hover:bg-white/90 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl border border-white/40 group">
+                        <div key={m.id || m.uid} className="glass-card bg-white/10 hover:bg-white/15 rounded-2xl p-6 transition-all duration-300 border border-white/15 group">
                             <div className="flex flex-col md:flex-row md:items-center gap-6">
                                 {/* Avatar and Basic Info */}
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -357,24 +356,24 @@ const MemberList: React.FC = () => {
 
                                 {/* Info Badges */}
                                 <div className="flex flex-wrap md:flex-nowrap gap-3 md:gap-4">
-                                    <div className="bg-red-50/50 rounded-xl px-4 py-2 border border-red-100/50 text-center">
+                                    <div className="rounded-xl px-4 py-2 text-center">
                                         <p className="text-[9px] font-black text-red-400 uppercase tracking-widest">Blood</p>
                                         <p className="text-sm font-black text-red-600 flex items-center justify-center gap-1">
                                             <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                             {m.bloodGroup || "N/A"}
                                         </p>
                                     </div>
-                                    <div className="bg-slate-50 rounded-xl px-4 py-2 border border-slate-100 text-center">
+                                    <div className="rounded-xl px-4 py-2 text-center">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Meetings</p>
                                         <p className="text-sm font-black text-slate-900">{m.attendanceCount || 0}</p>
                                     </div>
-                                    <div className={`rounded-xl px-4 py-2 border text-center ${m.paymentStatus === "paid" ? "bg-emerald-50 border-emerald-100" : m.paymentStatus === "partial" ? "bg-amber-50 border-amber-100" : "bg-red-50 border-red-100"}`}>
+                                    <div className="rounded-xl px-4 py-2 text-center">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Payment</p>
                                         <p className={`text-sm font-black uppercase ${m.paymentStatus === "paid" ? "text-emerald-700" : m.paymentStatus === "partial" ? "text-amber-700" : "text-red-700"}`}>
                                             {m.paymentStatus || 'none'}
                                         </p>
                                     </div>
-                                    <div className={`rounded-xl px-4 py-2 border text-center ${m.status === "active" ? "bg-indigo-50 border-indigo-100" : m.status === "pending" ? "bg-amber-50 border-amber-100" : "bg-slate-50 border-slate-100"}`}>
+                                    <div className="rounded-xl px-4 py-2 text-center">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</p>
                                         <p className={`text-sm font-black uppercase flex items-center justify-center gap-1.5 ${m.status === "active" ? "text-indigo-700" : m.status === "pending" ? "text-amber-700" : "text-slate-600"}`}>
                                             <div className={`w-1.5 h-1.5 rounded-full ${m.status === "active" ? "bg-indigo-500 animate-pulse" : m.status === "pending" ? "bg-amber-500" : "bg-slate-400"}`}></div>
@@ -390,14 +389,14 @@ const MemberList: React.FC = () => {
                                     return (
                                 <div className="flex gap-2 md:shrink-0">
                                     <Link to={`/admin/members/${memberId}`}
-                                        className="flex-1 md:w-auto h-10 px-4 flex items-center justify-center bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 rounded-xl transition-all shadow-sm font-bold text-xs"
+                                        className="flex-1 md:w-auto h-10 px-4 flex items-center justify-center text-slate-600 hover:text-indigo-600 rounded-xl transition-all font-bold text-xs"
                                         title="View Profile">
                                         <Eye size={16} className="mr-1.5" /> View
                                     </Link>
                                     {m.status === "pending" ? (
                                         <button onClick={() => toggleBlock(m)}
                                             disabled={isToggling}
-                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all shadow-sm font-bold text-xs uppercase tracking-wider ${isToggling ? "bg-indigo-400 cursor-not-allowed opacity-70" : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all font-bold text-xs uppercase tracking-wider ${isToggling ? "cursor-not-allowed opacity-70" : "text-indigo-600 hover:text-indigo-700"}`}
                                             title="Approve Member">
                                             {isToggling ? <Loader2 size={16} className="mr-1.5 animate-spin" /> : <UserCheck size={16} className="mr-1.5" />}
                                             {isToggling ? "Processing..." : "Approve"}
@@ -405,7 +404,7 @@ const MemberList: React.FC = () => {
                                     ) : m.status === "active" ? (
                                         <button onClick={() => toggleBlock(m)}
                                             disabled={isToggling}
-                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all shadow-sm font-bold text-xs ${isToggling ? "bg-slate-100 cursor-not-allowed opacity-70 border border-slate-200" : "bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50"}`}
+                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all font-bold text-xs ${isToggling ? "cursor-not-allowed opacity-70" : "text-slate-500 hover:text-red-600"}`}
                                             title="Block Member">
                                             {isToggling ? <Loader2 size={16} className="mr-1.5 animate-spin" /> : <UserX size={16} className="mr-1.5" />}
                                             {isToggling ? "Blocking..." : "Block"}
@@ -413,14 +412,14 @@ const MemberList: React.FC = () => {
                                     ) : (
                                         <button onClick={() => toggleBlock(m)}
                                             disabled={isToggling}
-                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all shadow-sm font-bold text-xs uppercase tracking-wider ${isToggling ? "bg-emerald-400 cursor-not-allowed opacity-70" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
+                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all font-bold text-xs uppercase tracking-wider ${isToggling ? "cursor-not-allowed opacity-70" : "text-emerald-600 hover:text-emerald-700"}`}
                                             title="Unblock Member">
                                             {isToggling ? <Loader2 size={16} className="mr-1.5 animate-spin" /> : <UserCheck size={16} className="mr-1.5" />}
                                             {isToggling ? "Unblocking..." : "Unblock"}
                                         </button>
                                     )}
                                     <button onClick={() => handleDelete(m.id || m.uid, m.name)}
-                                        className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 text-red-500 hover:text-red-700 hover:border-red-200 hover:bg-red-50 rounded-xl transition-all shadow-sm"
+                                        className="w-10 h-10 flex items-center justify-center text-red-500 hover:text-red-700 rounded-xl transition-all"
                                         title="Delete Permanently">
                                         <Trash2 size={16} />
                                     </button>
