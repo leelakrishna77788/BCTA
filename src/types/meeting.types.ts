@@ -10,6 +10,8 @@ export interface Meeting {
   location?: string;
   gpsLink?: string;
   status: MeetingStatus;
+  meetingStartUTC?: Date | { toDate(): Date } | null;
+  meetingEndUTC?: Date | { toDate(): Date } | null;
   qrToken?: string | null;
   qrExpiresAt?: Date | { toDate(): Date } | null;
   qrDuration?: number;
