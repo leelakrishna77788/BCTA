@@ -103,14 +103,20 @@ service cloud.firestore {
       allow create, update, delete:  if isAdmin();
     }
 
+    // ─── Shop Scans ────────────────────────────────────────────────────────
+    match /shopScans/{scanId} {
+      allow read: if isAdmin() || (isActiveUser() && resource.data.memberUid == request.auth.uid);
+      allow create: if isActiveUser() && request.resource.data.memberUid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
     // ─── Payments ──────────────────────────────────────────────────────────
     match /payments/{paymentId} {
       // Member sees own payments; admin sees all
       allow read:   if isActiveUser() && (
                       resource.data.memberUID == request.auth.uid || isAdmin()
                     );
-      allow create, update: if isAdmin();
-      allow delete:         if isSuperAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     // ─── Products / Inventory ──────────────────────────────────────────────

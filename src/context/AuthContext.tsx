@@ -8,7 +8,7 @@ import {
   deleteUser,
   type UserCredential,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase/firebaseConfig";
 import type { AuthContextValue } from "../types/auth.types";
 import type { Member, UserRole } from "../types/member.types";
@@ -34,6 +34,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const snap = await getDoc(docRef);
       if (snap.exists()) {
         const data = snap.data() as Member;
+        
+        // Calculate dynamic payment status based on current month
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        
+        try {
+            const paymentSnap = await getDocs(query(collection(db, "payments"), where("memberUID", "==", uid), where("month", "==", currentMonth), where("year", "==", currentYear)));
+            data.paymentStatus = !paymentSnap.empty ? "paid" : "unpaid";
+        } catch(paymentErr) {
+            console.error("Error fetching payment status in AuthContext:", paymentErr);
+            data.paymentStatus = "unpaid";
+        }
+
         setUserProfile(data);
         const role = (data.role?.toLowerCase().trim() as UserRole) || "member";
         setUserRole(role);

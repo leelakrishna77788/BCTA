@@ -38,10 +38,9 @@ interface NotificationData {
   [key: string]: any;
 }
 
-interface ProductData {
+interface PaymentData {
   id?: string;
-  paidAmount?: number;
-  remainingAmount?: number;
+  amount?: number;
   [key: string]: any;
 }
 
@@ -60,7 +59,7 @@ const MemberDashboard: React.FC = () => {
   const { userProfile, currentUser } = useAuth();
 
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
-  const [myProducts, setMyProducts] = useState<ProductData[]>([]);
+  const [myPayments, setMyPayments] = useState<PaymentData[]>([]);
   const [meetings, setMeetings] = useState<MeetingData[]>([]);
   const [myAttendanceCount, setMyAttendanceCount] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -88,18 +87,18 @@ const MemberDashboard: React.FC = () => {
     );
     unsubs.push(notifUnsub);
 
-    const prodUnsub = onSnapshot(
+    const payUnsub = onSnapshot(
       query(
-        collection(db, "products"),
+        collection(db, "payments"),
         where("memberUID", "==", currentUser.uid),
       ),
       (snap) =>
-        setMyProducts(
-          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ProductData),
+        setMyPayments(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as PaymentData),
         ),
-      (err) => console.error("products:", err),
+      (err) => console.error("payments:", err),
     );
-    unsubs.push(prodUnsub);
+    unsubs.push(payUnsub);
 
     const meetUnsub = onSnapshot(
       query(collection(db, "meetings"), orderBy("createdAt", "desc"), limit(3)),
@@ -131,8 +130,8 @@ const MemberDashboard: React.FC = () => {
     }
   };
 
-  const totalDue = myProducts.reduce((s, p) => s + (p.remainingAmount || 0), 0);
-  const totalPaid = myProducts.reduce((s, p) => s + (p.paidAmount || 0), 0);
+  const totalPaid = myPayments.reduce((s, p) => s + (p.amount || 0), 0);
+  const totalDue = userProfile?.paymentStatus !== "paid" ? 100 : 0;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -231,9 +230,9 @@ const MemberDashboard: React.FC = () => {
           </div>
         </div>
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 px-3 sm:px-4 py-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 px-3 sm:px-4 py-3">
           {loading
-            ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)
+            ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
             : [
                 {
                   label: "Meetings Attended",
@@ -287,17 +286,7 @@ const MemberDashboard: React.FC = () => {
                   iconColor:
                     totalDue > 0 ? "text-rose-600" : "text-emerald-600",
                   trend: totalDue === 0 ? "All clear!" : "Outstanding balance",
-                },
-                {
-                  label: "Active Products",
-                  value: myProducts.length,
-                  icon: Zap,
-                  gradient: "from-blue-500 to-indigo-600",
-                  bgGradient: "from-blue-50 to-indigo-50",
-                  iconBg: "bg-blue-100",
-                  iconColor: "text-blue-600",
-                  trend: "Assigned to you",
-                },
+                }
               ].map((stat, idx) => (
                 <div
                   key={stat.label}

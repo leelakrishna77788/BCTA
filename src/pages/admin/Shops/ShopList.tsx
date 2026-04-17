@@ -4,7 +4,7 @@ import { db } from "../../../firebase/firebaseConfig";
 import { QRCodeSVG } from "qrcode.react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Plus, Store, QrCode, Download, Eye } from "lucide-react";
+import { Plus, Store, QrCode, Download } from "lucide-react";
 
 interface Shop {
     id: string;
@@ -198,13 +198,9 @@ const ShopList: React.FC = () => {
                         </div>
 
                         <div className="flex gap-3">
-                            <Link to={`/admin/shops/${shop.id}`}
-                                className="flex-1 h-11 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all flex items-center justify-center gap-2 shadow-sm font-bold text-xs">
-                                <Eye size={16} /> Inventory
-                            </Link>
                             <button onClick={() => downloadShopQR(shop)}
-                                className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-slate-50 transition-all flex items-center justify-center shadow-sm">
-                                <Download size={18} />
+                                className="flex-1 h-11 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm font-bold text-xs">
+                                <Download size={18} /> Download QR
                             </button>
                         </div>
                     </div>

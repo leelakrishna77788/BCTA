@@ -20,6 +20,8 @@ interface ScanResult {
     location?: string;
     shopName?: string;
     shopId?: string;
+    memberId?: string;
+    memberName?: string;
 }
 
 const ScanQR: React.FC = () => {
@@ -241,15 +243,42 @@ const ScanQR: React.FC = () => {
 
             // --- SHOP QR ---
             else if (data.type === "shop" && data.shopId) {
-                if (userProfile?.status === "blocked") {
-                    toast.error("You are blocked from shop access!");
+                if (!userProfile || userProfile.status !== "active") {
+                    toast.error("Access Denied: You are not an active member!");
                     setProcessing(false); return;
                 }
+                if (!userProfile.memberId) {
+                    toast.error("Verification Failed: No Member ID found.");
+                    setProcessing(false); return;
+                }
+
                 const shopSnap = await getDoc(doc(db, "shops", data.shopId));
-                if (!shopSnap.exists()) { toast.error("Shop not found"); setProcessing(false); return; }
+                if (!shopSnap.exists()) { toast.error("Invalid QR: Shop not found"); setProcessing(false); return; }
                 const shop = shopSnap.data();
-                toast.success(`Shop QR scanned: ${shop.shopName}`);
-                setResult({ type: "shop", success: true, shopName: shop.shopName, shopId: data.shopId });
+
+                // Log the scan activity
+                try {
+                    await addDoc(collection(db, "shopScans"), {
+                        shopId: data.shopId,
+                        shopName: shop.shopName,
+                        memberUid: userProfile.uid,
+                        memberId: userProfile.memberId,
+                        memberName: `${userProfile.name} ${userProfile.surname}`,
+                        scannedAt: serverTimestamp()
+                    });
+                } catch (err) {
+                    console.warn("Could not log shop scan:", err);
+                }
+
+                toast.success("QR Code Verified Successfully");
+                setResult({ 
+                    type: "shop", 
+                    success: true, 
+                    shopName: shop.shopName, 
+                    shopId: data.shopId,
+                    memberId: userProfile.memberId,
+                    memberName: `${userProfile.name} ${userProfile.surname}`
+                });
             } else {
                 toast.error("Unknown QR format");
             }
@@ -469,11 +498,33 @@ const ScanQR: React.FC = () => {
                                 </>
                             )}
                             {result.type === "shop" && (
-                                <>
-                                    <p className="text-lg font-bold text-emerald-700">Shop Verified!</p>
-                                    <p className="text-slate-600 text-sm mt-1">{result.shopName}</p>
-                                    <p className="text-xs text-slate-400 mt-1">Show your profile to the shop owner to receive products</p>
-                                </>
+                                <div className="animate-slide-up">
+                                    <p className="text-xl font-black text-emerald-700 uppercase tracking-wide mb-3">QR Code Verified Successfully</p>
+                                    <div className="bg-emerald-100 border border-emerald-300 mt-2 p-4 rounded-2xl shadow-inner relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                                            <ShieldCheck size={80} />
+                                        </div>
+                                        <div className="relative z-10 flex flex-col items-center">
+                                            <p className="text-slate-500 text-[11px] font-black uppercase tracking-widest mb-1.5">Authenticated Identity</p>
+                                            <p className="text-lg font-bold text-slate-800 tracking-tight leading-none mb-3">{result.memberName}</p>
+                                            <div className="flex flex-col sm:flex-row items-center gap-2 w-full justify-center">
+                                                <div className="bg-emerald-50 border-2 border-emerald-400 px-4 py-2 rounded-xl text-center w-full sm:w-auto shadow-sm">
+                                                    <p className="text-emerald-800 text-xs font-semibold uppercase tracking-wider mb-0.5 opacity-80">BCTA Member ID</p>
+                                                    <p className="text-emerald-900 font-mono font-bold text-base tracking-widest">{result.memberId}</p>
+                                                </div>
+                                                <div className="bg-emerald-600 px-4 py-3 rounded-xl flex items-center justify-center gap-2 shadow-md w-full sm:w-auto">
+                                                    <ShieldCheck size={20} className="text-white" />
+                                                    <span className="text-white font-bold tracking-wide uppercase text-sm">Verified User</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-emerald-200">
+                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Scanned at Location</p>
+                                        <p className="text-emerald-800 font-semibold">{result.shopName}</p>
+                                        <p className="text-xs text-slate-500 mt-2 bg-white/50 py-1.5 px-3 rounded-lg border border-slate-200 inline-block">Please show this screen to the shop owner.</p>
+                                    </div>
+                                </div>
                             )}
                             <button onClick={() => { setResult(null); }} className="btn-secondary mt-4 flex items-center gap-2 mx-auto">
                                 <RefreshCw size={14} /> Scan Another

@@ -84,28 +84,45 @@ const MemberDetail: React.FC = () => {
                 }
 
                 if (memberData) {
-                    setMember(memberData);
+                    // Start parallel data fetches
                     const canonicalId = memberData.id;
+                    const now = new Date();
+                    const currentMonth = now.getMonth() + 1;
+                    const currentYear = now.getFullYear();
 
-                    try {
-                        const attSnap = await getDocs(query(collection(db, "attendance"), where("memberUID", "==", canonicalId)));
-                        setAttendance(attSnap.docs.map((d) => d.data()));
-                    } catch (err) {
-                        console.error("Attendance fetch error:", err);
+                    // Parallel execution to maintain performance
+                    const [paymentSnap, attSnap, prodSnap, meetSnap] = await Promise.allSettled([
+                        getDocs(query(collection(db, "payments"), where("memberUID", "==", canonicalId), where("month", "==", currentMonth), where("year", "==", currentYear))),
+                        getDocs(query(collection(db, "attendance"), where("memberUID", "==", canonicalId))),
+                        getDocs(query(collection(db, "products"), where("memberUID", "==", canonicalId))),
+                        getDocs(collection(db, "meetings"))
+                    ]);
+
+                    // Assign dynamic paymentStatus based on whether a payment record exists for current month
+                    if (paymentSnap.status === 'fulfilled') {
+                        memberData.paymentStatus = !paymentSnap.value.empty ? "paid" : "unpaid";
+                    } else {
+                        memberData.paymentStatus = "unpaid"; // fallback if error
+                    }
+                    
+                    setMember(memberData);
+
+                    if (attSnap.status === 'fulfilled') {
+                        setAttendance(attSnap.value.docs.map((d) => d.data()));
+                    } else {
+                        console.error("Attendance fetch error:", attSnap.reason);
                     }
 
-                    try {
-                        const prodSnap = await getDocs(query(collection(db, "products"), where("memberUID", "==", canonicalId)));
-                        setProducts(prodSnap.docs.map((d) => d.data() as ProductDoc));
-                    } catch (err) {
-                        console.error("Products fetch error:", err);
+                    if (prodSnap.status === 'fulfilled') {
+                        setProducts(prodSnap.value.docs.map((d) => d.data() as ProductDoc));
+                    } else {
+                        console.error("Products fetch error:", prodSnap.reason);
                     }
 
-                    try {
-                        const meetSnap = await getDocs(collection(db, "meetings"));
-                        setMeetings(meetSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
-                    } catch (err) {
-                        console.error("Meetings fetch error:", err);
+                    if (meetSnap.status === 'fulfilled') {
+                        setMeetings(meetSnap.value.docs.map((d) => ({ id: d.id, ...d.data() })));
+                    } else {
+                        console.error("Meetings fetch error:", meetSnap.reason);
                     }
                 }
             } catch (err) {
@@ -193,7 +210,7 @@ const MemberDetail: React.FC = () => {
         toast.success("Deleting member in background...");
         navigate("/admin/members");
 
-        membersApi.delete(member.id).then(() => {
+        membersApi.delete(member.uid).then(() => {
             toast.success("Member record destroyed successfully");
         }).catch((err: any) => {
             console.error("Deletion failed:", err);
@@ -566,8 +583,8 @@ const MemberDetail: React.FC = () => {
                 </div>
             </div>
 
-            <section className="relative overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.22),_transparent_46%)]" />
+            <section className="relative overflow-hidden rounded-4xl border border-blue-100 bg-linear-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_46%)]" />
                 <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
                 <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
                     <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
@@ -674,7 +691,7 @@ const MemberDetail: React.FC = () => {
                                             {Icon ? <Icon size={13} className="text-[#000080]" /> : null}
                                             {item.label}
                                         </dt>
-                                        <dd className="mt-2 text-sm font-semibold text-slate-900 break-words">{item.value}</dd>
+                                        <dd className="mt-2 text-sm font-semibold text-slate-900 wrap-break-word">{item.value}</dd>
                                     </div>
                                 );
                             })}
@@ -801,21 +818,21 @@ const MemberDetail: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                        <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
+                        <div className="card rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Meetings attended</p>
                             <p className="mt-2 text-3xl font-bold text-[#000080]">{attendance.length}</p>
                             <p className="mt-1 text-sm text-slate-500">Attendance summary from meeting records.</p>
                         </div>
-                        <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
+                        <div className="card rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payments collected</p>
                             <p className="mt-2 text-3xl font-bold text-emerald-600">Rs. {totalPaid.toLocaleString()}</p>
                             <p className="mt-1 text-sm text-slate-500">{paymentProgress}% of total allocation value paid.</p>
                         </div>
-                        <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
+                        <div className="card rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm">
                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Quick contact</p>
                             <div className="mt-3 space-y-2 text-sm text-slate-700">
-                                <p className="flex items-center gap-2 break-words"><Mail size={14} className="text-[#000080]" /> {member.email || "-"}</p>
-                                <p className="flex items-center gap-2 break-words"><Phone size={14} className="text-[#000080]" /> {member.phone || "-"}</p>
+                                <p className="flex items-center gap-2 wrap-break-word"><Mail size={14} className="text-[#000080]" /> {member.email || "-"}</p>
+                                <p className="flex items-center gap-2 wrap-break-word"><Phone size={14} className="text-[#000080]" /> {member.phone || "-"}</p>
                             </div>
                         </div>
                     </div>
@@ -823,9 +840,9 @@ const MemberDetail: React.FC = () => {
             </div>
 
             {showID && member && (
-                <div className="fixed inset-0 z-[100] bg-white/70 backdrop-blur-md animate-fade-in overflow-hidden overscroll-none">
+                <div className="fixed inset-0 z-100 bg-white/70 backdrop-blur-md animate-fade-in overflow-hidden overscroll-none">
                     <div className="h-full w-full flex items-start justify-center overflow-hidden">
-                        <div className="w-full max-w-[22rem] sm:max-w-[24rem] md:max-w-[26rem] relative overflow-hidden scale-[0.9] sm:scale-100 origin-top">
+                        <div className="w-full max-w-88 sm:max-w-96 md:max-w-104 relative overflow-hidden scale-[0.9] sm:scale-100 origin-top">
                             <button
                                 onClick={() => setShowID(false)}
                                 className="absolute top-2.5 right-2.5 text-white/70 hover:text-white transition-colors z-50 p-1.5 bg-white/10 rounded-full"
@@ -856,7 +873,7 @@ const MemberDetail: React.FC = () => {
 
                                 <div className="p-4 sm:p-5">
                                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:gap-5">
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                             <div className="w-18 h-18 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-3xl">
                                                 {member.photoURL ? (
                                                     <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
@@ -867,7 +884,7 @@ const MemberDetail: React.FC = () => {
                                         </div>
 
                                         <div className="flex-1 flex flex-col justify-center min-w-0">
-                                            <h3 className="text-base sm:text-lg font-black text-white tracking-tight break-words leading-tight">
+                                            <h3 className="text-base sm:text-lg font-black text-white tracking-tight wrap-break-word leading-tight">
                                                 {member.name} {member.surname}
                                             </h3>
                                             <p className="mt-1 text-[10px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.14em] break-all">

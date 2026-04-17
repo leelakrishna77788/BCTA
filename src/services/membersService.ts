@@ -300,7 +300,15 @@ export const membersApi = {
         } catch {
           errorMsg = `Server returned ${res.status}: ${text.slice(0, 100)}`;
         }
-        throw new Error(errorMsg);
+        
+        console.warn(`[membersApi.delete] Vercel API failed (${errorMsg}), attempting local fallback...`);
+        try {
+          await deleteDoc(doc(db, "users", uid));
+          console.log("[membersApi.delete] Successfully deleted via local fallback:", uid);
+          return { message: "Document deleted via local fallback (Auth may remain orphaned)", warning: errorMsg };
+        } catch (fbErr) {
+          throw new Error(`${errorMsg} | Local fallback also failed`);
+        }
       }
 
       return res.json();

@@ -36,7 +36,6 @@ const MeetingQR = React.lazy(() => import("./pages/admin/Meetings/MeetingQR"));
 const AttendanceDashboard = React.lazy(() => import("./pages/admin/Meetings/AttendanceDashboard"));
 const GlobalAttendance = React.lazy(() => import("./pages/admin/Meetings/GlobalAttendance"));
 const ShopList = React.lazy(() => import("./pages/admin/Shops/ShopList"));
-const ShopDetail = React.lazy(() => import("./pages/admin/Shops/ShopDetail"));
 const PaymentsDashboard = React.lazy(() => import("./pages/admin/Payments/PaymentsDashboard"));
 const ComplaintsList = React.lazy(() => import("./pages/admin/Complaints/ComplaintsList"));
 const SendNotification = React.lazy(() => import("./pages/admin/Notifications/SendNotification"));
@@ -149,7 +148,6 @@ function App() {
 
               {/* Shops */}
               <Route path="shops" element={<ShopList />} />
-              <Route path="shops/:id" element={<ShopDetail />} />
 
               {/* Other admin */}
               <Route path="payments" element={<PaymentsDashboard />} />

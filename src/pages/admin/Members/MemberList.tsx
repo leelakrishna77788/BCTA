@@ -70,9 +70,26 @@ const MemberList: React.FC = () => {
     const fetchMembers = async () => {
         try {
             setLoading(true);
-            const q = query(collection(db, "users"), where("role", "==", "member"));
-            const snap = await getDocs(q);
-            const data: MemberDoc[] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1;
+            const currentYear = now.getFullYear();
+
+            const [snap, paymentsSnap] = await Promise.all([
+                getDocs(query(collection(db, "users"), where("role", "==", "member"))),
+                getDocs(query(collection(db, "payments"), where("month", "==", currentMonth), where("year", "==", currentYear)))
+            ]);
+
+            const payments = paymentsSnap.docs.map(d => d.data());
+            const paidMemberIds = new Set(payments.map(p => p.memberUID));
+
+            const data: MemberDoc[] = snap.docs.map(d => {
+                const docData = d.data();
+                return {
+                    id: d.id,
+                    ...docData,
+                    paymentStatus: paidMemberIds.has(d.id) ? "paid" : "unpaid"
+                } as MemberDoc;
+            });
             
             data.sort((a, b) => {
                 const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt as any || 0);

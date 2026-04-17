@@ -98,7 +98,7 @@ export async function verifyIdTokenSimple(idToken: string, projectId: string) {
  * Deletes a user from Firebase Auth via REST API.
  */
 export async function deleteAuthUserREST(projectId: string, accessToken: string, uid: string) {
-  const url = `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:batchDelete`;
+  const url = `https://identitytoolkit.googleapis.com/v1/projects/${projectId}/accounts:delete`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -106,11 +106,11 @@ export async function deleteAuthUserREST(projectId: string, accessToken: string,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      localIds: [uid]
+      localId: uid
     })
   });
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (data.error && data.error.message === 'USER_NOT_FOUND') {
       console.warn(`Auth user ${uid} not found, skipping auth deletion.`);
@@ -162,8 +162,8 @@ export async function deleteFirestoreDocREST(projectId: string, accessToken: str
   });
 
   if (!response.ok && response.status !== 404) {
-    const data = await response.json();
-    throw new Error(`REST deleteFirestoreDoc failed: ${JSON.stringify(data)}`);
+    const data = await response.json().catch(() => ({}));
+    throw new Error(`REST deleteFirestoreDoc failed: ${JSON.stringify(data) || response.statusText}`);
   }
   return true;
 }

@@ -4,6 +4,7 @@ import {
   addDoc,
   getDocs,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -71,4 +72,46 @@ export async function getYearlyPaymentStats(year: number): Promise<{
     else if (p.status === "overdue") overdue++;
   });
   return { total: snap.size, paid, pending, overdue };
+}
+
+/** Record a manual monthly fee payment and update user status */
+export async function markMemberFeePaid(
+  memberUID: string,
+  memberId: string,
+  memberName: string,
+  month: number,
+  year: number,
+  collectedByUID: string
+): Promise<void> {
+  // 1. Create a payment record
+  await addDoc(collection(db, "payments"), {
+    memberUID,
+    memberId,
+    memberName,
+    amount: 100, // Fixed monthly fee
+    type: "monthly_fee",
+    status: "paid",
+    year,
+    month,
+    collectedByUID,
+    paidAt: serverTimestamp(),
+    createdAt: serverTimestamp(),
+  });
+
+}
+
+/** Remove a manual monthly fee payment marking a user unpaid for that month */
+export async function removeMemberFeePaid(memberUID: string, month: number, year: number): Promise<void> {
+  const snap = await getDocs(
+    query(
+      collection(db, "payments"),
+      where("memberUID", "==", memberUID),
+      where("month", "==", month),
+      where("year", "==", year),
+      where("type", "==", "monthly_fee")
+    )
+  );
+
+  const batchPromises = snap.docs.map(d => deleteDoc(doc(db, "payments", d.id)));
+  await Promise.all(batchPromises);
 }

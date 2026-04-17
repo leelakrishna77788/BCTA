@@ -134,11 +134,16 @@ const AdminDashboard: React.FC = () => {
 
   const fetchStats = useCallback(async () => {
     try {
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+
       // Fire all queries in PARALLEL — saves ~1-2s vs sequential
-      const [membersSnap, meetingsSnap, complaintsSnap] = await Promise.all([
+      const [membersSnap, meetingsSnap, complaintsSnap, paymentsSnap] = await Promise.all([
         getDocs(query(collection(db, "users"), where("role", "==", "member"))),
         getDocs(query(collection(db, "meetings"), orderBy("date", "desc"))),
         getDocs(query(collection(db, "complaints"), where("status", "==", "open"))),
+        getDocs(query(collection(db, "payments"), where("month", "==", currentMonth), where("year", "==", currentYear))),
       ]);
 
       const members = membersSnap.docs.map(
@@ -147,6 +152,9 @@ const AdminDashboard: React.FC = () => {
       const meetings = meetingsSnap.docs.map(
         (d) => ({ id: d.id, ...d.data() }) as MeetingStat,
       );
+      
+      const payments = paymentsSnap.docs.map(d => d.data());
+      const paidMemberIds = new Set(payments.map(p => p.memberUID));
 
       let active = 0,
         blocked = 0,
@@ -154,7 +162,11 @@ const AdminDashboard: React.FC = () => {
       members.forEach((m) => {
         if (m.status === "active") active++;
         else if (m.status === "blocked") blocked++;
-        if (m.paymentStatus === "unpaid") pendingPay++;
+        
+        const isPaid = paidMemberIds.has(m.uid);
+        m.paymentStatus = isPaid ? "paid" : "unpaid";
+        
+        if (!isPaid) pendingPay++;
       });
 
       setStats({
