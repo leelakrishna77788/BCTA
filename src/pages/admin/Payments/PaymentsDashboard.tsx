@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
-import { CreditCard, TrendingUp, AlertCircle, CheckCircle, CalendarDays, History } from "lucide-react";
+import { CreditCard, TrendingUp, AlertCircle, CheckCircle, CalendarDays, History, X } from "lucide-react";
 import { markMemberFeePaid, removeMemberFeePaid } from "../../../services/paymentsService";
 import { useAuth } from "../../../context/AuthContext";
 import toast from "react-hot-toast";
@@ -42,6 +42,39 @@ const PaymentsDashboard: React.FC = () => {
     const [loadingPayments, setLoadingPayments] = useState<boolean>(true);
     const [filter, setFilter] = useState<string>("all");
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const [markPaidConfirm, setMarkPaidConfirm] = useState<Member | null>(null);
+    const [markUnpaidConfirm, setMarkUnpaidConfirm] = useState<Member | null>(null);
+
+    // Lock ALL scroll when modal is open
+    useEffect(() => {
+        const isModalOpen = markPaidConfirm !== null || markUnpaidConfirm !== null;
+        if (!isModalOpen) return;
+
+        const preventDefault = (e: Event) => e.preventDefault();
+
+        // Block mouse wheel
+        window.addEventListener("wheel", preventDefault, { passive: false });
+        // Block touch scroll (mobile)
+        window.addEventListener("touchmove", preventDefault, { passive: false });
+        // Block keyboard scroll (arrow keys, space, page up/down)
+        const blockKeys = (e: KeyboardEvent) => {
+            const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
+            if (keys.includes(e.key)) e.preventDefault();
+        };
+        window.addEventListener("keydown", blockKeys);
+
+        // Also lock body/html as fallback
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+
+        return () => {
+            window.removeEventListener("wheel", preventDefault);
+            window.removeEventListener("touchmove", preventDefault);
+            window.removeEventListener("keydown", blockKeys);
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+        };
+    }, [markPaidConfirm, markUnpaidConfirm]);
 
     const getCurrentPeriod = () => {
         const now = new Date();
@@ -116,13 +149,12 @@ const PaymentsDashboard: React.FC = () => {
 
     const handleMarkPaid = async (member: any) => {
         if (!currentUser) return;
-        const monthLabel = monthsList.find(m => m.value === selectedMonth)?.label;
-        if (!window.confirm(`Mark ₹100 as paid for ${member.name} for ${monthLabel} ${selectedYear}?`)) return;
         
         setProcessingId(member.uid);
         try {
             await markMemberFeePaid(member.uid, member.memberId, `${member.name} ${member.surname || ""}`.trim(), selectedMonth, selectedYear, currentUser.uid);
             toast.success(`Fee collected from ${member.name}`);
+            setMarkPaidConfirm(null);
         } catch (error) {
             console.error(error);
             toast.error("Failed to mark fee as paid.");
@@ -132,13 +164,11 @@ const PaymentsDashboard: React.FC = () => {
     };
 
     const handleMarkUnpaid = async (member: any) => {
-        const monthLabel = monthsList.find(m => m.value === selectedMonth)?.label;
-        if (!window.confirm(`Remove payment record for ${member.name} for ${monthLabel} ${selectedYear}?`)) return;
-        
         setProcessingId(member.uid);
         try {
             await removeMemberFeePaid(member.uid, selectedMonth, selectedYear);
             toast.success(`Payment removed for ${member.name}`);
+            setMarkUnpaidConfirm(null);
         } catch (error) {
             console.error(error);
             toast.error("Failed to remove payment.");
@@ -148,7 +178,128 @@ const PaymentsDashboard: React.FC = () => {
     };
 
     return (
-        <div className="space-y-5 sm:space-y-6 animate-fade-in pb-4 sm:pb-8">
+        <>
+            {/* Mark as Paid Confirmation Modal */}
+            {markPaidConfirm && (
+                <div className="fixed inset-0 z-[100] backdrop-blur-md animate-fade-in">
+                    <div className="absolute inset-0 flex items-start justify-center p-4 pt-8 sm:pt-12">
+                        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
+                            <button 
+                                onClick={() => setMarkPaidConfirm(null)}
+                                className="absolute top-4 sm:top-8 right-4 sm:right-8 text-slate-400 hover:text-slate-600 transition-colors z-50 p-2"
+                                title="Close"
+                            >
+                                <X size={20} className="sm:w-6 sm:h-6" />
+                            </button>
+                            <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-5 text-emerald-600">
+                                <CheckCircle size={80} className="sm:w-[120px] sm:h-[120px]" />
+                            </div>
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center mb-6 sm:mb-8 shadow-inner">
+                                <CheckCircle size={28} className="sm:w-9 sm:h-9" />
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 sm:mb-4 tracking-tight">Mark as Paid</h2>
+                            <p className="text-sm sm:text-base text-slate-500 font-bold leading-relaxed mb-6 sm:mb-8">
+                                You are about to mark <span className="text-emerald-600">{markPaidConfirm.name} {markPaidConfirm.surname || ""}</span> as paid for <span className="text-emerald-600">{monthsList.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>.
+                            </p>
+                            
+                            <div className="bg-slate-50 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 border border-slate-200">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs sm:text-sm text-slate-600 font-semibold">Member:</span>
+                                    <span className="text-sm sm:text-base font-black text-slate-900">{markPaidConfirm.name} {markPaidConfirm.surname || ""}</span>
+                                </div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs sm:text-sm text-slate-600 font-semibold">Amount:</span>
+                                    <span className="text-xl sm:text-2xl font-black text-emerald-600">₹100</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs sm:text-sm text-slate-600 font-semibold">Period:</span>
+                                    <span className="text-sm sm:text-base font-black text-slate-900">
+                                        {monthsList.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                                <button 
+                                    onClick={() => setMarkPaidConfirm(null)}
+                                    className="btn-secondary flex-1 py-4 font-bold rounded-2xl hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={() => handleMarkPaid(markPaidConfirm)}
+                                    className="bg-emerald-600 text-white font-black flex-1 py-4 rounded-2xl shadow-lg shadow-emerald-100 hover:shadow-emerald-200 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <CheckCircle size={20} />
+                                    Confirm Payment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Undo Payment Confirmation Modal */}
+            {markUnpaidConfirm && (
+                <div className="fixed inset-0 z-[100] backdrop-blur-md animate-fade-in">
+                    <div className="absolute inset-0 flex items-start justify-center p-4 pt-8 sm:pt-12">
+                        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
+                            <button 
+                                onClick={() => setMarkUnpaidConfirm(null)}
+                                className="absolute top-4 sm:top-8 right-4 sm:right-8 text-slate-400 hover:text-slate-600 transition-colors z-50 p-2"
+                                title="Close"
+                            >
+                                <X size={20} className="sm:w-6 sm:h-6" />
+                            </button>
+                            <div className="absolute top-0 right-0 p-4 sm:p-8 opacity-5 text-amber-600">
+                                <AlertCircle size={80} className="sm:w-[120px] sm:h-[120px]" />
+                            </div>
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mb-6 sm:mb-8 shadow-inner">
+                                <AlertCircle size={28} className="sm:w-9 sm:h-9" />
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 sm:mb-4 tracking-tight">Undo Payment</h2>
+                            <p className="text-sm sm:text-base text-slate-500 font-bold leading-relaxed mb-6 sm:mb-8">
+                                You are about to remove the payment record for <span className="text-amber-600">{markUnpaidConfirm.name} {markUnpaidConfirm.surname || ""}</span> for <span className="text-amber-600">{monthsList.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>. This will mark them as <span className="underline decoration-amber-200 decoration-4 underline-offset-4">unpaid</span>.
+                            </p>
+                            
+                            <div className="bg-slate-50 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 border border-slate-200">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs sm:text-sm text-slate-600 font-semibold">Member:</span>
+                                    <span className="text-sm sm:text-base font-black text-slate-900">{markUnpaidConfirm.name} {markUnpaidConfirm.surname || ""}</span>
+                                </div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs sm:text-sm text-slate-600 font-semibold">Amount:</span>
+                                    <span className="text-xl sm:text-2xl font-black text-amber-600">₹100</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs sm:text-sm text-slate-600 font-semibold">Period:</span>
+                                    <span className="text-sm sm:text-base font-black text-slate-900">
+                                        {monthsList.find(m => m.value === selectedMonth)?.label} {selectedYear}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                                <button 
+                                    onClick={() => setMarkUnpaidConfirm(null)}
+                                    className="btn-secondary flex-1 py-4 font-bold rounded-2xl hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={() => handleMarkUnpaid(markUnpaidConfirm)}
+                                    className="bg-amber-600 text-white font-black flex-1 py-4 rounded-2xl shadow-lg shadow-amber-100 hover:shadow-amber-200 hover:bg-amber-700 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <AlertCircle size={20} />
+                                    Undo Payment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        <div className={`space-y-5 sm:space-y-6 animate-fade-in pb-4 sm:pb-8 ${markPaidConfirm || markUnpaidConfirm ? 'blur-sm' : ''}`}>
             <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
@@ -274,7 +425,7 @@ const PaymentsDashboard: React.FC = () => {
                                 </span>
                                 {m.computedStatus !== "paid" ? (
                                     <button
-                                        onClick={() => handleMarkPaid(m)}
+                                        onClick={() => setMarkPaidConfirm(m)}
                                         disabled={processingId === m.uid}
                                         className="h-10 lg:h-11 w-full sm:w-auto lg:w-[160px] rounded-xl bg-emerald-500 text-white font-bold text-sm transition-colors hover:bg-emerald-600 disabled:opacity-50"
                                     >
@@ -282,7 +433,7 @@ const PaymentsDashboard: React.FC = () => {
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={() => handleMarkUnpaid(m)}
+                                        onClick={() => setMarkUnpaidConfirm(m)}
                                         disabled={processingId === m.uid}
                                         className="h-10 lg:h-11 w-full sm:w-auto lg:w-[160px] rounded-xl bg-slate-100 text-slate-700 font-bold text-sm transition-colors hover:bg-slate-200 disabled:opacity-50"
                                     >
@@ -296,6 +447,7 @@ const PaymentsDashboard: React.FC = () => {
                 )}
             </div>
         </div>
+        </>
     );
 };
 
