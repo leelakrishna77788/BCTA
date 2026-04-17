@@ -210,7 +210,7 @@ const MemberDetail: React.FC = () => {
         toast.success("Deleting member in background...");
         navigate("/admin/members");
 
-        membersApi.delete(member.uid).then(() => {
+        membersApi.delete(member.id).then(() => {
             toast.success("Member record destroyed successfully");
         }).catch((err: any) => {
             console.error("Deletion failed:", err);
