@@ -36,6 +36,8 @@ const ScanQR: React.FC = () => {
         if (error?.name === "NotAllowedError") {
             setPermissionError("Camera access denied. Please allow permissions.");
             setScanning(false);
+        } else {
+            toast.error(`Camera Error: ${error?.message || "Unknown error"}`);
         }
     };
 
@@ -139,8 +141,13 @@ const ScanQR: React.FC = () => {
                     let meetingEnd: Date;
 
                     if (meetingData.meetingStartUTC && meetingData.meetingEndUTC) {
-                        meetingStart = meetingData.meetingStartUTC.toDate();
-                        meetingEnd = meetingData.meetingEndUTC.toDate();
+                        meetingStart = meetingData.meetingStartUTC?.toDate 
+                            ? meetingData.meetingStartUTC.toDate() 
+                            : new Date(meetingData.meetingStartUTC.seconds ? meetingData.meetingStartUTC.seconds * 1000 : meetingData.meetingStartUTC);
+                        
+                        meetingEnd = meetingData.meetingEndUTC?.toDate 
+                            ? meetingData.meetingEndUTC.toDate() 
+                            : new Date(meetingData.meetingEndUTC.seconds ? meetingData.meetingEndUTC.seconds * 1000 : meetingData.meetingEndUTC);
                     } else {
                         const [year, month, day] = meetingData.date.split('-').map(Number);
                         const [startH, startM] = meetingData.startTime.split(':').map(Number);
@@ -163,7 +170,9 @@ const ScanQR: React.FC = () => {
                          setProcessing(false); return;
                     }
 
-                    const expiry = meetingData.qrExpiresAt?.toDate?.() || new Date(meetingData.qrExpiresAt);
+                    const expiry = meetingData.qrExpiresAt?.toDate?.() 
+                        ? meetingData.qrExpiresAt.toDate()
+                        : new Date(meetingData.qrExpiresAt?.seconds ? meetingData.qrExpiresAt.seconds * 1000 : meetingData.qrExpiresAt);
 
                     if (now > expiry) {
                         toast.error("QR Code expired");
@@ -175,7 +184,11 @@ const ScanQR: React.FC = () => {
                         setProcessing(false); return;
                     }
 
-                    if(!userProfile) return;
+                    if (!userProfile) {
+                        toast.error("User profile is missing! Cannot mark attendance.");
+                        setProcessing(false); 
+                        return;
+                    }
 
                     // 2. Check for existing attendance
                     const attendanceRef = collection(db, "attendance");
@@ -205,9 +218,13 @@ const ScanQR: React.FC = () => {
                         method: "member_scan"
                     });
 
-                    // 4. Increment counts
-                    await updateDoc(meetingRef, { attendanceCount: increment(1) });
-                    await updateDoc(doc(db, "users", userProfile.uid), { attendanceCount: increment(1) });
+                    // 4. Increment counts (Warning: usually blocked by security rules for members)
+                    try {
+                        await updateDoc(meetingRef, { attendanceCount: increment(1) });
+                        await updateDoc(doc(db, "users", userProfile.uid), { attendanceCount: increment(1) });
+                    } catch (updateErr) {
+                        console.warn("Non-critical: Could not increment counts directly (normal for members).", updateErr);
+                    }
 
                     toast.success("Attendance marked successfully! ✅");
                     setResult({
@@ -361,8 +378,7 @@ const ScanQR: React.FC = () => {
                                                 finder: false,
                                             }}
                                             constraints={{
-                                                facingMode: "environment",
-                                                aspectRatio: { ideal: 1 }
+                                                facingMode: "environment"
                                             }}
                                             allowMultiple={false}
                                             paused={!scanning}

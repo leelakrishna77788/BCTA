@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2 } from "lucide-react";
+import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { collection, getDocs, query, where, doc, updateDoc, Timestamp, DocumentData } from "firebase/firestore";
@@ -33,6 +33,7 @@ const MemberList: React.FC = () => {
     // Track which member is currently being toggled (prevents double-clicks)
     const [togglingId, setTogglingId] = useState<string | null>(null);
 
+    const [searchTerm, setSearchTerm] = useState<string>("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [paymentFilter, setPaymentFilter] = useState<string>("all");
 
@@ -95,10 +96,35 @@ const MemberList: React.FC = () => {
 
     useEffect(() => {
         let result = [...members];
+        const term = searchTerm.trim().toLowerCase();
+
+        if (term) {
+            result = result.filter(m => {
+                const fullName = `${m.name || ""} ${m.surname || ""}`.trim().toLowerCase();
+                const memberId = String(m.memberId || "").toLowerCase();
+                const email = String(m.email || "").toLowerCase();
+                const bloodGroup = String(m.bloodGroup || "").toLowerCase();
+                const status = String(m.status || "").toLowerCase();
+                return (
+                    fullName.includes(term) ||
+                    memberId.includes(term) ||
+                    email.includes(term) ||
+                    bloodGroup.includes(term) ||
+                    status.includes(term)
+                );
+            });
+        }
+
         if (statusFilter !== "all") result = result.filter(m => m.status === statusFilter);
         if (paymentFilter !== "all") result = result.filter(m => m.paymentStatus === paymentFilter);
         setFiltered(result);
-    }, [statusFilter, paymentFilter, members]);
+    }, [searchTerm, statusFilter, paymentFilter, members]);
+
+    const clearFilters = () => {
+        setSearchTerm("");
+        setStatusFilter("all");
+        setPaymentFilter("all");
+    };
 
     /** Optimistically update a member in local state without re-fetching */
     const updateMemberLocally = useCallback((docId: string, updates: Partial<MemberDoc>) => {
@@ -247,34 +273,22 @@ const MemberList: React.FC = () => {
             )}
 
         <div className={`space-y-6 animate-fade-in pb-8 ${showBulkConfirm ? 'blur-sm' : ''}`}>
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-2">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end justify-between mb-2">
                 <div className="relative">
                     <div className="absolute -left-4 top-0 w-1 bg-indigo-600 h-full rounded-full opacity-0 md:opacity-100" />
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-2">
                         Members <span className="text-indigo-600">Directory</span>
                     </h1>
-                    <div className="flex items-center gap-2">
-                        <div className="flex -space-x-2">
-                            {members.slice(0, 3).map((m, i) => (
-                                <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 overflow-hidden">
-                                     {m.photoURL ? <img src={m.photoURL} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-400">{m.name?.[0]}</div>}
-                                </div>
-                            ))}
-                        </div>
-                        <p className="text-slate-500 font-semibold text-sm tracking-tight">
-                            Showing <span className="text-slate-900">{filtered.length}</span> of <span className="text-slate-900">{members.length}</span> records
-                        </p>
-                    </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:items-center">
                     <button 
                         onClick={() => setShowBulkConfirm(true)} 
-                        className="group h-12 px-5 rounded-2xl glass-card border border-red-200/50 text-red-600 hover:bg-red-50 transition-all flex items-center gap-2 shadow-sm font-bold text-sm"
+                        className="group h-12 w-full justify-center px-5 rounded-2xl glass-card border border-red-200/50 text-red-600 hover:bg-red-50 transition-all flex items-center gap-2 shadow-sm font-bold text-sm sm:w-auto"
                     >
                          <Trash2 size={18} className="transition-transform group-hover:scale-110" /> 
-                         <span className="hidden sm:inline">Bulk Cleanup</span>
+                        <span>Bulk Cleanup</span>
                     </button>
-                    <Link to="/admin/members/add" className="h-12 px-6 rounded-2xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95">
+                    <Link to="/admin/members/add" className="h-12 w-full justify-center px-6 rounded-2xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 sm:w-auto">
                         <Plus size={20} strokeWidth={2.5} /> 
                         <span>Add Member</span>
                     </Link>
@@ -284,13 +298,34 @@ const MemberList: React.FC = () => {
                         <div className="glass-card rounded-2xl sm:rounded-3xl border border-white/15 p-3.5 sm:p-4"
                             style={{ background: "rgba(255, 255, 255, 0.18)" }}
             >
-                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex items-center gap-2 text-slate-400">
                         <Filter size={16} />
                         <span className="text-[11px] font-black uppercase tracking-widest">Filter Results</span>
                     </div>
-                    <div className="flex gap-3 sm:w-auto w-full">
-                        <div className="relative flex-1 sm:w-44">
+                    <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,11rem)_minmax(0,11rem)_auto] xl:items-center">
+                        <div className="relative min-w-0">
+                            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search name, ID, email, blood group..."
+                                className="w-full h-11 pl-10 pr-10 bg-white/40 border border-slate-200/60 rounded-2xl font-semibold text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                            />
+                            {searchTerm ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchTerm("")}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                    aria-label="Clear search"
+                                    title="Clear search"
+                                >
+                                    <X size={14} />
+                                </button>
+                            ) : null}
+                        </div>
+                        <div className="relative min-w-0">
                             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
                                 className="w-full h-11 pl-4 pr-10 appearance-none bg-white/35 border border-slate-200/50 rounded-2xl font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
                                 <option value="all">All Status</option>
@@ -302,7 +337,7 @@ const MemberList: React.FC = () => {
                                 <Filter size={14} />
                             </div>
                         </div>
-                        <div className="relative flex-1 sm:w-44">
+                        <div className="relative min-w-0">
                             <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}
                                 className="w-full h-11 pl-4 pr-10 appearance-none bg-white/35 border border-slate-200/50 rounded-2xl font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
                                 <option value="all">All Payments</option>
@@ -314,6 +349,15 @@ const MemberList: React.FC = () => {
                                 <Filter size={14} />
                             </div>
                         </div>
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/60 bg-white/40 px-4 text-sm font-bold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-indigo-600 hover:shadow-md active:scale-[0.98] sm:col-span-2 xl:col-span-1"
+                            title="Reset all filters"
+                        >
+                            <RotateCcw size={14} />
+                            Reset
+                        </button>
                     </div>
                 </div>
             </div>
@@ -326,15 +370,15 @@ const MemberList: React.FC = () => {
                         <TableSkeleton rows={8} />
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="text-center py-20 rounded-3xl border border-dashed flex flex-col items-center justify-center gap-4">
+                    <div className="text-center py-20 px-4 rounded-3xl border border-dashed flex flex-col items-center justify-center gap-4">
                         <span className="text-6xl opacity-20">👥</span>
                         <p className="font-bold text-slate-600 mb-1">No members found</p>
                         <p className="text-sm font-medium text-slate-400">Try adjusting your filters.</p>
                     </div>
                 ) : (
                     filtered.map(m => (
-                        <div key={m.id || m.uid} className="glass-card bg-white/10 hover:bg-white/15 rounded-2xl p-6 transition-all duration-300 border border-white/15 group">
-                            <div className="flex flex-col md:flex-row md:items-center gap-6">
+                        <div key={m.id || m.uid} className="glass-card bg-white/10 hover:bg-white/15 rounded-2xl p-4 sm:p-5 lg:p-6 transition-all duration-300 border border-white/15 group">
+                            <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-center lg:gap-6">
                                 {/* Avatar and Basic Info */}
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
                                     <div className="relative shrink-0">
@@ -355,25 +399,25 @@ const MemberList: React.FC = () => {
                                 </div>
 
                                 {/* Info Badges */}
-                                <div className="flex flex-wrap md:flex-nowrap gap-3 md:gap-4">
-                                    <div className="rounded-xl px-4 py-2 text-center">
+                                <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-3 lg:gap-4">
+                                    <div className="rounded-xl px-3 py-2 text-center sm:px-4">
                                         <p className="text-[9px] font-black text-red-400 uppercase tracking-widest">Blood</p>
                                         <p className="text-sm font-black text-red-600 flex items-center justify-center gap-1">
                                             <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                             {m.bloodGroup || "N/A"}
                                         </p>
                                     </div>
-                                    <div className="rounded-xl px-4 py-2 text-center">
+                                    <div className="rounded-xl px-3 py-2 text-center sm:px-4">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Meetings</p>
                                         <p className="text-sm font-black text-slate-900">{m.attendanceCount || 0}</p>
                                     </div>
-                                    <div className="rounded-xl px-4 py-2 text-center">
+                                    <div className="rounded-xl px-3 py-2 text-center sm:px-4">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Payment</p>
                                         <p className={`text-sm font-black uppercase ${m.paymentStatus === "paid" ? "text-emerald-700" : m.paymentStatus === "partial" ? "text-amber-700" : "text-red-700"}`}>
                                             {m.paymentStatus || 'none'}
                                         </p>
                                     </div>
-                                    <div className="rounded-xl px-4 py-2 text-center">
+                                    <div className="rounded-xl px-3 py-2 text-center sm:px-4">
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</p>
                                         <p className={`text-sm font-black uppercase flex items-center justify-center gap-1.5 ${m.status === "active" ? "text-indigo-700" : m.status === "pending" ? "text-amber-700" : "text-slate-600"}`}>
                                             <div className={`w-1.5 h-1.5 rounded-full ${m.status === "active" ? "bg-indigo-500 animate-pulse" : m.status === "pending" ? "bg-amber-500" : "bg-slate-400"}`}></div>
@@ -387,42 +431,54 @@ const MemberList: React.FC = () => {
                                     const memberId = m.id || m.uid;
                                     const isToggling = togglingId === memberId;
                                     return (
-                                <div className="flex gap-2 md:shrink-0">
-                                    <Link to={`/admin/members/${memberId}`}
-                                        className="flex-1 md:w-auto h-10 px-4 flex items-center justify-center text-slate-600 hover:text-indigo-600 rounded-xl transition-all font-bold text-xs"
-                                        title="View Profile">
-                                        <Eye size={16} className="mr-1.5" /> View
-                                    </Link>
-                                    {m.status === "pending" ? (
-                                        <button onClick={() => toggleBlock(m)}
-                                            disabled={isToggling}
-                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all font-bold text-xs uppercase tracking-wider ${isToggling ? "cursor-not-allowed opacity-70" : "text-indigo-600 hover:text-indigo-700"}`}
-                                            title="Approve Member">
-                                            {isToggling ? <Loader2 size={16} className="mr-1.5 animate-spin" /> : <UserCheck size={16} className="mr-1.5" />}
-                                            {isToggling ? "Processing..." : "Approve"}
+                                <div className="md:shrink-0 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-200/60 transition-shadow hover:shadow-xl hover:shadow-slate-200/80">
+                                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                                        <Link
+                                            to={`/admin/members/${memberId}`}
+                                            className="h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 shadow-md shadow-slate-200/60 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-lg hover:shadow-indigo-100 active:translate-y-0.5 active:shadow-lg active:shadow-slate-300/80 font-bold text-[10px] sm:text-xs whitespace-nowrap"
+                                            title="View Profile"
+                                        >
+                                            <Eye size={16} /> <span className="hidden sm:inline">View</span>
+                                        </Link>
+                                        {m.status === "pending" ? (
+                                            <button
+                                                onClick={() => toggleBlock(m)}
+                                                disabled={isToggling}
+                                                className={`h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-white shadow-md shadow-indigo-100 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-wider whitespace-nowrap ${isToggling ? "cursor-not-allowed opacity-70" : "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-lg hover:shadow-indigo-100 active:translate-y-0.5 active:shadow-lg active:shadow-indigo-200/70"}`}
+                                                title="Approve Member"
+                                            >
+                                                {isToggling ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
+                                                <span className="hidden sm:inline">{isToggling ? "Processing..." : "Approve"}</span>
+                                            </button>
+                                        ) : m.status === "active" ? (
+                                            <button
+                                                onClick={() => toggleBlock(m)}
+                                                disabled={isToggling}
+                                                className={`h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white shadow-md shadow-red-100 transition-all font-bold text-[10px] sm:text-xs whitespace-nowrap ${isToggling ? "cursor-not-allowed opacity-70" : "text-slate-500 hover:bg-red-50 hover:text-red-600 hover:shadow-lg hover:shadow-red-100 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"}`}
+                                                title="Block Member"
+                                            >
+                                                {isToggling ? <Loader2 size={16} className="animate-spin" /> : <UserX size={16} />}
+                                                <span className="hidden sm:inline">{isToggling ? "Blocking..." : "Block"}</span>
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => toggleBlock(m)}
+                                                disabled={isToggling}
+                                                className={`h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-white shadow-md shadow-emerald-100 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-wider whitespace-nowrap ${isToggling ? "cursor-not-allowed opacity-70" : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:shadow-lg hover:shadow-emerald-100 active:translate-y-0.5 active:shadow-lg active:shadow-emerald-200/70"}`}
+                                                title="Unblock Member"
+                                            >
+                                                {isToggling ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
+                                                <span className="hidden sm:inline">{isToggling ? "Unblocking..." : "Unblock"}</span>
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => handleDelete(m.id || m.uid, m.name)}
+                                            className="h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[10px] sm:text-xs whitespace-nowrap hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"
+                                            title="Delete Permanently"
+                                        >
+                                            <Trash2 size={16} /> <span className="hidden sm:inline">Delete</span>
                                         </button>
-                                    ) : m.status === "active" ? (
-                                        <button onClick={() => toggleBlock(m)}
-                                            disabled={isToggling}
-                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all font-bold text-xs ${isToggling ? "cursor-not-allowed opacity-70" : "text-slate-500 hover:text-red-600"}`}
-                                            title="Block Member">
-                                            {isToggling ? <Loader2 size={16} className="mr-1.5 animate-spin" /> : <UserX size={16} className="mr-1.5" />}
-                                            {isToggling ? "Blocking..." : "Block"}
-                                        </button>
-                                    ) : (
-                                        <button onClick={() => toggleBlock(m)}
-                                            disabled={isToggling}
-                                            className={`flex-1 md:w-auto h-10 px-4 flex items-center justify-center rounded-xl transition-all font-bold text-xs uppercase tracking-wider ${isToggling ? "cursor-not-allowed opacity-70" : "text-emerald-600 hover:text-emerald-700"}`}
-                                            title="Unblock Member">
-                                            {isToggling ? <Loader2 size={16} className="mr-1.5 animate-spin" /> : <UserCheck size={16} className="mr-1.5" />}
-                                            {isToggling ? "Unblocking..." : "Unblock"}
-                                        </button>
-                                    )}
-                                    <button onClick={() => handleDelete(m.id || m.uid, m.name)}
-                                        className="w-10 h-10 flex items-center justify-center text-red-500 hover:text-red-700 rounded-xl transition-all"
-                                        title="Delete Permanently">
-                                        <Trash2 size={16} />
-                                    </button>
+                                    </div>
                                 </div>
                                     );
                                 })()}
