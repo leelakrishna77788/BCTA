@@ -274,7 +274,6 @@ export async function sendFCMNotification(projectId: string, accessToken: string
         android: {
           priority: 'high',
           notification: {
-            sound: 'default',
             channel_id: 'bcta_alerts'
           }
         },
@@ -285,7 +284,6 @@ export async function sendFCMNotification(projectId: string, accessToken: string
           notification: {
             icon: '/leaning_avatar.png',
             badge: '/leaning_avatar.png',
-            sound: 'default',
             requireInteraction: true
           }
         }
