@@ -85,25 +85,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<UserCredential> => {
     const trimmedEmail = email.trim();
-    const cred = await signInWithEmailAndPassword(auth, trimmedEmail, password);
-    
-    const profile = await fetchUserProfile(cred.user.uid);
-    if (!profile) {
-      throw new Error(`Account setup is incomplete (UID: ${cred.user.uid}). This usually happens if the system was interrupted. Please contact an admin to delete and re-add this account.`);
-    }
+    setLoading(true);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, trimmedEmail, password);
+      
+      const profile = await fetchUserProfile(cred.user.uid);
+      if (!profile) {
+        throw new Error(`Account setup is incomplete (UID: ${cred.user.uid}). This usually happens if the system was interrupted. Please contact an admin to delete and re-add this account.`);
+      }
 
-    if (profile.status === "blocked") {
-      await signOut(auth);
-      throw new Error("Your account is blocked. Contact admin.");
+      if (profile.status === "blocked") {
+        await signOut(auth);
+        throw new Error("Your account is blocked. Contact admin.");
+      }
+      if (profile.status === "pending") {
+        await signOut(auth);
+        throw new Error("Your account is pending approval. Contact admin.");
+      }
+
+      // MANUALLY SET STATE for immediate consistency during navigation
+      setCurrentUser({
+        uid: cred.user.uid,
+        email: cred.user.email,
+        displayName: cred.user.displayName,
+        photoURL: cred.user.photoURL,
+      });
+      setUserProfile(profile);
+      setUserRole(profile.role as UserRole);
+
+      return cred;
+    } finally {
+      setLoading(false);
     }
-    if (profile.status === "pending") {
-      await signOut(auth);
-      throw new Error("Your account is pending approval. Contact admin.");
-    }
-    return cred;
   };
 
-  const logout = () => signOut(auth);
+  const logout = async () => {
+    await signOut(auth);
+    // IMMEDIATELY CLEAR STATE to prevent race conditions in ProtectedRoute/LoginPage
+    setCurrentUser(null);
+    setUserProfile(null);
+    setUserRole(null);
+  };
 
   const createMember = async (
     email: string,
