@@ -38,6 +38,7 @@ const AttendanceDashboard = React.lazy(() => import("./pages/admin/Meetings/Atte
 const GlobalAttendance = React.lazy(() => import("./pages/admin/Meetings/GlobalAttendance"));
 const ShopList = React.lazy(() => import("./pages/admin/Shops/ShopList"));
 const PaymentsDashboard = React.lazy(() => import("./pages/admin/Payments/PaymentsDashboard"));
+const PaymentsHistory = React.lazy(() => import("./pages/admin/Payments/PaymentsHistory"));
 const ComplaintsList = React.lazy(() => import("./pages/admin/Complaints/ComplaintsList"));
 const SendNotification = React.lazy(() => import("./pages/admin/Notifications/SendNotification"));
 
@@ -153,6 +154,7 @@ function App() {
 
               {/* Other admin */}
               <Route path="payments" element={<PaymentsDashboard />} />
+              <Route path="payments/history" element={<PaymentsHistory />} />
               <Route path="complaints" element={<ComplaintsList />} />
               <Route path="notifications" element={<SendNotification />} />
 
