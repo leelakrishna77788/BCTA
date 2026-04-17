@@ -372,7 +372,7 @@ const LandingPage: React.FC = () => {
       `}</style>
 
       <div
-        className="min-h-screen text-slate-900 overflow-x-hidden"
+        className="min-h-screen text-slate-900 overflow-x-hidden scrollbar-hide"
         style={{ background: "var(--surface-base)" }}
       >
         <Navbar />

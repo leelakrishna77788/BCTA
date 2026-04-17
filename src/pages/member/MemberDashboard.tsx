@@ -174,7 +174,7 @@ const MemberDashboard: React.FC = () => {
   const deadline = getDeadlineInfo();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 scrollbar-hide">
       {/* Ambient background effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-violet-200/40 to-indigo-200/40 rounded-full blur-3xl animate-pulse" />
@@ -646,7 +646,7 @@ const MemberDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-4 max-h-[460px] overflow-y-auto custom-scrollbar">
+              <div className="p-4 max-h-[460px] overflow-y-auto scrollbar-hide">
                 {loading ? (
                   Array.from({ length: 4 }).map((_, i) => (
                     <div
@@ -737,19 +737,6 @@ const MemberDashboard: React.FC = () => {
                 }
                 .animate-spin-slow {
                     animation: spin-slow 20s linear infinite;
-                }
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #e2e8f0;
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: #cbd5e1;
                 }
             `}</style>
     </div>

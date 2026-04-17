@@ -41,7 +41,7 @@ const SERVICES = [
 
 const ServicesPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100 scrollbar-hide">
       <style>{`
         @keyframes shootBullet {
           0%   { width: 6px;  opacity: 0.5; }

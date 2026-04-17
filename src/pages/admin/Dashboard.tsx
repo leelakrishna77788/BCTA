@@ -528,7 +528,7 @@ const AdminDashboard: React.FC = () => {
             View all &rarr;
           </Link>
         </div>
-        <div className="overflow-x-hidden text-sm">
+        <div className="overflow-x-hidden text-sm scrollbar-hide">
           {loading ? (
             <div className="p-8">
               <TableSkeleton rows={5} />

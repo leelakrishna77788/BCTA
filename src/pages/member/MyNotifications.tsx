@@ -30,6 +30,8 @@ const MyNotifications: React.FC = () => {
   const { currentUser, userRole } = useAuth();
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteAllConfirm, setDeleteAllConfirm] = useState<boolean>(false);
 
   useEffect(() => {
     const q = query(collection(db, "notifications"), orderBy("sentAt", "desc"));
@@ -54,8 +56,6 @@ const MyNotifications: React.FC = () => {
   const deleteNotification = async (id: string) => {
     if (!currentUser) return;
 
-    if (!window.confirm("Remove this notification?")) return;
-
     try {
       if (userRole === "admin" || userRole === "superadmin") {
         // ✅ ADMIN → delete for everyone
@@ -68,6 +68,7 @@ const MyNotifications: React.FC = () => {
         });
         toast.success("Notification removed from your view");
       }
+      setDeleteConfirm(null);
     } catch (err) {
       console.error("[deleteNotification] Error:", err);
       toast.error("Failed to delete notification");
@@ -75,8 +76,6 @@ const MyNotifications: React.FC = () => {
   };
   const deleteAllNotifications = async () => {
     if (!currentUser || notifications.length === 0) return;
-
-    if (!window.confirm("Remove all notifications?")) return;
 
     try {
       const batch = writeBatch(db);
@@ -104,6 +103,7 @@ const MyNotifications: React.FC = () => {
         await batch.commit();
         toast.success("All notifications removed from your view");
       }
+      setDeleteAllConfirm(false);
     } catch (err) {
       console.error("[deleteAllNotifications] Error:", err);
       toast.error("Failed to clear notifications");
@@ -183,7 +183,7 @@ const MyNotifications: React.FC = () => {
     );
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-5 animate-fade-in scrollbar-hide">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title mb-0">My Notifications</h1>
@@ -193,7 +193,7 @@ const MyNotifications: React.FC = () => {
         </div>
         {visibleNotifications.length > 0 && (
           <button
-            onClick={deleteAllNotifications}
+            onClick={() => setDeleteAllConfirm(true)}
             className="btn-danger flex items-center gap-2"
           >
             <Trash2 size={16} />
@@ -235,7 +235,7 @@ const MyNotifications: React.FC = () => {
                     </p>
                   </div>
                   <button
-                    onClick={() => deleteNotification(n.id)}
+                    onClick={() => setDeleteConfirm(n.id)}
                     className="absolute top-3 right-3 z-10 p-2 rounded-lg bg-white text-red-500 hover:bg-red-50 hover:text-red-600 transition-all shadow-sm"
                   >
                     <Trash2 size={16} />
@@ -254,6 +254,68 @@ const MyNotifications: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete Single Notification Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+              <Trash2 size={24} className="text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 text-center mb-2">
+              Delete Notification?
+            </h3>
+            <p className="text-sm text-slate-600 text-center mb-6">
+              Are you sure you want to delete this notification? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteNotification(deleteConfirm)}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Notifications Confirmation Modal */}
+      {deleteAllConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+              <Trash2 size={24} className="text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 text-center mb-2">
+              Clear All Notifications?
+            </h3>
+            <p className="text-sm text-slate-600 text-center mb-6">
+              Are you sure you want to clear all notifications? This will remove {visibleNotifications.length} notification{visibleNotifications.length !== 1 ? 's' : ''}.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteAllConfirm(false)}
+                className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteAllNotifications}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
