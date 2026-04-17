@@ -322,7 +322,7 @@ const AddAdmin: React.FC = () => {
           </button>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
-              Provision Admin
+              ADD ADMIN
             </h1>
             <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2 leading-none">
               Security Privilege Configuration
@@ -386,7 +386,7 @@ const AddAdmin: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-2 group">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
-                    Access Password <span className="text-rose-500">*</span>
+                    Type Password <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -429,11 +429,11 @@ const AddAdmin: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-12 flex flex-col sm:flex-row gap-4">
+            <div className="mt-7 flex flex-col sm:flex-row gap-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl shadow-2xl shadow-indigo-200 hover:shadow-indigo-400 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex-1 flex items-center justify-center gap-3"
+                className="bg-blue-600 text-white font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl shadow-2xl shadow-indigo-200 hover:shadow-indigo-400 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex-1 flex items-center justify-center gap-3"
               >
                 {loading ? (
                   <Loader2 className="animate-spin" size={20} />
