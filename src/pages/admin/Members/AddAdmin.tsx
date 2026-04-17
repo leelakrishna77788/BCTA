@@ -58,7 +58,6 @@ const AddAdmin: React.FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Prevent double-submit
     if (loading) return;
 
     if (!form.name.trim()) {
@@ -81,10 +80,8 @@ const AddAdmin: React.FC = () => {
     setLoading(true);
     setProvisionStage("Authenticating session...");
 
-    // Capture session UID BEFORE creating the new admin
     const originalUid = auth.currentUser?.uid;
 
-    // Retry wrapper for transient failures
     const attempt = async (retryCount = 0): Promise<void> => {
       try {
         setProvisionStage(
@@ -99,12 +96,10 @@ const AddAdmin: React.FC = () => {
           password: form.password,
         });
 
-        // Session integrity check — ensure we're still the same admin
         if (auth.currentUser?.uid !== originalUid) {
           console.warn(
             "[AddAdmin] Session displacement detected! Restoring...",
           );
-          // Force token refresh to restore original session
           await auth.currentUser?.getIdToken(true);
         }
 
@@ -112,20 +107,15 @@ const AddAdmin: React.FC = () => {
 
         toast.success(
           `Administrator account for "${form.name}" has been provisioned successfully!`,
-          {
-            duration: 5000,
-            icon: "🛡️",
-          },
+          { duration: 5000, icon: "🛡️" },
         );
 
-        // Reset form for next admin
         setForm({ name: "", email: "", password: "", confirmPassword: "" });
         console.log(
           "[AddAdmin] Account created. Session preserved — UID:",
           auth.currentUser?.uid,
         );
       } catch (err: any) {
-        // Auto-retry once on network/transient errors
         if (
           retryCount < 1 &&
           !err.message?.includes("email-already-in-use") &&
@@ -172,38 +162,39 @@ const AddAdmin: React.FC = () => {
   }
 
   return (
-    <div className="space-y-10 animate-fade-in pb-20 max-w-4xl mx-auto px-4 sm:px-0">
-      {/* Header */}
-      <div className="flex items-center gap-5">
-        <button
-          onClick={() => navigate(-1)}
-          className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-slate-300 transition-all shadow-sm"
-        >
-          <ArrowLeft size={22} />
-        </button>
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
-            Provision Admin
-          </h1>
-          <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2 leading-none">
-            Security Privilege Configuration
-          </p>
+    <>
+      {/* ══════════════════════════════════════
+          MOBILE — fixed full screen, no scroll
+          ══════════════════════════════════════ */}
+      <div className="sm:hidden fixed inset-0 bg-slate-50 flex flex-col">
+        {/* Top bar */}
+        <div className="flex items-center gap-3 px-4 pt-5 pb-3 shrink-0">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 active:bg-slate-100 transition-all shadow-sm"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
+              ADD ADMIN
+            </h1>
+          </div>
+          <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50">
+            <Shield size={16} className="text-indigo-600" />
+          </div>
         </div>
-      </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 lg:grid-cols-1 gap-10"
-      >
-        <div className="glass-card bg-white border border-slate-200/60 shadow-xl rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden">
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-600"></div>
-            Administrator Credentials
-          </h2>
-
-          <div className="space-y-8">
-            <div className="space-y-2 group">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+        {/* Form — flex-1 so it fills remaining height, buttons pushed to bottom */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col flex-1 px-4 pb-6 justify-between"
+        >
+          {/* Fields */}
+          <div className="flex flex-col gap-3 pt-1">
+            {/* Full Name */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
                 Full Name <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
@@ -214,17 +205,18 @@ const AddAdmin: React.FC = () => {
                   onChange={handleChange}
                   placeholder="e.g. Administrator"
                   required
-                  className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                  className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                 />
                 <UserPlus
-                  className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
-                  size={20}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={15}
                 />
               </div>
             </div>
 
-            <div className="space-y-2 group">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+            {/* Email */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
                 Email Address <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
@@ -235,19 +227,20 @@ const AddAdmin: React.FC = () => {
                   onChange={handleChange}
                   placeholder="admin@bcta.in"
                   required
-                  className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                  className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                 />
                 <Mail
-                  className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
-                  size={20}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={15}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="space-y-2 group">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
-                  Access Password <span className="text-rose-500">*</span>
+            {/* Password + Confirm — side by side */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
+                  Password <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -258,17 +251,17 @@ const AddAdmin: React.FC = () => {
                     placeholder="••••••••"
                     required
                     minLength={6}
-                    className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                    className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                   />
                   <Lock
-                    className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
-                    size={20}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={15}
                   />
                 </div>
               </div>
-              <div className="space-y-2 group">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
-                  Confirm Password <span className="text-rose-500">*</span>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
+                  Confirm <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -279,44 +272,191 @@ const AddAdmin: React.FC = () => {
                     placeholder="••••••••"
                     required
                     minLength={6}
-                    className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                    className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                   />
                   <ShieldCheck
-                    className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
-                    size={20}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={15}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-12 flex flex-col sm:flex-row gap-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl shadow-2xl shadow-indigo-200 hover:shadow-indigo-400 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex-1 flex items-center justify-center gap-3"
-            >
-              {loading ? (
-                <Loader2 className="animate-spin" size={20} />
-              ) : (
-                <UserPlus size={20} />
-              )}
-              {loading
-                ? provisionStage || "Processing..."
-                : "Confirm Provisioning"}
-            </button>
+          {/* Buttons — pinned to bottom via justify-between on parent */}
+          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
               onClick={() => navigate(-1)}
               disabled={loading}
-              className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.12em] text-[10px] py-3.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               Abort Process
             </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-indigo-600 text-white font-black uppercase tracking-[0.12em] text-[10px] py-3.5 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            >
+              {loading ? (
+                <Loader2 className="animate-spin" size={14} />
+              ) : (
+                <UserPlus size={14} />
+              )}
+              {loading ? provisionStage || "Processing..." : "Confirm"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ══════════════════════════════════════
+          DESKTOP — completely unchanged
+          ══════════════════════════════════════ */}
+      <div className="hidden sm:block space-y-10 animate-fade-in pb-20 max-w-4xl mx-auto">
+        <div className="flex items-center gap-5">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-slate-300 transition-all shadow-sm"
+          >
+            <ArrowLeft size={22} />
+          </button>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
+              Provision Admin
+            </h1>
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2 leading-none">
+              Security Privilege Configuration
+            </p>
           </div>
         </div>
-      </form>
-    </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 lg:grid-cols-1 gap-10"
+        >
+          <div className="glass-card bg-white border border-slate-200/60 shadow-xl rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden">
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-indigo-600"></div>
+              Administrator Credentials
+            </h2>
+
+            <div className="space-y-8">
+              <div className="space-y-2 group">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+                  Full Name <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="e.g. Administrator"
+                    required
+                    className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                  />
+                  <UserPlus
+                    className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
+                    size={20}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 group">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+                  Email Address <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="admin@bcta.in"
+                    required
+                    className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                  />
+                  <Mail
+                    className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
+                    size={20}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+                    Access Password <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      name="password"
+                      value={form.password}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      required
+                      minLength={6}
+                      className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                    />
+                    <Lock
+                      className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
+                      size={20}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2 group">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+                    Confirm Password <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={form.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      required
+                      minLength={6}
+                      className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                    />
+                    <ShieldCheck
+                      className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
+                      size={20}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-12 flex flex-col sm:flex-row gap-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl shadow-2xl shadow-indigo-200 hover:shadow-indigo-400 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex-1 flex items-center justify-center gap-3"
+              >
+                {loading ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <UserPlus size={20} />
+                )}
+                {loading
+                  ? provisionStage || "Processing..."
+                  : "Confirm Provisioning"}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                disabled={loading}
+                className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Abort Process
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </>
   );
 };
 
