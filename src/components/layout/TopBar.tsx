@@ -116,7 +116,6 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
         background: "linear-gradient(135deg, white 10%, #1e3a8a 50%)",
       }}
     >
-      {" "}
       <div className="relative flex items-center gap-4 h-full">
         {/* Mobile Only Logo */}
         <img

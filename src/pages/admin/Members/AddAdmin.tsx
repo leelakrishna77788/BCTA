@@ -168,7 +168,7 @@ const AddAdmin: React.FC = () => {
           ══════════════════════════════════════ */}
       <div className="sm:hidden fixed inset-0 bg-slate-50 flex flex-col">
         {/* Top bar */}
-        <div className="flex items-center gap-3 px-4 pt-5 pb-3 shrink-0">
+        <div className="flex items-center gap-4 px-4 pt-5 pb-3 shrink-0">
           <button
             onClick={() => navigate(-1)}
             className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 active:bg-slate-100 transition-all shadow-sm"
@@ -177,7 +177,7 @@ const AddAdmin: React.FC = () => {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
-              ADD ADMIN
+              Add Admin
             </h1>
           </div>
           <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50">
@@ -191,7 +191,12 @@ const AddAdmin: React.FC = () => {
           className="flex flex-col flex-1 px-4 pb-6 justify-between"
         >
           {/* Fields */}
-          <div className="flex flex-col gap-3 pt-1">
+          <div
+            className="bg-white rounded-2xl shadow-md border border-slate-200 
+p-5 min-h-[320px] 
+flex flex-col gap-4 w-full max-w-md mx-auto"
+          >
+            {" "}
             {/* Full Name */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
@@ -213,7 +218,6 @@ const AddAdmin: React.FC = () => {
                 />
               </div>
             </div>
-
             {/* Email */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
@@ -235,12 +239,11 @@ const AddAdmin: React.FC = () => {
                 />
               </div>
             </div>
-
             {/* Password + Confirm — side by side */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
-                  Password <span className="text-rose-500">*</span>
+                  Enter Password <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -261,7 +264,7 @@ const AddAdmin: React.FC = () => {
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
-                  Confirm <span className="text-rose-500">*</span>
+                  Confirm Password<span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
