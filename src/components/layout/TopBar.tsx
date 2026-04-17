@@ -113,7 +113,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
     <header
       className="h-16 overflow-visible shrink-0 relative z-30 px-3 sm:px-8 flex items-center justify-between transition-all duration-300 shadow-sm"
       style={{
-        background: "linear-gradient(135deg, white 50%, #1e3a8a 50%)",
+        background: "linear-gradient(135deg, white 10%, #1e3a8a 50%)",
       }}
     >
       {" "}
@@ -122,7 +122,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
         <img
           src={assets.herologo}
           alt="Logo"
-          className="h-full max-h-12 object-contain block sm:hidden"
+          className="h-full w-full max-h-20 object-contain block sm:hidden"
         />
       </div>
       {/* Gradient bottom accent */}
@@ -150,7 +150,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
           </button>
 
           {showNotifs && (
-            <div className="absolute top-full -right-2 sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-100/80 py-1 animate-scale-in z-50 overflow-hidden gpu-accelerated">
+            <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-[90vw] max-w-xs sm:w-80 sm:max-w-sm bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-100/80 py-1 animate-scale-in z-50 overflow-hidden gpu-accelerated">
               {/* Gradient header strip */}
               <div
                 className="h-[3px]"
@@ -229,21 +229,16 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
             >
               <button
                 onClick={() => {
-                  navigate("/member/Myprofile");
+                  if (userRole?.toLowerCase() === "admin") {
+                    navigate("/admin/admins/add");
+                  } else {
+                    navigate("/member/Myprofile");
+                  }
                   setShowProfileMenu(false);
                 }}
                 className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
               >
-                Profile
-              </button>
-              <button
-                onClick={() => {
-                  navigate("/");
-                  setShowProfileMenu(false);
-                }}
-                className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-              >
-                settings
+                {userRole?.toLowerCase() === "admin" ? "Add Admin" : "Profile"}
               </button>
 
               {/* Logout */}

@@ -134,6 +134,35 @@ const ScanQR: React.FC = () => {
 
                     const meetingData = meetingSnap.data();
                     const now = new Date();
+                    
+                    let meetingStart: Date;
+                    let meetingEnd: Date;
+
+                    if (meetingData.meetingStartUTC && meetingData.meetingEndUTC) {
+                        meetingStart = meetingData.meetingStartUTC.toDate();
+                        meetingEnd = meetingData.meetingEndUTC.toDate();
+                    } else {
+                        const [year, month, day] = meetingData.date.split('-').map(Number);
+                        const [startH, startM] = meetingData.startTime.split(':').map(Number);
+                        meetingStart = new Date(year, month - 1, day, startH, startM);
+                        if (meetingData.endTime) {
+                            const [endH, endM] = meetingData.endTime.split(':').map(Number);
+                            meetingEnd = new Date(year, month - 1, day, endH, endM);
+                        } else {
+                            meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
+                        }
+                    }
+
+                    if (now < meetingStart) {
+                         toast.error("Meeting has not started yet.");
+                         setProcessing(false); return;
+                    }
+
+                    if (now > meetingEnd) {
+                         toast.error("Meeting has already ended.");
+                         setProcessing(false); return;
+                    }
+
                     const expiry = meetingData.qrExpiresAt?.toDate?.() || new Date(meetingData.qrExpiresAt);
 
                     if (now > expiry) {

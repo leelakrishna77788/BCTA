@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../../../context/AuthContext";
 import { db } from "../../../firebase/firebaseConfig";
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, deleteDoc, Timestamp } from "firebase/firestore";
 
 interface Meeting {
     id: string;
@@ -17,6 +17,8 @@ interface Meeting {
     gpsLink?: string;
     qrDuration?: number;
     status: "upcoming" | "active" | "expired" | string;
+    meetingStartUTC?: any;
+    meetingEndUTC?: any;
     createdAt?: any;
     attendanceCount?: number;
     createdBy?: string;
@@ -89,6 +91,23 @@ const MeetingList: React.FC = () => {
 
         setSubmitting(true);
         try {
+            const [year, month, day] = form.date.split('-').map(Number);
+            const [startH, startM] = form.startTime.split(':').map(Number);
+            const meetingStart = new Date(year, month - 1, day, startH, startM);
+            
+            let meetingEnd: Date;
+            if (form.endTime) {
+                const [endH, endM] = form.endTime.split(':').map(Number);
+                meetingEnd = new Date(year, month - 1, day, endH, endM);
+                if (meetingEnd <= meetingStart) {
+                    toast.error("End time must be after start time");
+                    setSubmitting(false);
+                    return;
+                }
+            } else {
+                meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4 hours default
+            }
+
             const meetingData = {
                 topic: form.topic.trim(),
                 description: form.description?.trim() || "",
@@ -99,6 +118,8 @@ const MeetingList: React.FC = () => {
                 gpsLink: form.gpsLink?.trim() || "",
                 qrDuration: parseInt(form.qrDuration || "30"),
                 status: "upcoming",
+                meetingStartUTC: Timestamp.fromDate(meetingStart),
+                meetingEndUTC: Timestamp.fromDate(meetingEnd),
                 createdAt: serverTimestamp(),
                 attendanceCount: 0,
                 createdBy: "admin"
@@ -142,23 +163,33 @@ const MeetingList: React.FC = () => {
         if (!m.date || !m.startTime) return "unknown";
         
         const now = new Date();
-        const [year, month, day] = m.date.split('-').map(Number);
-        const [startH, startM] = m.startTime.split(':').map(Number);
         
-        const meetingStart = new Date(year, month - 1, day, startH, startM);
-        const bufferStart = new Date(meetingStart.getTime() - 30 * 60 * 1000); // 30m early
-        
+        let meetingStart: Date;
         let meetingEnd: Date;
-        if (m.endTime) {
-            const [endH, endM] = m.endTime.split(':').map(Number);
-            meetingEnd = new Date(year, month - 1, day, endH, endM);
+
+        if (m.meetingStartUTC && m.meetingEndUTC) {
+            meetingStart = m.meetingStartUTC instanceof Timestamp 
+                ? m.meetingStartUTC.toDate() 
+                : new Date((m.meetingStartUTC as any).seconds ? (m.meetingStartUTC as any).seconds * 1000 : m.meetingStartUTC);
+            meetingEnd = m.meetingEndUTC instanceof Timestamp 
+                ? m.meetingEndUTC.toDate() 
+                : new Date((m.meetingEndUTC as any).seconds ? (m.meetingEndUTC as any).seconds * 1000 : m.meetingEndUTC);
         } else {
-            meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
+            const [year, month, day] = m.date.split('-').map(Number);
+            const [startH, startM] = m.startTime.split(':').map(Number);
+            meetingStart = new Date(year, month - 1, day, startH, startM);
+            
+            if (m.endTime) {
+                const [endH, endM] = m.endTime.split(':').map(Number);
+                meetingEnd = new Date(year, month - 1, day, endH, endM);
+            } else {
+                meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
+            }
         }
 
         if (m.status === "active") return "live";
-        if (now < bufferStart) return m.status === "expired" ? "expired" : "scheduled";
-        if (now >= bufferStart && now <= meetingEnd) return m.status === "expired" ? "expired" : "ready";
+        if (now < meetingStart) return m.status === "expired" ? "expired" : "scheduled";
+        if (now >= meetingStart && now <= meetingEnd) return m.status === "expired" ? "expired" : "ready";
         return "past";
     };
 
