@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { collection, getDocs, query, where, doc, updateDoc, Timestamp, DocumentData } from "firebase/firestore";
+import { collection, query, where, doc, updateDoc, Timestamp, DocumentData, onSnapshot } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { membersApi } from "../../../services/membersService";
 import { TableSkeleton } from "../../../components/shared/LoadingSkeleton";
@@ -67,48 +67,78 @@ const MemberList: React.FC = () => {
         };
     }, [showBulkConfirm]);
 
-    const fetchMembers = async () => {
-        try {
-            setLoading(true);
-            const now = new Date();
-            const currentMonth = now.getMonth() + 1;
-            const currentYear = now.getFullYear();
+    useEffect(() => {
+        setLoading(true);
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
 
-            const [snap, paymentsSnap] = await Promise.all([
-                getDocs(query(collection(db, "users"), where("role", "==", "member"))),
-                getDocs(query(collection(db, "payments"), where("month", "==", currentMonth), where("year", "==", currentYear)))
-            ]);
+        let userDocs: MemberDoc[] = [];
+        let paidMemberIds = new Set<string>();
+        let hasUsersSnapshot = false;
+        let hasPaymentsSnapshot = false;
 
-            const payments = paymentsSnap.docs.map(d => d.data());
-            const paidMemberIds = new Set(payments.map(p => p.memberUID));
+        const hydrateMembers = () => {
+            if (!hasUsersSnapshot || !hasPaymentsSnapshot) return;
 
-            const data: MemberDoc[] = snap.docs.map(d => {
-                const docData = d.data();
+            const merged = userDocs.map((member) => {
+                const docId = member.id || member.uid;
                 return {
-                    id: d.id,
-                    ...docData,
-                    paymentStatus: paidMemberIds.has(d.id) ? "paid" : "unpaid"
+                    ...member,
+                    paymentStatus: docId && paidMemberIds.has(docId) ? "paid" : "unpaid",
                 } as MemberDoc;
             });
-            
-            data.sort((a, b) => {
+
+            merged.sort((a, b) => {
                 const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toDate() : new Date(a.createdAt as any || 0);
                 const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toDate() : new Date(b.createdAt as any || 0);
                 return dateB.getTime() - dateA.getTime();
             });
 
-            setMembers(data);
-            setFiltered(data);
-        } catch (err) {
-            console.error("❌ Component Error [MemberList]:", err);
-            toast.error("Failed to load members directory");
-        } finally {
+            setMembers(merged);
             setLoading(false);
-        }
-    };
+        };
 
-    useEffect(() => {
-        fetchMembers();
+        const usersUnsub = onSnapshot(
+            query(collection(db, "users"), where("role", "==", "member")),
+            (snap) => {
+                hasUsersSnapshot = true;
+                userDocs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as MemberDoc));
+                hydrateMembers();
+            },
+            (err) => {
+                console.error("❌ Users listener error [MemberList]:", err);
+                toast.error("Failed to sync members list");
+                setLoading(false);
+            }
+        );
+
+        const paymentsUnsub = onSnapshot(
+            query(
+                collection(db, "payments"),
+                where("month", "==", currentMonth),
+                where("year", "==", currentYear)
+            ),
+            (snap) => {
+                hasPaymentsSnapshot = true;
+                paidMemberIds = new Set(
+                    snap.docs
+                        .map((d) => String(d.data().memberUID || ""))
+                        .filter(Boolean)
+                );
+                hydrateMembers();
+            },
+            (err) => {
+                console.error("❌ Payments listener error [MemberList]:", err);
+                toast.error("Failed to sync payment status");
+                setLoading(false);
+            }
+        );
+
+        return () => {
+            usersUnsub();
+            paymentsUnsub();
+        };
     }, []);
 
     useEffect(() => {
@@ -201,7 +231,6 @@ const MemberList: React.FC = () => {
         try {
             await membersApi.delete(id);
             toast.success(`${name} has been removed permanently`);
-            fetchMembers();
         } catch (err: any) {
             toast.error(err.message || "Failed to delete member");
         }
@@ -219,7 +248,6 @@ const MemberList: React.FC = () => {
             toast.success("Database cleanup complete. All members removed.");
             setShowBulkConfirm(false);
             setBulkConfirmText("");
-            fetchMembers();
         } catch (err: any) {
             toast.error(err.message || "Bulk deletion failed");
             setShowBulkConfirm(false);

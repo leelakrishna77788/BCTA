@@ -41,6 +41,9 @@ interface NotificationData {
 interface PaymentData {
   id?: string;
   amount?: number;
+  month?: number;
+  year?: number;
+  status?: string;
   [key: string]: any;
 }
 
@@ -111,7 +114,10 @@ const MemberDashboard: React.FC = () => {
     unsubs.push(meetUnsub);
 
     const attUnsub = onSnapshot(
-      query(collection(db, "attendance"), where("uid", "==", currentUser.uid)),
+      query(
+        collection(db, "attendance"),
+        where("memberUID", "==", currentUser.uid),
+      ),
       (snap) => setMyAttendanceCount(snap.size),
       (err) => console.error("attendance:", err),
     );
@@ -131,7 +137,16 @@ const MemberDashboard: React.FC = () => {
   };
 
   const totalPaid = myPayments.reduce((s, p) => s + (p.amount || 0), 0);
-  const totalDue = userProfile?.paymentStatus !== "paid" ? 100 : 0;
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const isCurrentMonthPaid = myPayments.some(
+    (p) =>
+      p.month === currentMonth &&
+      p.year === currentYear &&
+      (p.status ? p.status === "paid" : true),
+  );
+  const totalDue = isCurrentMonthPaid ? 0 : 100;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -246,23 +261,22 @@ const MemberDashboard: React.FC = () => {
                 },
                 {
                   label: "Payment Status",
-                  value:
-                    userProfile?.paymentStatus === "paid" ? "Paid" : "Pending",
+                  value: isCurrentMonthPaid ? "Paid" : "Pending",
                   icon: CreditCard,
                   gradient:
-                    userProfile?.paymentStatus === "paid"
+                    isCurrentMonthPaid
                       ? "from-emerald-500 to-teal-600"
                       : "from-amber-500 to-orange-600",
                   bgGradient:
-                    userProfile?.paymentStatus === "paid"
+                    isCurrentMonthPaid
                       ? "from-emerald-50 to-teal-50"
                       : "from-amber-50 to-orange-50",
                   iconBg:
-                    userProfile?.paymentStatus === "paid"
+                    isCurrentMonthPaid
                       ? "bg-emerald-100"
                       : "bg-amber-100",
                   iconColor:
-                    userProfile?.paymentStatus === "paid"
+                    isCurrentMonthPaid
                       ? "text-emerald-600"
                       : "text-amber-600",
                   trend:
