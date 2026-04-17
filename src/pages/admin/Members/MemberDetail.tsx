@@ -680,8 +680,8 @@ const MemberDetail: React.FC = () => {
                                 { label: "Blood Group", value: member.bloodGroup || "-", icon: Droplet },
                                 { label: "Email", value: member.email || "-", icon: Mail },
                                 { label: "Phone", value: member.phone || "-", icon: Phone },
+                                { label: "Aadhaar Number", value: member.aadhaarLast4 ? `XXXXXXXX${member.aadhaarLast4}` : "-", icon: ShieldCheck },
                                 { label: "Attendance", value: `${attendance.length} / ${meetings.length || 0} meetings` },
-                                { label: "Consistency", value: `${attendanceRate}%`, icon: CalendarDays },
                                 { label: "Balance Due", value: `Rs. ${totalDue.toLocaleString()}`, icon: CreditCard },
                             ].map((item) => {
                                 const Icon = item.icon;
@@ -699,140 +699,118 @@ const MemberDetail: React.FC = () => {
                     </div>
 
                     <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
-                        <div className="mb-5 flex items-center justify-between gap-3">
+                        <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Shop and Nominee</h2>
-                                <p className="text-sm text-slate-500">Address and emergency contact details.</p>
+                                <h2 className="text-base font-bold text-slate-900">Shop and Nominee</h2>
+                                <p className="text-xs text-slate-500">Address and emergency contact details.</p>
                             </div>
-                            <MapPin className="text-[#000080]" size={20} />
+                            <MapPin className="text-[#000080]" size={18} />
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-0.5 rounded-xl bg-[#000080]/10 p-2 text-[#000080]">
-                                        <MapPin size={16} />
+                        <div className="space-y-2.5">
+                            <div className="rounded-xl border border-slate-200 bg-white p-3">
+                                <div className="flex items-start gap-2.5">
+                                    <div className="mt-0.5 rounded-lg bg-[#000080]/10 p-2 text-[#000080]">
+                                        <MapPin size={14} />
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Shop address</p>
-                                        <p className="mt-1 text-sm font-medium text-slate-800 leading-6">{member.shopAddress || "No address on file"}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-1.5">Shop address</p>
+                                        <p className="text-xs font-medium text-slate-800 leading-5 line-clamp-2">{member.shopAddress || "No address on file"}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {member.nomineeDetails?.name ? (
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Nominee</p>
-                                    <div className="mt-3 space-y-1">
-                                        <p className="text-sm font-semibold text-slate-900">{member.nomineeDetails.name}</p>
-                                        <p className="text-sm text-slate-600">{member.nomineeDetails.relation || "Relation not set"}</p>
-                                        <p className="text-sm text-slate-600">{member.nomineeDetails.phone || "Phone not set"}</p>
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">Nominee Details</p>
+                                    <div className="space-y-1.5">
+                                        <div>
+                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Name</p>
+                                            <p className="text-xs font-semibold text-slate-900 mt-0.5">{member.nomineeDetails.name}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Relationship</p>
+                                            <p className="text-xs text-slate-600 mt-0.5">{member.nomineeDetails.relation || "Relation not set"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Contact</p>
+                                            <p className="text-xs text-slate-600 mt-0.5">{member.nomineeDetails.phone || "Phone not set"}</p>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-4 text-sm text-slate-500">
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-3 text-xs text-slate-500">
                                     No nominee details have been added yet.
                                 </div>
                             )}
                         </div>
                     </div>
-
-                    <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm overflow-hidden">
-                        <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
-                            <h2 className="text-lg font-bold text-slate-900">Distribution Ledger</h2>
-                            <p className="text-sm text-slate-500">Products allocated and corresponding payment tracking.</p>
-                        </div>
-
-                        {products.length === 0 ? (
-                            <div className="p-10 text-center text-slate-500">
-                                <Package size={28} className="mx-auto mb-3 text-slate-300" />
-                                No allocation history found for this member.
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full min-w-[640px] text-left text-sm">
-                                    <thead className="bg-slate-50 text-slate-500">
-                                        <tr>
-                                            <th className="px-5 py-3 font-semibold">Product</th>
-                                            <th className="px-5 py-3 font-semibold">Quantity</th>
-                                            <th className="px-5 py-3 font-semibold">Paid</th>
-                                            <th className="px-5 py-3 font-semibold">Due</th>
-                                            <th className="px-5 py-3 font-semibold">Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {products.map((p, i) => (
-                                            <tr key={i} className="hover:bg-slate-50/70">
-                                                <td className="px-5 py-3 font-medium text-slate-800">{p.productName || "-"}</td>
-                                                <td className="px-5 py-3 text-slate-700">{p.quantity ?? 0}</td>
-                                                <td className="px-5 py-3 text-slate-700">Rs. {(p.paidAmount || 0).toLocaleString()}</td>
-                                                <td className="px-5 py-3 text-slate-700">Rs. {(p.remainingAmount || 0).toLocaleString()}</td>
-                                                <td className="px-5 py-3 text-slate-700">
-                                                    {p.distributedAt && typeof p.distributedAt.toDate === "function"
-                                                        ? p.distributedAt.toDate().toLocaleDateString()
-                                                        : "-"}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
                 </div>
 
                 <aside className="min-w-0 space-y-6">
                     <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
-                        <div className="mb-5 flex items-center justify-between gap-3">
+                        <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Membership Snapshot</h2>
-                                <p className="text-sm text-slate-500">Quick account and ID verification status.</p>
+                                <h2 className="text-base font-bold text-slate-900">Membership Snapshot</h2>
+                                <p className="text-xs text-slate-500">Quick account and ID verification status.</p>
                             </div>
-                            <CalendarDays className="text-[#000080]" size={20} />
+                            <CalendarDays className="text-[#000080]" size={18} />
                         </div>
 
-                        <div className="space-y-3">
-                            <div className={`rounded-2xl border p-4 ${statusTone}`}>
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em]">Account status</p>
-                                <p className="mt-1 text-lg font-bold capitalize">{member.status || "unknown"}</p>
-                            </div>
-                            <div className={`rounded-2xl border p-4 ${memberIdVerified ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Member ID check</p>
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    <p className="font-mono text-sm font-semibold text-slate-900 break-all">{hasMemberId ? memberId : "Member ID pending"}</p>
-                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${memberIdVerified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                                        {memberIdVerified ? <CheckCircle2 size={11} /> : <AlertTriangle size={11} />}
+                        <div className="space-y-2.5">
+                            <div className={`rounded-xl border p-3 ${memberIdVerified ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Member ID check</p>
+                                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                    <p className="font-mono text-xs font-semibold text-slate-900 break-all">{hasMemberId ? memberId : "Member ID pending"}</p>
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${memberIdVerified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                                        {memberIdVerified ? <CheckCircle2 size={10} /> : <AlertTriangle size={10} />}
                                         {memberIdVerified ? "Verified" : "Needs check"}
                                     </span>
                                 </div>
                             </div>
-                            <div className={`rounded-2xl border p-4 ${paymentTone}`}>
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em]">Payment status</p>
-                                <p className="mt-1 text-lg font-bold capitalize">{derivedPaymentStatus}</p>
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <div className={`rounded-xl border p-3 ${statusTone}`}>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em]">Account status</p>
+                                    <p className="mt-1 text-base font-bold capitalize">{member.status || "unknown"}</p>
+                                </div>
+                                <div className={`rounded-xl border p-3 ${paymentTone}`}>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em]">Payment status</p>
+                                    <p className="mt-1 text-base font-bold capitalize">{derivedPaymentStatus}</p>
+                                </div>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Joined year</p>
+                            <div className="rounded-xl border border-slate-200 bg-white p-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Joined year</p>
                                 <p className="mt-1 text-sm font-semibold text-slate-900">{memberSince}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                        <div className="card rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Meetings attended</p>
-                            <p className="mt-2 text-3xl font-bold text-[#000080]">{attendance.length}</p>
-                            <p className="mt-1 text-sm text-slate-500">Attendance summary from meeting records.</p>
+                    <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-base font-bold text-slate-900">Activity & Contact</h2>
+                                <p className="text-xs text-slate-500">Meeting attendance and contact information.</p>
+                            </div>
+                            <Activity className="text-[#000080]" size={18} />
                         </div>
-                        <div className="card rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Payments collected</p>
-                            <p className="mt-2 text-3xl font-bold text-emerald-600">Rs. {totalPaid.toLocaleString()}</p>
-                            <p className="mt-1 text-sm text-slate-500">{paymentProgress}% of total allocation value paid.</p>
-                        </div>
-                        <div className="card rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm">
-                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Quick contact</p>
-                            <div className="mt-3 space-y-2 text-sm text-slate-700">
-                                <p className="flex items-center gap-2 wrap-break-word"><Mail size={14} className="text-[#000080]" /> {member.email || "-"}</p>
-                                <p className="flex items-center gap-2 wrap-break-word"><Phone size={14} className="text-[#000080]" /> {member.phone || "-"}</p>
+
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Meetings attended</p>
+                                    <p className="mt-1.5 text-2xl font-bold text-[#000080]">{attendance.length}</p>
+                                </div>
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Payments collected</p>
+                                    <p className="mt-1.5 text-2xl font-bold text-emerald-600">Rs. {totalPaid.toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">Quick contact</p>
+                                <div className="space-y-1.5 text-xs text-slate-700">
+                                    <p className="flex items-center gap-1.5 wrap-break-word"><Mail size={12} className="text-[#000080] shrink-0" /> {member.email || "-"}</p>
+                                    <p className="flex items-center gap-1.5 wrap-break-word"><Phone size={12} className="text-[#000080] shrink-0" /> {member.phone || "-"}</p>
+                                </div>
                             </div>
                         </div>
                     </div>

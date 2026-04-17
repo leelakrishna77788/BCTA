@@ -430,7 +430,7 @@ const AddEditMember: React.FC = () => {
                                     <input
                                         type={showAadhaar ? "text" : "password"}
                                         inputMode="numeric"
-                                        value={form.aadhaarFull}
+                                        value={form.aadhaarFull || (isEdit && form.aadhaarLast4 ? `XXXXXXXX${form.aadhaarLast4}` : "")}
                                         onChange={(e) => {
                                             const digits = e.target.value.replace(/\D/g, "").slice(0, 12);
                                             setForm((prev) => ({ ...prev, aadhaarFull: digits }));
@@ -450,9 +450,11 @@ const AddEditMember: React.FC = () => {
                                     </button>
                                 </div>
                                 <p className="text-[11px] text-slate-500">
-                                    Visible format: {form.aadhaarFull.length > 0
-                                        ? `XXXXXXXX${form.aadhaarFull.slice(-4).padStart(4, "X")}`
-                                        : (form.aadhaarLast4 ? `XXXXXXXX${form.aadhaarLast4}` : "XXXXXXXX0000")}
+                                    {isEdit && !form.aadhaarFull && form.aadhaarLast4 
+                                        ? `Current: XXXXXXXX${form.aadhaarLast4} (Enter new 12 digits to update)` 
+                                        : form.aadhaarFull.length > 0
+                                        ? `Visible format: XXXXXXXX${form.aadhaarFull.slice(-4).padStart(4, "X")}`
+                                        : "Enter 12-digit Aadhaar number"}
                                 </p>
                             </div>
                         </div>
