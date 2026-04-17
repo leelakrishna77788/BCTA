@@ -116,7 +116,6 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
         background: "linear-gradient(135deg, white 10%, #1e3a8a 50%)",
       }}
     >
-      {" "}
       <div className="relative flex items-center gap-4 h-full">
         {/* Mobile Only Logo */}
         <img
@@ -137,7 +136,10 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
         {/* Notification Bell */}
         <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button
-            onClick={() => setShowNotifs(!showNotifs)}
+            onClick={() => {
+              setShowNotifs(!showNotifs);
+              setShowProfileMenu(false); // close profile menu
+            }}
             className="p-2.5 rounded-xl text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all duration-200 relative group"
           >
             <Bell size={19} />
@@ -150,7 +152,16 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
           </button>
 
           {showNotifs && (
-            <div className="absolute top-full left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-[90vw] max-w-xs sm:w-80 sm:max-w-sm bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-100/80 py-1 animate-scale-in z-50 overflow-hidden gpu-accelerated">
+            <div
+              className="absolute top-full left-1/2 -translate-x-1/2 
+  sm:left-auto sm:translate-x-0 sm:right-0 
+  mt-2 
+  w-[85vw] max-w-[260px] sm:w-80 sm:max-w-sm
+  bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl 
+  border border-slate-100/80 py-1 animate-scale-in 
+  z-50 overflow-hidden gpu-accelerated"
+            >
+              {" "}
               {/* Gradient header strip */}
               <div
                 className="h-[3px]"
@@ -182,8 +193,8 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                           ? n.sentAt.toDate().toLocaleTimeString()
                           : n.sentAt._seconds
                             ? new Date(
-                                n.sentAt._seconds * 1000,
-                              ).toLocaleTimeString()
+                              n.sentAt._seconds * 1000,
+                            ).toLocaleTimeString()
                             : new Date(n.sentAt).toLocaleTimeString()
                         : "Just now"}
                     </p>
@@ -219,6 +230,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
           onClick={(e) => {
             e.stopPropagation();
             setShowProfileMenu(!showProfileMenu);
+            setShowNotifs(false); // close notifications
           }}
           className="relative flex items-center gap-3 pl-1 group cursor-pointer"
         >
