@@ -491,143 +491,150 @@ const MeetingList: React.FC = () => {
         </div>
       )}
       {/* Meetings List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {meetings.map((m) => (
-          <div
-            key={m.id}
-            className="card group hover:border-slate-300 hover:shadow-lg transition-all duration-300"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-slate-100 group-hover:text-[#4f46e5] transition-colors">
-                <CalendarDays size={24} />
+      <div className="relative">
+        {deleteModal.open && (
+          <div className="absolute inset-0 z-40 bg-white/20 backdrop-blur-lg rounded-2xl pointer-events-none" />
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {" "}
+          {meetings.map((m) => (
+            <div
+              key={m.id}
+              className="card group hover:border-slate-300 hover:shadow-lg transition-all duration-300"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-slate-100 group-hover:text-[#4f46e5] transition-colors">
+                  <CalendarDays size={24} />
+                </div>
+                <div className="flex gap-2">
+                  <span className={statusColor(getMeetingTimeStatus(m))}>
+                    {getMeetingTimeStatus(m)}
+                  </span>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setDeleteModal({
+                          open: true,
+                          id: m.id,
+                          topic: m.topic,
+                        });
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      title="Delete Meeting"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <span className={statusColor(getMeetingTimeStatus(m))}>
-                  {getMeetingTimeStatus(m)}
-                </span>
-                {isAdmin && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setDeleteModal({
-                        open: true,
-                        id: m.id,
-                        topic: m.topic,
-                      });
-                    }}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    title="Delete Meeting"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+
+              <h3 className="font-bold text-slate-900 group-hover:text-[#4f46e5] transition-colors mb-2 leading-tight">
+                {m.topic}
+              </h3>
+              {m.description && (
+                <p className="text-sm text-slate-500 line-clamp-2 mb-4 font-medium">
+                  {m.description}
+                </p>
+              )}
+
+              <div className="space-y-2.5 pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
+                  <CalendarDays size={16} className="text-slate-400" />
+                  {new Date(m.date).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </div>
+                <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
+                  <Clock size={16} className="text-slate-400" />
+                  {m.startTime} {m.endTime ? `– ${m.endTime}` : "(TBD)"}
+                </div>
+                {m.location && (
+                  <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
+                    <MapPin size={16} className="text-slate-400" />
+                    <span className="truncate">{m.location}</span>
+                  </div>
                 )}
               </div>
-            </div>
 
-            <h3 className="font-bold text-slate-900 group-hover:text-[#4f46e5] transition-colors mb-2 leading-tight">
-              {m.topic}
-            </h3>
-            {m.description && (
-              <p className="text-sm text-slate-500 line-clamp-2 mb-4 font-medium">
-                {m.description}
-              </p>
-            )}
-
-            <div className="space-y-2.5 pt-4 border-t border-slate-100">
-              <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
-                <CalendarDays size={16} className="text-slate-400" />
-                {new Date(m.date).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </div>
-              <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
-                <Clock size={16} className="text-slate-400" />
-                {m.startTime} {m.endTime ? `– ${m.endTime}` : "(TBD)"}
-              </div>
-              {m.location && (
-                <div className="flex items-center gap-3 text-slate-600 text-sm font-medium">
-                  <MapPin size={16} className="text-slate-400" />
-                  <span className="truncate">{m.location}</span>
+              {isAdmin ? (
+                <div className="mt-6 flex gap-3">
+                  {(() => {
+                    const status = getMeetingTimeStatus(m);
+                    const isWorkable =
+                      status !== "past" && status !== "expired";
+                    return isWorkable ? (
+                      <Link
+                        to={`/admin/meetings/${m.id}`}
+                        className="flex-1 btn-primary text-xs h-10 px-0 flex justify-center items-center"
+                      >
+                        <QrCode size={14} className="mr-1" /> Manage QR
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="flex-1 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed text-xs h-10 px-0 flex justify-center items-center rounded-xl font-bold"
+                      >
+                        <Clock size={14} className="mr-1" /> Session Locked
+                      </button>
+                    );
+                  })()}
+                  <Link
+                    to={`/admin/meetings/${m.id}/attendance`}
+                    className="flex-1 btn-secondary text-xs h-10 px-0 flex justify-center items-center transition-all"
+                  >
+                    <Users size={14} className="mr-1" /> Stats
+                  </Link>
+                </div>
+              ) : (
+                <div className="mt-6">
+                  {(() => {
+                    const status = getMeetingTimeStatus(m);
+                    const isWorkable =
+                      status !== "past" && status !== "expired";
+                    return isWorkable ? (
+                      <Link
+                        to="/member/scan"
+                        className="btn-primary w-full h-11 text-sm font-bold shadow-lg shadow-slate-200 active:scale-95 transition-transform flex justify-center items-center px-4 py-2 rounded-xl"
+                      >
+                        <QrCode size={18} className="mr-1" /> Mark Attendance
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="w-full h-11 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed text-sm font-bold flex justify-center items-center rounded-xl opacity-75"
+                      >
+                        <Clock size={18} className="mr-1" /> Session Ended
+                      </button>
+                    );
+                  })()}
                 </div>
               )}
             </div>
-
-            {isAdmin ? (
-              <div className="mt-6 flex gap-3">
-                {(() => {
-                  const status = getMeetingTimeStatus(m);
-                  const isWorkable = status !== "past" && status !== "expired";
-                  return isWorkable ? (
-                    <Link
-                      to={`/admin/meetings/${m.id}`}
-                      className="flex-1 btn-primary text-xs h-10 px-0 flex justify-center items-center"
-                    >
-                      <QrCode size={14} className="mr-1" /> Manage QR
-                    </Link>
-                  ) : (
-                    <button
-                      disabled
-                      className="flex-1 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed text-xs h-10 px-0 flex justify-center items-center rounded-xl font-bold"
-                    >
-                      <Clock size={14} className="mr-1" /> Session Locked
-                    </button>
-                  );
-                })()}
-                <Link
-                  to={`/admin/meetings/${m.id}/attendance`}
-                  className="flex-1 btn-secondary text-xs h-10 px-0 flex justify-center items-center transition-all"
-                >
-                  <Users size={14} className="mr-1" /> Stats
-                </Link>
+          ))}
+          {!loading && meetings.length === 0 && !error && (
+            <div className="md:col-span-2 xl:col-span-3 card border-dashed border-2 border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                <CalendarDays className="text-slate-300 w-8 h-8" />
               </div>
-            ) : (
-              <div className="mt-6">
-                {(() => {
-                  const status = getMeetingTimeStatus(m);
-                  const isWorkable = status !== "past" && status !== "expired";
-                  return isWorkable ? (
-                    <Link
-                      to="/member/scan"
-                      className="btn-primary w-full h-11 text-sm font-bold shadow-lg shadow-slate-200 active:scale-95 transition-transform flex justify-center items-center px-4 py-2 rounded-xl"
-                    >
-                      <QrCode size={18} className="mr-1" /> Mark Attendance
-                    </Link>
-                  ) : (
-                    <button
-                      disabled
-                      className="w-full h-11 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed text-sm font-bold flex justify-center items-center rounded-xl opacity-75"
-                    >
-                      <Clock size={18} className="mr-1" /> Session Ended
-                    </button>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {!loading && meetings.length === 0 && !error && (
-          <div className="md:col-span-2 xl:col-span-3 card border-dashed border-2 border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-              <CalendarDays className="text-slate-300 w-8 h-8" />
+              <h3 className="text-slate-900 font-bold text-lg">
+                No meetings scheduled
+              </h3>
+              <p className="text-slate-500 text-sm mt-1 max-w-xs">
+                {isAdmin
+                  ? "Click 'Create Meeting' above to start your first session."
+                  : "There are currently no upcoming committee meetings."}
+              </p>
             </div>
-            <h3 className="text-slate-900 font-bold text-lg">
-              No meetings scheduled
-            </h3>
-            <p className="text-slate-500 text-sm mt-1 max-w-xs">
-              {isAdmin
-                ? "Click 'Create Meeting' above to start your first session."
-                : "There are currently no upcoming committee meetings."}
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       {deleteModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* FULL WIDTH BLUR BACKGROUND */}
-          <div className="fixed top-0 left-0 w-screen h-screen bg-white/25 backdrop-blur-lg" />
           {/* MODAL */}
           <div className="relative bg-white rounded-2xl shadow-xl w-[90%] max-w-sm p-5">
             <h2 className="text-lg font-bold text-slate-900 mb-2">
