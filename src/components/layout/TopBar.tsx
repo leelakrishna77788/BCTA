@@ -30,7 +30,7 @@ interface NotificationDoc {
 }
 
 const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
-  const { currentUser, userProfile, userRole } = useAuth();
+  const { currentUser, userProfile, userRole, logout } = useAuth();
   const navigate = useNavigate();
   const [notifs, setNotifs] = useState<NotificationDoc[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -101,7 +101,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   }, []);
   const handleLogout = async () => {
     try {
-      await auth.signOut();
+      await logout();
       toast.success("Logged out successfully");
       navigate("/login");
     } catch (err) {

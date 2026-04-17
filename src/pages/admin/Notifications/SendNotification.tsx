@@ -61,7 +61,7 @@ const SendNotification: React.FC = () => {
     const [form, setForm] = useState<NotificationForm>({
         title: "",
         body: "",
-        type: "general",
+        type: "",
     });
     const [sending, setSending] = useState<boolean>(false);
     const [sent, setSent] = useState<Notification[]>([]);
@@ -81,6 +81,10 @@ const SendNotification: React.FC = () => {
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!form.type) {
+            toast.error("Please select a notification category");
+            return;
+        }
         setSending(true);
         try {
             await addDoc(collection(db, "notifications"), {
@@ -89,7 +93,7 @@ const SendNotification: React.FC = () => {
                 target: "all",
             });
             toast.success("Notification sent to all members!");
-            setForm({ title: "", body: "", type: "general" });
+            setForm({ title: "", body: "", type: "" });
         } catch (err: any) {
             console.error("Failed to send notification:", err);
             toast.error("Failed to send notification");
