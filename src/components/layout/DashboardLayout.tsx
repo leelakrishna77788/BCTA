@@ -25,7 +25,7 @@ const DashboardLayout: React.FC = () => {
 
       <div className="flex-1 flex flex-col relative z-10 overflow-hidden h-full pb-16 md:pb-0">
         <TopBar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8 w-full scroll-smooth">
+        <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8 w-full scroll-smooth scrollbar-hide">
           <div className="max-w-7xl mx-auto w-full animate-fade-in pb-12">
             <React.Suspense fallback={
               <div className="space-y-6 animate-pulse">

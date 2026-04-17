@@ -185,7 +185,7 @@ const SidebarContent: React.FC<SidebarContentProps> = React.memo(
       </div>
 
       {/* Nav Links */}
-      <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto scrollbar-hide">
         {links.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}

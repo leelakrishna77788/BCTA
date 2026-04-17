@@ -7,7 +7,7 @@ import Footer from "../components/shared/Footer";
 
 const AboutPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100 scrollbar-hide">
       <Navbar />
 
       {/* Content */}

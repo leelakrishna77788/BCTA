@@ -41,7 +41,7 @@ const PresidentsPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-slate-50 to-indigo-100 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-slate-50 to-indigo-100 font-sans scrollbar-hide">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
 

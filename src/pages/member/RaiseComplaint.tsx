@@ -89,7 +89,7 @@ const RaiseComplaint: React.FC = () => {
             )}
 
             <div className="card shadow-2xl shadow-slate-200/50 border-none">
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-3 md:space-y-12">
                     <div>
                         <label className="label">Title (Optional)</label>
                         <input
@@ -107,7 +107,7 @@ const RaiseComplaint: React.FC = () => {
                         <textarea
                             value={description}
                             onChange={e => setDescription(e.target.value)}
-                            required rows={6}
+                            required rows={2}
                             placeholder="Please describe exactly what happened..."
                             className="input-field resize-none bg-slate-50 border-slate-100 focus:bg-white transition-all p-4 text-base"
                         />

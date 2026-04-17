@@ -91,7 +91,7 @@ const RegisterPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "var(--gradient-primary)" }}>
+    <div className="min-h-screen flex flex-col relative overflow-hidden scrollbar-hide" style={{ background: "var(--gradient-primary)" }}>
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-15"

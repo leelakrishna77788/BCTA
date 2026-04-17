@@ -93,6 +93,15 @@
        It causes severe scroll jank on mobile by forcing full-page repaints. */
   }
 
+  body, html {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  body::-webkit-scrollbar, html::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
   ::selection {
     background-color: rgba(99, 102, 241, 0.2);
     color: #1e1b4b;

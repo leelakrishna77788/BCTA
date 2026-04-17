@@ -85,7 +85,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "var(--surface-base)" }}>
+    <div className="min-h-screen flex flex-col relative overflow-hidden scrollbar-hide" style={{ background: "var(--surface-base)" }}>
       {/* Show loading spinner while checking persisted session */}
       {authLoading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-50/80 backdrop-blur-sm">
