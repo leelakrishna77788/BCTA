@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Scanner, IDetectedBarcode } from "@yudiel/react-qr-scanner";
 import { QRCodeSVG } from "qrcode.react";
@@ -36,6 +36,13 @@ const MeetingQR: React.FC = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("showqr");
     const [meeting, setMeeting] = useState<Meeting | null>(null);
+    const [currentTime, setCurrentTime] = useState(() => new Date());
+    const autoActionFired = useRef({ started: false, stopped: false });
+    
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
     const [isActive, setIsActive] = useState(false);
     const [qrData, setQrData] = useState<string>("");
     const [timeLeft, setTimeLeft] = useState(0);
@@ -128,6 +135,33 @@ const MeetingQR: React.FC = () => {
         }
     }, [id]);
 
+    const parsedTimes = useMemo(() => {
+        if (!meeting || !meeting.date || !meeting.startTime) return null;
+        let meetingStart: Date;
+        let meetingEnd: Date;
+
+        if (meeting.meetingStartUTC && meeting.meetingEndUTC) {
+            meetingStart = meeting.meetingStartUTC instanceof Timestamp 
+                ? meeting.meetingStartUTC.toDate() 
+                : new Date((meeting.meetingStartUTC as any).seconds ? (meeting.meetingStartUTC as any).seconds * 1000 : meeting.meetingStartUTC);
+            meetingEnd = meeting.meetingEndUTC instanceof Timestamp 
+                ? meeting.meetingEndUTC.toDate() 
+                : new Date((meeting.meetingEndUTC as any).seconds ? (meeting.meetingEndUTC as any).seconds * 1000 : meeting.meetingEndUTC);
+        } else {
+            const [year, month, day] = meeting.date.split('-').map(Number);
+            const [startH, startM] = meeting.startTime.split(':').map(Number);
+            meetingStart = new Date(year, month - 1, day, startH, startM);
+            
+            if (meeting.endTime) {
+                const [endH, endM] = meeting.endTime.split(':').map(Number);
+                meetingEnd = new Date(year, month - 1, day, endH, endM);
+            } else {
+                meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
+            }
+        }
+        return { meetingStart, meetingEnd };
+    }, [meeting]);
+
     const rotateToken = useCallback(async () => {
         if (!id) return;
         try {
@@ -176,11 +210,7 @@ const MeetingQR: React.FC = () => {
                     setMeeting(data);
                     setError(null);
 
-                    if (data.status === "active" && data.qrExpiresAt) {
-                        const expiry = data.qrExpiresAt instanceof Timestamp 
-                            ? data.qrExpiresAt.toDate() 
-                            : new Date(data.qrExpiresAt as any);
-                            
+                    if (data.status === "active") {
                         const sessionExpiry = data.sessionExpiresAt instanceof Timestamp
                             ? data.sessionExpiresAt.toDate()
                             : data.sessionExpiresAt ? new Date(data.sessionExpiresAt as any) : null;
@@ -188,19 +218,31 @@ const MeetingQR: React.FC = () => {
                         const now = new Date();
                         if (sessionExpiry && now > sessionExpiry) {
                             stopAttendance();
-                        } else if (now < expiry) {
-                            setIsActive(true);
-                            setQrData(JSON.stringify({
-                                meetingId: id,
-                                token: data.qrToken,
-                                topic: data.topic,
-                                t: Date.now()
-                            }));
-                            const secsLeft = Math.round((expiry.getTime() - now.getTime()) / 1000);
-                            setTimeLeft(secsLeft);
-                            setCountdown(Math.max(1, secsLeft));
+                        } else if (data.qrExpiresAt) {
+                            const expiry = data.qrExpiresAt instanceof Timestamp 
+                                ? data.qrExpiresAt.toDate() 
+                                : new Date(data.qrExpiresAt as any);
+                                
+                            if (now < expiry) {
+                                setIsActive(true);
+                                setQrData(JSON.stringify({
+                                    meetingId: id,
+                                    token: data.qrToken,
+                                    topic: data.topic,
+                                    t: Date.now()
+                                }));
+                                const secsLeft = Math.round((expiry.getTime() - now.getTime()) / 1000);
+                                setTimeLeft(secsLeft);
+                                setCountdown(Math.max(1, secsLeft));
+                            } else {
+                                // Token expired while away from page. Automatically rotate token to keep session alive.
+                                setIsActive(true);
+                                rotateToken();
+                            }
                         } else {
-                            stopAttendance();
+                            // Missing QR data, but status is active. Rotate token.
+                            setIsActive(true);
+                            rotateToken();
                         }
                     } else {
                         setIsActive(false);
@@ -223,43 +265,47 @@ const MeetingQR: React.FC = () => {
     }, [id, stopAttendance]);
 
     const getStatus = useCallback(() => {
-        if (!meeting || !meeting.date || !meeting.startTime) return "unknown";
+        if (!meeting || !parsedTimes) return "unknown";
+        const { meetingStart, meetingEnd } = parsedTimes;
         
-        const now = new Date();
-        
-        let meetingStart: Date;
-        let meetingEnd: Date;
+        if (meeting.status === "active") {
+            if (currentTime > meetingEnd) return "expired";
+            return "live";
+        }
+        if (currentTime < meetingStart) return meeting.status === "expired" ? "expired" : "scheduled";
+        if (currentTime >= meetingStart && currentTime <= meetingEnd) return meeting.status === "expired" ? "expired" : "ready";
+        return "past";
+    }, [meeting, parsedTimes, currentTime]);
 
-        if (meeting.meetingStartUTC && meeting.meetingEndUTC) {
-            meetingStart = meeting.meetingStartUTC instanceof Timestamp 
-                ? meeting.meetingStartUTC.toDate() 
-                : new Date((meeting.meetingStartUTC as any).seconds ? (meeting.meetingStartUTC as any).seconds * 1000 : meeting.meetingStartUTC);
-            meetingEnd = meeting.meetingEndUTC instanceof Timestamp 
-                ? meeting.meetingEndUTC.toDate() 
-                : new Date((meeting.meetingEndUTC as any).seconds ? (meeting.meetingEndUTC as any).seconds * 1000 : meeting.meetingEndUTC);
-        } else {
-            const [year, month, day] = meeting.date.split('-').map(Number);
-            const [startH, startM] = meeting.startTime.split(':').map(Number);
-            meetingStart = new Date(year, month - 1, day, startH, startM);
-            
-            if (meeting.endTime) {
-                const [endH, endM] = meeting.endTime.split(':').map(Number);
-                meetingEnd = new Date(year, month - 1, day, endH, endM);
-            } else {
-                meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
+    const isConcluded = getStatus() === "past" || getStatus() === "expired";
+    const isScheduled = getStatus() === "scheduled";
+
+    // Auto-start and auto-stop interval logic
+    useEffect(() => {
+        autoActionFired.current = { started: false, stopped: false };
+    }, [id]);
+
+    useEffect(() => {
+        if (!meeting || !parsedTimes) return;
+        const { meetingStart, meetingEnd } = parsedTimes;
+
+        if (currentTime >= meetingStart && currentTime <= meetingEnd && meeting.status !== "active" && meeting.status !== "expired") {
+            if (!autoActionFired.current.started) {
+                autoActionFired.current.started = true;
+                startAttendance();
             }
         }
 
-        if (meeting.status === "active") return "live";
-        if (now < meetingStart) return meeting.status === "expired" ? "expired" : "scheduled";
-        if (now >= meetingStart && now <= meetingEnd) return meeting.status === "expired" ? "expired" : "ready";
-        return "past";
-    }, [meeting]);
-
-    const isConcluded = getStatus() === "past" || getStatus() === "expired";
+        if (meeting.status === "active" && currentTime > meetingEnd) {
+            if (!autoActionFired.current.stopped) {
+                autoActionFired.current.stopped = true;
+                stopAttendance();
+            }
+        }
+    }, [currentTime, meeting, parsedTimes]);
 
     const startAttendance = async () => {
-        if (!id || !meeting) return;
+        if (!id || !meeting || !parsedTimes) return;
         
         // Strict Time Enforcement
         if (isConcluded) {
@@ -267,38 +313,16 @@ const MeetingQR: React.FC = () => {
             return;
         }
 
-        const now = new Date();
-        
-        let meetingStart: Date;
-        let meetingEnd: Date;
+        const { meetingStart, meetingEnd } = parsedTimes;
 
-        if (meeting.meetingStartUTC && meeting.meetingEndUTC) {
-            meetingStart = meeting.meetingStartUTC instanceof Timestamp 
-                ? meeting.meetingStartUTC.toDate() 
-                : new Date((meeting.meetingStartUTC as any).seconds ? (meeting.meetingStartUTC as any).seconds * 1000 : meeting.meetingStartUTC);
-            meetingEnd = meeting.meetingEndUTC instanceof Timestamp 
-                ? meeting.meetingEndUTC.toDate() 
-                : new Date((meeting.meetingEndUTC as any).seconds ? (meeting.meetingEndUTC as any).seconds * 1000 : meeting.meetingEndUTC);
-        } else {
-            const [year, month, day] = meeting.date.split('-').map(Number);
-            const [startH, startM] = meeting.startTime.split(':').map(Number);
-            meetingStart = new Date(year, month - 1, day, startH, startM);
-            if (meeting.endTime) {
-                const [endH, endM] = meeting.endTime.split(':').map(Number);
-                meetingEnd = new Date(year, month - 1, day, endH, endM);
-            } else {
-                meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
-            }
-        }
+        console.log(`[MeetingQR] startAttendance checks - serverTime: ${currentTime}, meetingStart: ${meetingStart}, meetingEnd: ${meetingEnd}`);
 
-        console.log(`[MeetingQR] startAttendance checks - serverTime: ${now}, meetingStart: ${meetingStart}, meetingEnd: ${meetingEnd}`);
-
-        if (now < meetingStart) {
+        if (currentTime < meetingStart) {
             toast.error("Meeting has not started yet. Please wait until the exact start time.");
             return;
         }
 
-        if (now > meetingEnd) {
+        if (currentTime > meetingEnd) {
             toast.error("Meeting has ended.");
             return;
         }
@@ -323,6 +347,12 @@ const MeetingQR: React.FC = () => {
 
     const processMemberQR = async (raw: string) => {
         if (!id) return;
+        
+        if (isScheduled) {
+            toast.error("Cannot mark attendance: Meeting has not started yet.");
+            return;
+        }
+        
         setMemberProcessing(true);
         try {
             const data = JSON.parse(raw);
@@ -414,14 +444,6 @@ const MeetingQR: React.FC = () => {
                                             size={220}
                                             level="H"
                                             includeMargin={false}
-                                            imageSettings={{
-                                                src: "/logo.png", // Fallback to centered logo placeholder if available
-                                                x: undefined,
-                                                y: undefined,
-                                                height: 48,
-                                                width: 48,
-                                                excavate: true,
-                                            }}
                                             fgColor="#1e1b4b"
                                         />
                                         
@@ -494,13 +516,17 @@ const MeetingQR: React.FC = () => {
                                             : "Open the secure camera terminal to scan a member's digital ID for instant verification."}
                                     </p>
                                 </div>
-                                {!isConcluded ? (
+                                {!isConcluded && !isScheduled ? (
                                     <button onClick={() => setMemberScanning(true)} className="btn-primary w-full h-14 shadow-xl shadow-indigo-900/40 border border-white/10 active:scale-95 transition-transform font-bold">
                                         Open Secure Terminal
                                     </button>
-                                ) : (
+                                ) : isConcluded ? (
                                     <div className="w-full py-4 px-6 bg-slate-800/50 rounded-2xl border border-slate-700 text-slate-500 text-sm font-bold flex items-center justify-center gap-2">
                                         <Shield size={16} /> Restricted Access
+                                    </div>
+                                ) : (
+                                    <div className="w-full py-4 px-6 bg-slate-800/50 rounded-2xl border border-slate-700 text-slate-500 text-sm font-bold flex items-center justify-center gap-2">
+                                        <Clock size={16} /> Meeting has not started yet
                                     </div>
                                 )}
                             </div>

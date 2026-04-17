@@ -44,7 +44,7 @@ service cloud.firestore {
 
       // Members can update their own doc but NOT change role or status
       allow update: if (isOwner(userId) &&
-                       !request.resource.data.keys().hasAny(['role', 'status', 'attendanceCount']))
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status']))
                     || isAdmin();
 
       // Only admin/superadmin can hard-delete a user doc (soft-delete via status preferred)
@@ -54,7 +54,10 @@ service cloud.firestore {
     // ─── Meetings ──────────────────────────────────────────────────────────
     match /meetings/{meetingId} {
       allow read:                    if isAdmin() || isActiveUser();
-      allow create, update, delete:  if isAdmin();
+      allow create, delete:          if isAdmin();
+      allow update:                  if isAdmin() || (
+        isActiveUser() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendanceCount'])
+      );
     }
 
     // ─── Attendance ────────────────────────────────────────────────────────
