@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 import {
   Plus,
   CalendarDays,
@@ -624,42 +625,39 @@ const MeetingList: React.FC = () => {
         )}
       </div>
       {deleteModal.open && (
-        <div className="fixed inset-0 z-[9999]">
-          {/* Overlay */}
-          <div className="absolute inset-0 backdrop-blur-lg touch-none" />{" "}
-          {/* Modal */}
-          <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-            {" "}
-            <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-sm p-5">
-              <h2 className="text-lg font-bold text-slate-900 mb-2">
-                Delete Meeting
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* FULL WIDTH BLUR BACKGROUND */}
+          <div className="fixed top-0 left-0 w-screen h-screen bg-white/25 backdrop-blur-lg" />
+          {/* MODAL */}
+          <div className="relative bg-white rounded-2xl shadow-xl w-[90%] max-w-sm p-5">
+            <h2 className="text-lg font-bold text-slate-900 mb-2">
+              Delete Meeting
+            </h2>
 
-              <p className="text-sm text-slate-500 mb-6">
-                Are you sure you want to delete{" "}
-                <span className="font-semibold text-slate-700">
-                  "{deleteModal.topic}"
-                </span>
-                ?
-              </p>
+            <p className="text-sm text-slate-500 mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-slate-700">
+                "{deleteModal.topic}"
+              </span>
+              ?
+            </p>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() =>
-                    setDeleteModal({ open: false, id: null, topic: "" })
-                  }
-                  className="flex-1 bg-slate-100 py-2.5 rounded-xl"
-                >
-                  Cancel
-                </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() =>
+                  setDeleteModal({ open: false, id: null, topic: "" })
+                }
+                className="flex-1 bg-slate-100 py-2.5 rounded-xl"
+              >
+                Cancel
+              </button>
 
-                <button
-                  onClick={handleDelete}
-                  className="flex-1 bg-rose-600 text-white py-2.5 rounded-xl"
-                >
-                  Delete
-                </button>
-              </div>
+              <button
+                onClick={handleDelete}
+                className="flex-1 bg-rose-600 text-white py-2.5 rounded-xl"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
