@@ -14,7 +14,7 @@ const RaiseComplaint: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!currentUser || !userProfile) {
             toast.error("User profile not found. Please try again.");
             return;
@@ -76,7 +76,7 @@ const RaiseComplaint: React.FC = () => {
 
     return (
         <div className="max-w-lg mx-auto space-y-6 animate-fade-in pb-12">
-            <div>
+            <div className="text-center">
                 <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Help & Support</h1>
                 <p className="text-slate-500 font-medium">Please provide specific details about your complaint</p>
             </div>
@@ -126,7 +126,7 @@ const RaiseComplaint: React.FC = () => {
                             </span>
                         )}
                     </button>
-                    
+
                     <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest">
                         🛡️ Your identity is verified via BCTA secure gateway
                     </p>
