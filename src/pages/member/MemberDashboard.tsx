@@ -182,7 +182,6 @@ const MemberDashboard: React.FC = () => {
         <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-gradient-to-br from-rose-200/20 to-orange-200/20 rounded-full blur-3xl" />
       </div>
       <div className="relative z-10 w-full">
-        {" "}
         {/* Hero Section - Clean */}
         <div className=" p-4 sm:p-5">
           <div className="flex items-center gap-4">
@@ -245,7 +244,7 @@ const MemberDashboard: React.FC = () => {
           </div>
         </div>
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 px-3 sm:px-4 py-3">
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 px-3 sm:px-4 py-3">
           {loading
             ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
             : [
@@ -263,22 +262,18 @@ const MemberDashboard: React.FC = () => {
                   label: "Payment Status",
                   value: isCurrentMonthPaid ? "Paid" : "Pending",
                   icon: CreditCard,
-                  gradient:
-                    isCurrentMonthPaid
-                      ? "from-emerald-500 to-teal-600"
-                      : "from-amber-500 to-orange-600",
-                  bgGradient:
-                    isCurrentMonthPaid
-                      ? "from-emerald-50 to-teal-50"
-                      : "from-amber-50 to-orange-50",
-                  iconBg:
-                    isCurrentMonthPaid
-                      ? "bg-emerald-100"
-                      : "bg-amber-100",
-                  iconColor:
-                    isCurrentMonthPaid
-                      ? "text-emerald-600"
-                      : "text-amber-600",
+                  gradient: isCurrentMonthPaid
+                    ? "from-emerald-500 to-teal-600"
+                    : "from-amber-500 to-orange-600",
+                  bgGradient: isCurrentMonthPaid
+                    ? "from-emerald-50 to-teal-50"
+                    : "from-amber-50 to-orange-50",
+                  iconBg: isCurrentMonthPaid
+                    ? "bg-emerald-100"
+                    : "bg-amber-100",
+                  iconColor: isCurrentMonthPaid
+                    ? "text-emerald-600"
+                    : "text-amber-600",
                   trend:
                     totalPaid > 0
                       ? `₹${totalPaid.toLocaleString()} paid`
@@ -300,7 +295,7 @@ const MemberDashboard: React.FC = () => {
                   iconColor:
                     totalDue > 0 ? "text-rose-600" : "text-emerald-600",
                   trend: totalDue === 0 ? "All clear!" : "Outstanding balance",
-                }
+                },
               ].map((stat, idx) => (
                 <div
                   key={stat.label}
@@ -710,7 +705,7 @@ const MemberDashboard: React.FC = () => {
                         {n.id && (
                           <button
                             onClick={() => deleteNotification(n.id!)}
-                            className="absolute top-1/2 -translate-y-1/2 right-3 p-2 rounded-xl bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all duration-300"
+                            className="absolute top-1/2 -translate-y-1/2 right-3 p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-300"
                           >
                             <Trash2 size={14} />
                           </button>
