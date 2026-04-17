@@ -33,6 +33,7 @@ import {
   orderBy,
   limit,
   where,
+  getCountFromServer
 } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { adminApi } from "../../services/adminService";
@@ -179,15 +180,18 @@ const AdminDashboard: React.FC = () => {
         "#10b981",
         "#f59e0b",
       ];
+      const top6Meetings = meetings.slice(0, 6);
+      const countsSnap = await Promise.all(
+        top6Meetings.map(m => getCountFromServer(query(collection(db, "attendance"), where("meetingId", "==", m.id))))
+      );
+
       setAttendanceData(
-        meetings
-          .slice(0, 6)
-          .reverse()
+        top6Meetings
           .map((m, i) => ({
-            name: m.topic.slice(0, 10),
-            attended: Math.floor(Math.random() * (active || 10)),
+            name: (m.topic || "").slice(0, 10),
+            attended: countsSnap[i].data().count,
             fill: colors[i % colors.length],
-          })),
+          })).reverse()
       );
 
       setLastUpdated(new Date());

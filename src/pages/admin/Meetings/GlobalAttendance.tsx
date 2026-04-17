@@ -98,12 +98,17 @@ const GlobalAttendance: React.FC = () => {
 
         aSnap.docs.forEach((doc) => {
           const data = doc.data();
-          if (data && data.memberUID && data.meetingId) {
-            if (!aMap[data.memberUID]) aMap[data.memberUID] = {};
-            aMap[data.memberUID][data.meetingId] = true;
-            totalPresentCount++;
-            memberPresences[data.memberUID] =
-              (memberPresences[data.memberUID] || 0) + 1;
+          const uid = data?.memberUID || data?.memberId;
+          const mapId = data?.meetingId;
+          
+          if (uid && mapId) {
+            if (!aMap[uid]) aMap[uid] = {};
+            // Make sure we only increment logic ONCE per member/meeting combo
+            if (!aMap[uid][mapId]) {
+               aMap[uid][mapId] = true;
+               totalPresentCount++;
+               memberPresences[uid] = (memberPresences[uid] || 0) + 1;
+            }
           }
         });
         setAttendanceMap(aMap);
@@ -152,7 +157,9 @@ const GlobalAttendance: React.FC = () => {
         const attendedCount = Object.keys(
           attendanceMap[member.id] || {},
         ).length;
-        const row = [member.name, member.id || "N/A", attendedCount];
+        
+        // Ensure we're using the human-readable BCTA-ID, not the long Firestore UID
+        const row = [member.name || "Unknown", member.memberId || "Pending", attendedCount];
 
         meetings.forEach((m) => {
           row.push(attendanceMap[member.id]?.[m.id] ? "Present" : "Absent");
@@ -161,9 +168,13 @@ const GlobalAttendance: React.FC = () => {
         return row;
       });
 
-      // 3. Convert to CSV String
+      // 3. Convert to CSV String (Structured with title spacing)
+      const reportTitle = `"Global Attendance Report - Generated on: ${new Date().toLocaleDateString()}"`;
+      
       const csvContent = [
-        headers.join(","),
+        reportTitle, // Custom title for visual spacing in excel
+        "", // Blank line for spacing
+        headers.map(h => `"${h}"`).join(","),
         ...rows.map((row) =>
           row.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(","),
         ),
@@ -183,7 +194,7 @@ const GlobalAttendance: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      toast.success("Attendance report downloaded successfully!");
+      toast.success("Attendance report structured and downloaded!");
     } catch (err) {
       console.error("CSV Export Error:", err);
       toast.error("Failed to generate report");
