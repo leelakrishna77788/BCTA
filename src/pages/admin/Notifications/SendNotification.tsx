@@ -10,8 +10,9 @@ import {
     doc,
     writeBatch,
 } from "firebase/firestore";
-import { db } from "../../../firebase/firebaseConfig";
+import { db, auth } from "../../../firebase/firebaseConfig";
 import toast from "react-hot-toast";
+import axios from "axios";
 import { Bell, Send, Trash2 } from "lucide-react";
 
 interface NotificationForm {
@@ -92,6 +93,26 @@ const SendNotification: React.FC = () => {
                 sentAt: serverTimestamp(),
                 target: "all",
             });
+            
+            // FCM Broadcast via API
+            try {
+                const idToken = await auth.currentUser?.getIdToken();
+                if (idToken) {
+                    await axios.post('/api/admin', {
+                        action: 'broadcastNotification',
+                        title: form.title,
+                        body: form.body,
+                        data: { url: '/member/notifications' }
+                    }, {
+                        headers: { Authorization: `Bearer ${idToken}` }
+                    });
+                    console.log("[SendNotification] Push broadcast triggered successfully");
+                }
+            } catch (fcmErr) {
+                console.error("[SendNotification] Push broadcast failed:", fcmErr);
+                // We don't block the UI as Firestore doc is already added
+            }
+
             toast.success("Notification sent to all members!");
             setForm({ title: "", body: "", type: "" });
         } catch (err: any) {

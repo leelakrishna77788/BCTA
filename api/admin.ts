@@ -7,7 +7,9 @@ import {
   getFirestoreDocREST,
   revokeTokensREST,
   createAuthUserREST,
-  setFirestoreDocREST
+  setFirestoreDocREST,
+  getAllFcmTokens,
+  sendFCMNotification
 } from "./adminUtils";
 
 // ── In-memory access token cache (survives across warm requests on Vercel) ──
@@ -37,7 +39,7 @@ interface VercelResponse {
   setHeader: (name: string, value: string | string[]) => VercelResponse;
 }
 
-type AdminAction = "deleteUser" | "revokeTokens" | "createUser" | "bulkDeleteUsers";
+type AdminAction = "deleteUser" | "revokeTokens" | "createUser" | "bulkDeleteUsers" | "broadcastNotification";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Health check for GET
@@ -196,6 +198,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
         return res.status(200).json({ message: `${uids.length} users processed for deletion` });
+      }
+
+      case "broadcastNotification": {
+        const { title, body, data } = req.body as { title: string; body: string; data?: any };
+        if (!title || !body) return res.status(400).json({ error: "Missing title or body for broadcastNotification" });
+
+        console.log(`[api/admin] Broadcasting notification: ${title}`);
+        
+        // 1. Get all tokens
+        const tokens = await getAllFcmTokens(projectId, accessToken);
+        if (tokens.length === 0) {
+          return res.status(200).json({ message: "No devices registered for notifications.", tokenCount: 0 });
+        }
+
+        // 2. Send via FCM
+        const results = await sendFCMNotification(projectId, accessToken, tokens, title, body, data);
+        const successCount = results.filter(r => r.success).length;
+
+        return res.status(200).json({ 
+          message: `Broadcast complete. Sent to ${successCount}/${tokens.length} devices.`,
+          successCount,
+          totalCount: tokens.length
+        });
       }
 
       default:

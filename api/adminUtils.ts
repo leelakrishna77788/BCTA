@@ -258,3 +258,82 @@ export async function setFirestoreDocREST(projectId: string, accessToken: string
   return data;
 }
 
+/**
+ * Sends a push notification via FCM v1 API.
+ */
+export async function sendFCMNotification(projectId: string, accessToken: string, tokens: string[], title: string, body: string, data?: any) {
+  const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
+  
+  const results = [];
+  for (const token of tokens) {
+    const payload = {
+      message: {
+        token,
+        notification: { title, body },
+        data: data || {},
+        android: {
+          priority: 'high',
+          notification: {
+            sound: 'default',
+            channel_id: 'bcta_alerts'
+          }
+        },
+        webpush: {
+          headers: {
+            Urgency: 'high'
+          },
+          notification: {
+            icon: '/leaning_avatar.png',
+            badge: '/leaning_avatar.png',
+            sound: 'default',
+            requireInteraction: true
+          }
+        }
+      }
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const resData = await response.json().catch(() => ({}));
+    results.push({ token, success: response.ok, data: resData });
+  }
+  return results;
+}
+
+/**
+ * Fetches all FCM tokens from the 'users' collection.
+ */
+export async function getAllFcmTokens(projectId: string, accessToken: string) {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users`;
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(`REST getAllFcmTokens failed: ${JSON.stringify(data)}`);
+  }
+
+  const data = await response.json();
+  const tokens: string[] = [];
+  
+  if (data.documents) {
+    for (const doc of data.documents) {
+      const fcmTokens = doc.fields?.fcmTokens?.arrayValue?.values;
+      if (fcmTokens) {
+        for (const v of fcmTokens) {
+          if (v.stringValue) tokens.push(v.stringValue);
+        }
+      }
+    }
+  }
+  return [...new Set(tokens)]; // unique tokens
+}
+

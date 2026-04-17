@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import NotificationManager from "./components/shared/NotificationManager";
 
 
 // Scroll to top on route change
@@ -86,6 +87,7 @@ function App() {
     <BrowserRouter>
       <ScrollToTop />
       <AuthProvider>
+        <NotificationManager />
         <Toaster
           position="top-right"
           toastOptions={{
