@@ -38,6 +38,7 @@ const MeetingQR: React.FC = () => {
     const [meeting, setMeeting] = useState<Meeting | null>(null);
     const [currentTime, setCurrentTime] = useState(() => new Date());
     const autoActionFired = useRef({ started: false, stopped: false });
+    const processingLock = useRef(false);
     
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -346,15 +347,20 @@ const MeetingQR: React.FC = () => {
     };
 
     const processMemberQR = async (raw: string) => {
-        if (!id) return;
+        if (!id || processingLock.current) return;
         
         if (isScheduled) {
             toast.error("Cannot mark attendance: Meeting has not started yet.");
             return;
         }
         
+        processingLock.current = true;
         setMemberProcessing(true);
+
         try {
+            // Artificial delay for better UX (prevents flicker and gives time for unmounting)
+            await new Promise(resolve => setTimeout(resolve, 800));
+
             const data = JSON.parse(raw);
             if (data.type !== "member" || !data.uid) throw new Error("Invalid member QR");
 
@@ -375,9 +381,11 @@ const MeetingQR: React.FC = () => {
             await updateDoc(doc(db, "users", data.uid), { attendanceCount: increment(1) });
             setMemberScanResult({ success: true, memberName: data.name });
         } catch (err: any) {
-            setMemberScanResult({ success: false, error: err.message });
+            console.error("[MeetingQR] Scan Error:", err);
+            setMemberScanResult({ success: false, error: err.message === "Invalid member QR" ? "This is not a valid BCTA member ID" : "Verification Failed" });
         } finally {
             setMemberProcessing(false);
+            processingLock.current = false;
         }
     };
 
@@ -587,7 +595,17 @@ const MeetingQR: React.FC = () => {
                                 </button>
                             </div>
                         )
-                    ) : (
+                    ) : memberProcessing ? (
+                        <div className="text-center space-y-6 animate-pulse py-8">
+                             <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto border border-indigo-500/20">
+                                <Loader2 size={40} className="text-indigo-400 animate-spin" />
+                             </div>
+                             <div className="space-y-2">
+                                <h3 className="text-xl font-bold text-white tracking-tight">Verifying ID...</h3>
+                                <p className="text-slate-400 text-sm">Validating credentials against server...</p>
+                             </div>
+                        </div>
+                    ) : memberScanResult ? (
                         <div className="text-center space-y-6 animate-scale-in py-8">
                              <div className="relative inline-block">
                                 <div className={`absolute -inset-4 rounded-full blur-2xl opacity-20 ${memberScanResult?.success ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse`}></div>
@@ -611,7 +629,7 @@ const MeetingQR: React.FC = () => {
                                 Scan Next Member
                             </button>
                         </div>
-                    )}
+                    ) : null}
                     
                     {/* Background Overlay */}
                     <div className="absolute inset-0 bg-linear-to-b from-indigo-900/20 to-transparent pointer-events-none opacity-20"></div>
