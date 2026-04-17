@@ -166,12 +166,12 @@ const AddAdmin: React.FC = () => {
       {/* ══════════════════════════════════════
           MOBILE — fixed full screen, no scroll
           ══════════════════════════════════════ */}
-      <div className="sm:hidden fixed inset-0 bg-slate-50 flex flex-col">
+      <div className="sm:hidden fixed inset-0 flex flex-col">
         {/* Top bar */}
-        <div className="flex items-center gap-4 px-4 pt-5 pb-3 shrink-0">
+        <div className="flex items-center gap-4 px-4 pt-5 pb-3">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 active:bg-slate-100 transition-all shadow-sm"
+            className="w-9 h-9 flex items-center justify-center rounded-xl  border border-slate-200 text-slate-500  transition-all shadow-sm"
           >
             <ArrowLeft size={18} />
           </button>
@@ -180,8 +180,8 @@ const AddAdmin: React.FC = () => {
               Add Admin
             </h1>
           </div>
-          <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-indigo-50">
-            <Shield size={16} className="text-indigo-600" />
+          <div className="w-8 h-8 flex items-center justify-center rounded-xl">
+            <Shield size={16} />
           </div>
         </div>
 

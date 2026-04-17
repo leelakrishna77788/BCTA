@@ -244,7 +244,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                   if (userRole?.toLowerCase() === "admin") {
                     navigate("/admin/admins/add");
                   } else {
-                    navigate("/member/Myprofile");
+                    navigate("/member/profile");
                   }
                   setShowProfileMenu(false);
                 }}
