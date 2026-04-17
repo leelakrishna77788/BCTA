@@ -245,6 +245,28 @@ const AddEditMember: React.FC = () => {
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
 
+        if (!form.email.toLowerCase().endsWith("@gmail.com")) {
+            toast.error("Email must be a @gmail.com address.");
+            return;
+        }
+
+        const phoneDigits = form.phone.replace(/\D/g, "");
+        if (phoneDigits.length !== 10) {
+            toast.error("Phone number must be exactly 10 digits.");
+            return;
+        }
+
+        const nomineePhoneDigits = form.nomineePhone.replace(/\D/g, "");
+        if (nomineePhoneDigits.length !== 10) {
+            toast.error("Nominee phone number must be exactly 10 digits.");
+            return;
+        }
+
+        if (!isEdit && form.password && form.password.length < 8) {
+            toast.error("Password must be at least 8 characters long.");
+            return;
+        }
+
         const aadhaarDigits = form.aadhaarFull.replace(/\D/g, "");
         if (!isEdit && aadhaarDigits.length !== 12) {
             toast.error("Please enter full 12-digit Aadhaar number.");
