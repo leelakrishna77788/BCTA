@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -63,7 +64,13 @@ export default defineConfig(({ mode }) => {
           next();
         });
       }
-    }
+    } as any,
+    visualizer({
+      open: false,
+      filename: 'bundle-report.html',
+      gzipSize: true,
+      brotliSize: true,
+    }) as any
   ],
   resolve: {
     alias: {

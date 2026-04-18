@@ -72,11 +72,21 @@ const Sidebar: React.FC<SidebarProps> = ({
         : [];
 
   const handleLogout = useCallback(async () => {
-    await logout();
-    setMobileOpen(false);
-    toast.success("Logged out");
-    navigate("/login");
-  }, [logout, navigate, setMobileOpen]);
+    try {
+      toast.loading("Logging out...", { id: "logout-toast" });
+      await logout();
+      
+      // Clear security/auth state
+      localStorage.clear(); 
+      // We don't need to manually clear sessionStorage flags since we're moving to version.json system
+      
+      setMobileOpen(false);
+      toast.success("Signed out safely", { id: "logout-toast" });
+      navigate("/login", { replace: true });
+    } catch (error) {
+      toast.error("Logout failed", { id: "logout-toast" });
+    }
+  }, [logout, setMobileOpen, navigate]);
 
   if (loading) return null;
 
