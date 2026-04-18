@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot, query, where, Timestamp } from "firebase/firestore";
 import { Link } from "react-router-dom";
@@ -145,15 +146,15 @@ const PaymentsHistory: React.FC = () => {
 
   return (
     <div className="space-y-5 sm:space-y-6 animate-fade-in pb-4 sm:pb-8">
-      <div className="rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+      <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+          <div className="pt-10 sm:pt-0">
             <h1 className="page-title mb-0 text-2xl sm:text-3xl">Payments History</h1>
             <p className="text-slate-500 text-sm mt-2">View complete monthly fee records for all members</p>
           </div>
           <Link
             to="/admin/payments"
-            className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-semibold text-sm inline-flex items-center justify-center gap-2"
+            className="absolute top-4 left-4 sm:static h-10 px-4 rounded-xl border border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 font-semibold text-sm inline-flex items-center justify-center gap-2"
           >
             <ArrowLeft size={16} />
             Back to Payments
@@ -173,7 +174,7 @@ const PaymentsHistory: React.FC = () => {
             />
           </div>
 
-          <div className="grid w-full gap-2 sm:grid-cols-2 lg:max-w-[420px]">
+          <div className="grid w-full grid-cols-2 gap-2 lg:max-w-[420px]">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2">
               <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Month</label>
               <select
