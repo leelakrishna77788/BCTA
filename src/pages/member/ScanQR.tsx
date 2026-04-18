@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Scanner, IDetectedBarcode } from "@yudiel/react-qr-scanner";
-import { doc, getDoc, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDocs, runTransaction, setDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, addDoc, serverTimestamp, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
+import { recordAttendance } from "../../services/attendanceService";
 import toast from "react-hot-toast";
 import { CheckCircle, QrCode, RefreshCw, ScanLine, User, Zap, ZapOff, ShieldCheck, CreditCard } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -135,125 +136,46 @@ const ScanQR: React.FC = () => {
 
             // --- MEETING QR ---
             if (data.meetingId) {
-                let meetingData: any;
                 if (userProfile?.status === "blocked") {
                     toast.error("You are blocked from attending meetings!");
                     setProcessing(false); return;
                 }
 
                 try {
-                    // 2. Optimized Validation (Use Cache if possible)
-                    const meetingRef = doc(db, "meetings", data.meetingId);
-
-                    if (meetingCacheRef.current?.id === data.meetingId) {
-                        meetingData = meetingCacheRef.current;
-                    } else {
-                        const meetingSnap = await getDoc(meetingRef);
-                        if (!meetingSnap.exists() || meetingSnap.data().status !== "active") {
-                            toast.error("Meeting is no longer active");
-                            setProcessing(false); return;
-                        }
-                        meetingData = { id: meetingSnap.id, ...meetingSnap.data() };
-                        meetingCacheRef.current = meetingData;
+                    if (!userProfile?.uid) {
+                        toast.error("Please log in to mark attendance");
+                        setProcessing(false); return;
                     }
-
-                    const now = new Date();
+                    const status = await recordAttendance(data.meetingId, data.token, userProfile.uid);
                     
-                    let meetingStart: Date;
-                    let meetingEnd: Date;
-
-                    if (meetingData.meetingStartUTC && meetingData.meetingEndUTC) {
-                        meetingStart = meetingData.meetingStartUTC?.toDate 
-                            ? meetingData.meetingStartUTC.toDate() 
-                            : new Date(meetingData.meetingStartUTC.seconds ? meetingData.meetingStartUTC.seconds * 1000 : meetingData.meetingStartUTC);
-                        
-                        meetingEnd = meetingData.meetingEndUTC?.toDate 
-                            ? meetingData.meetingEndUTC.toDate() 
-                            : new Date(meetingData.meetingEndUTC.seconds ? meetingData.meetingEndUTC.seconds * 1000 : meetingData.meetingEndUTC);
-                    } else {
-                        const [year, month, day] = meetingData.date.split('-').map(Number);
-                        const [startH, startM] = meetingData.startTime.split(':').map(Number);
-                        meetingStart = new Date(year, month - 1, day, startH, startM);
-                        if (meetingData.endTime) {
-                            const [endH, endM] = meetingData.endTime.split(':').map(Number);
-                            meetingEnd = new Date(year, month - 1, day, endH, endM);
-                        } else {
-                            meetingEnd = new Date(meetingStart.getTime() + 4 * 60 * 60 * 1000); // 4h default
-                        }
-                    }
-
-                    if (now < meetingStart) {
-                         toast.error("Meeting has not started yet.");
-                         setProcessing(false); return;
-                    }
-
-                    if (now > meetingEnd) {
-                         toast.error("Meeting has already ended.");
-                         setProcessing(false); return;
-                    }
-
-                    const expiry = meetingData.qrExpiresAt?.toDate?.() 
-                        ? meetingData.qrExpiresAt.toDate()
-                        : new Date(meetingData.qrExpiresAt?.seconds ? meetingData.qrExpiresAt.seconds * 1000 : meetingData.qrExpiresAt);
-
-                    if (now > expiry) {
-                        toast.error("QR Code expired");
-                        setProcessing(false); return;
-                    }
-
-                    if (meetingData.qrToken !== data.token) {
-                        toast.error("Invalid or outdated QR token");
-                        setProcessing(false); return;
-                    }
-
-                    if (!userProfile) {
-                        toast.error("User profile is missing!");
-                        setProcessing(false); return;
-                    }
-
-                    // 4. Atomic Transaction with Idempotent ID (meetingId_userId)
-                    const attendanceDocId = `${data.meetingId}_${userProfile.uid}`;
-                    const attendanceDocRef = doc(db, "attendance", attendanceDocId);
-
-                    await runTransaction(db, async (transaction) => {
-                        const docSnap = await transaction.get(attendanceDocRef);
-                        
-                        // If already exists, we stop the transaction (no double writes)
-                        if (docSnap.exists()) {
-                            return "ALREADY_MARKED";
-                        }
-
-                        // Mark attendance
-                        transaction.set(attendanceDocRef, {
-                            meetingId: data.meetingId,
-                            memberUID: userProfile.uid,
-                            memberName: `${userProfile.name} ${userProfile.surname}`,
-                            markedAt: serverTimestamp(),
-                            method: "member_scan"
-                        });
-
-                        // Increment counts atomically (Handled by admin rules usually, but included for logic completeness)
-                        // Note: If security rules block this for members, the transaction will fail.
-                        // We wrap these in a try-catch inside the component logic or handle via Cloud Functions.
-                        transaction.update(meetingRef, { attendanceCount: increment(1) });
-                        transaction.update(doc(db, "users", userProfile.uid), { attendanceCount: increment(1) });
-                        
-                        return "SUCCESS";
-                    }).then((status) => {
-                        if (status === "ALREADY_MARKED") {
-                            toast("Already marked present!", { icon: "👍" });
-                            setResult({ type: "meeting", success: true, alreadyScanned: true, topic: meetingData.topic });
-                        } else {
+                    switch (status) {
+                        case "SUCCESS":
                             toast.success("Attendance marked successfully! ✅");
-                            setResult({ type: "meeting", success: true, alreadyScanned: false, topic: meetingData.topic });
-                        }
-                    });
-
+                            setResult({ type: "meeting", success: true, alreadyScanned: false, topic: data.topic || "Meeting" });
+                            break;
+                        case "ALREADY_MARKED":
+                            toast("Already marked present!", { icon: "👍" });
+                            setResult({ type: "meeting", success: true, alreadyScanned: true, topic: data.topic || "Meeting" });
+                            break;
+                        case "EXPIRED":
+                            toast.error("QR Code has expired. Please refresh.");
+                            break;
+                        case "INVALID_TOKEN":
+                            toast.error("Invalid or outdated QR token");
+                            break;
+                        case "MEETING_NOT_ACTIVE":
+                            toast.error("This meeting is no longer active");
+                            break;
+                        case "OFFLINE":
+                            toast.error("No internet connection.");
+                            break;
+                        default:
+                            toast.error("Failed to mark attendance.");
+                    }
                 } catch (err: any) {
-                    console.error("[ScanQR] Transaction Error:", err);
+                    console.error("[ScanQR] Error:", err);
                     if (err.code === 'permission-denied') {
-                         toast.success("Attendance recorded! (Count update pending admin sync)");
-                         setResult({ type: "meeting", success: true, alreadyScanned: false, topic: meetingData.topic });
+                         toast.error("Permission Denied: Database rules blocked this scan.");
                     } else {
                          toast.error("Failed to mark attendance. Please try again.");
                     }

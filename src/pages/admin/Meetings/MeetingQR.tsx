@@ -5,7 +5,8 @@ import { QRCodeSVG } from "qrcode.react";
 import toast from "react-hot-toast";
 import { ArrowLeft, RefreshCw, Clock, Shield, Play, Square, Download, ScanLine, QrCode, CheckCircle, AlertCircle, Loader2, Zap, ZapOff } from "lucide-react";
 import { db } from "../../../firebase/firebaseConfig";
-import { doc, onSnapshot, updateDoc, collection, addDoc, serverTimestamp, getDocs, query, where, increment, Timestamp, runTransaction, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, Timestamp } from "firebase/firestore";
+import { recordAttendanceByAdmin } from "../../../services/attendanceService";
 
 // Simple robust UUID alternative to avoid ESM import issues with 'uuid' package
 const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -306,12 +307,15 @@ const MeetingQR: React.FC = () => {
         }
     }, [currentTime, meeting, parsedTimes]);
 
-    const startAttendance = async () => {
-        if (!id || !meeting || !parsedTimes) return;
+    const startAttendance = useCallback(async () => {
+        if (!id || !meeting || !parsedTimes || processingLock.current) return;
         
         // Strict Time Enforcement
         if (isConcluded) {
-            toast.error("This meeting has already concluded. Attendance cannot be started.", { icon: "🚫" });
+            toast.error("This meeting has already concluded. Attendance cannot be started.", { 
+                id: "meeting-concluded",
+                icon: "🚫" 
+            });
             return;
         }
 
@@ -320,15 +324,18 @@ const MeetingQR: React.FC = () => {
         console.log(`[MeetingQR] startAttendance checks - serverTime: ${currentTime}, meetingStart: ${meetingStart}, meetingEnd: ${meetingEnd}`);
 
         if (currentTime < meetingStart) {
-            toast.error("Meeting has not started yet. Please wait until the exact start time.");
+            toast.error("Meeting has not started yet. Please wait until the exact start time.", {
+                id: "meeting-not-started"
+            });
             return;
         }
 
         if (currentTime > meetingEnd) {
-            toast.error("Meeting has ended.");
+            toast.error("Meeting has ended.", { id: "meeting-ended" });
             return;
         }
 
+        processingLock.current = true;
         try {
             const TOKEN_EXPIRY_MS = 45 * 1000; // First token valid for 45s
 
@@ -339,13 +346,16 @@ const MeetingQR: React.FC = () => {
                 sessionExpiresAt: Timestamp.fromDate(meetingEnd) // Keep track of full session
             });
             setCountdown(45);
-            toast.success("Attendance terminal active!");
+            toast.success("Attendance terminal active!", { id: "meeting-active" });
         } catch (err: any) {
             console.error("[MeetingQR] Start Flow ERROR:", err);
             const msg = err.code ? `[${err.code}] ${err.message}` : "Failed to start";
-            toast.error(msg, { duration: 6000 });
+            toast.error(msg, { id: "start-error", duration: 6000 });
+        } finally {
+            processingLock.current = false;
         }
-    };
+    }, [id, meeting, parsedTimes, currentTime, isConcluded]);
+
 
     const processMemberQR = async (raw: string) => {
         if (!id || processingLock.current) return;
@@ -373,42 +383,15 @@ const MeetingQR: React.FC = () => {
             const data = JSON.parse(raw);
             if (data.type !== "member" || !data.uid) throw new Error("Invalid member QR");
 
-            // 2. Atomic Transaction with Idempotent ID (meetingId_userId)
-            const attendanceDocId = `${id}_${data.uid}`;
-            const attendanceDocRef = doc(db, "attendance", attendanceDocId);
-            const meetingRef = doc(db, "meetings", id);
-            const userRef = doc(db, "users", data.uid);
-
-            await runTransaction(db, async (transaction) => {
-                const docSnap = await transaction.get(attendanceDocRef);
-                
-                if (docSnap.exists()) {
-                    return "ALREADY_MARKED";
-                }
-
-                // Mark attendance
-                transaction.set(attendanceDocRef, {
-                    meetingId: id,
-                    memberUID: data.uid,
-                    memberName: data.name,
-                    markedAt: serverTimestamp(),
-                    markedBy: "admin",
-                    method: "admin_scan"
-                });
-
-                // Increment counts atomically
-                transaction.update(meetingRef, { attendanceCount: increment(1) });
-                transaction.update(userRef, { attendanceCount: increment(1) });
-                
-                return "SUCCESS";
-            }).then((status) => {
-                if (status === "ALREADY_MARKED") {
-                    setMemberScanResult({ success: true, alreadyScanned: true, memberName: data.name });
-                } else {
-                    setMemberScanResult({ success: true, memberName: data.name });
-                }
-            });
-
+            const result = await recordAttendanceByAdmin(id, data.uid);
+            
+            if (result.status === "ALREADY_MARKED") {
+                setMemberScanResult({ success: true, alreadyScanned: true, memberName: result.name || data.name });
+            } else if (result.status === "SUCCESS") {
+                setMemberScanResult({ success: true, memberName: result.name || data.name });
+            } else {
+                throw new Error(result.status);
+            }
         } catch (err: any) {
             console.error("[MeetingQR] Scan Error:", err);
             setMemberScanResult({ success: false, error: err.message === "Invalid member QR" ? "This is not a valid BCTA member ID" : "Verification Failed" });

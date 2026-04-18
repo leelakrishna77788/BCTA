@@ -66,10 +66,11 @@ service cloud.firestore {
 
       // Enforce Idempotency + Auth + Meeting Status
       allow create: if isActiveUser() && (
-                      isAdmin() || (
-                        request.resource.data.memberUID == request.auth.uid &&
-                        docId == request.resource.data.meetingId + "_" + request.auth.uid &&
-                        get(/databases/$(database)/documents/meetings/$(request.resource.data.meetingId)).data.status == "active"
+                      docId == request.resource.data.meetingId + "_" + request.resource.data.memberUID && (
+                        isAdmin() || (
+                          request.resource.data.memberUID == request.auth.uid &&
+                          get(/databases/$(database)/documents/meetings/$(request.resource.data.meetingId)).data.status == "active"
+                        )
                       )
                     );
       allow update, delete: if isAdmin();

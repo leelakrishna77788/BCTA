@@ -19,16 +19,43 @@ import { getMeetingById } from "./meetingsService";
 import { getMemberById, incrementAttendanceCount } from "./membersService";
 import type { AttendanceRecord } from "../types/attendance.types";
 
+/** Response status for attendance operations */
+export type AttendanceResult = 
+  | "SUCCESS" 
+  | "ALREADY_MARKED" 
+  | "EXPIRED" 
+  | "INVALID_TOKEN" 
+  | "BLOCKED" 
+  | "OFFLINE"
+  | "MEETING_NOT_FOUND"
+  | "MEETING_NOT_ACTIVE";
+
 /** Member scans the meeting QR code to mark their own attendance */
 export async function recordAttendance(
   meetingId: string,
   token: string,
   memberUID: string
-): Promise<void> {
+): Promise<AttendanceResult> {
+  console.log(`[Attendance] Initiating scan for meeting: ${meetingId}, user: ${memberUID}`);
+  
+  if (!navigator.onLine) return "OFFLINE";
+
   // 1. Validate meeting + token
   const meeting = await getMeetingById(meetingId);
-  if (!meeting) throw new Error("Meeting not found");
-  if (meeting.qrToken !== token) throw new Error("Invalid or expired QR token");
+  if (!meeting) {
+    console.error("[Attendance] Meeting not found:", meetingId);
+    return "MEETING_NOT_FOUND";
+  }
+  
+  if (meeting.status !== "active") {
+    console.warn("[Attendance] Meeting status is:", meeting.status);
+    return "MEETING_NOT_ACTIVE";
+  }
+
+  if (meeting.qrToken !== token) {
+    console.warn("[Attendance] Token mismatch");
+    return "INVALID_TOKEN";
+  }
 
   // 2. Check QR expiry
   if (meeting.qrExpiresAt) {
@@ -36,13 +63,20 @@ export async function recordAttendance(
       typeof (meeting.qrExpiresAt as { toDate?: () => Date }).toDate === "function"
         ? (meeting.qrExpiresAt as { toDate: () => Date }).toDate()
         : new Date(meeting.qrExpiresAt as unknown as string);
-    if (new Date() > expiresAt) throw new Error("Meeting QR has expired");
+    if (new Date() > expiresAt) {
+      console.warn("[Attendance] QR Expired");
+      return "EXPIRED";
+    }
   }
 
   // 3. Validate member
   const member = await getMemberById(memberUID);
-  if (!member) throw new Error("User not found");
-  if (member.status === "blocked") throw new Error("Your account is blocked from attending meetings");
+  if (!member) {
+    console.error("[Attendance] User doc not found for UID:", memberUID);
+    throw new Error("User profile not found in database");
+  }
+
+  if (member.status === "blocked") return "BLOCKED";
 
   // 4. Atomic write with idempotent ID
   const attendanceDocId = `${meetingId}_${memberUID}`;
@@ -50,29 +84,34 @@ export async function recordAttendance(
   const meetingRef = doc(db, "meetings", meetingId);
   const userRef = doc(db, "users", memberUID);
 
-  await runTransaction(db, async (transaction) => {
-    const docSnap = await transaction.get(attendanceRef);
-    if (docSnap.exists()) {
-      const err = new Error("Attendance already marked");
-      (err as any).alreadyScanned = true;
-      throw err;
-    }
+  try {
+    return await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(attendanceRef);
+      if (docSnap.exists()) return "ALREADY_MARKED";
 
-    // Write attendance record
-    transaction.set(attendanceRef, {
-      meetingId,
-      memberId: member.memberId,
-      memberUID,
-      memberName: `${member.name} ${member.surname}`.trim(),
-      status: "present",
-      markedBy: "self",
-      scannedAt: serverTimestamp(),
+      // Write attendance record
+      transaction.set(attendanceRef, {
+        meetingId,
+        memberId: member.memberId || "N/A",
+        memberUID,
+        memberName: `${member.name} ${member.surname}`.trim(),
+        status: "present",
+        markedBy: "self",
+        scannedAt: serverTimestamp(),
+        method: "qr_scan"
+      });
+
+      // Increment counters atomically
+      transaction.update(meetingRef, { attendanceCount: increment(1) });
+      transaction.update(userRef, { attendanceCount: increment(1) });
+
+      console.log("[Attendance] Transaction successful");
+      return "SUCCESS";
     });
-
-    // Increment counters atomically
-    transaction.update(meetingRef, { attendanceCount: increment(1) });
-    transaction.update(userRef, { attendanceCount: increment(1) });
-  });
+  } catch (err: any) {
+    console.error("[Attendance] Transaction failed:", err);
+    throw err; // Re-throw to be handled by UI catch block
+  }
 }
 
 /**
@@ -82,12 +121,13 @@ export async function recordAttendance(
 export async function recordAttendanceByAdmin(
   meetingId: string,
   memberUID: string
-): Promise<string> {
+): Promise<{ status: AttendanceResult; name?: string }> {
+  console.log(`[AttendanceAdmin] Marking user ${memberUID} for meeting ${meetingId}`);
+
   // 1. Validate member
   const member = await getMemberById(memberUID);
-  if (!member) throw new Error("Member not found");
-  if (member.status === "blocked")
-    throw new Error("This member is blocked and cannot be marked present");
+  if (!member) return { status: "MEETING_NOT_FOUND" }; // Reuse status if member not found
+  if (member.status === "blocked") return { status: "BLOCKED" };
 
   // 2. Atomic write with idempotent ID
   const attendanceDocId = `${meetingId}_${memberUID}`;
@@ -95,31 +135,38 @@ export async function recordAttendanceByAdmin(
   const meetingRef = doc(db, "meetings", meetingId);
   const userRef = doc(db, "users", memberUID);
 
-  await runTransaction(db, async (transaction) => {
-    const docSnap = await transaction.get(attendanceRef);
-    if (docSnap.exists()) {
-      const err = new Error("Attendance already marked");
-      (err as any).alreadyScanned = true;
-      throw err;
-    }
+  try {
+    const resultStatus = await runTransaction(db, async (transaction) => {
+      const docSnap = await transaction.get(attendanceRef);
+      if (docSnap.exists()) return "ALREADY_MARKED";
 
-    // Write attendance
-    transaction.set(attendanceRef, {
-      meetingId,
-      memberId: member.memberId,
-      memberUID,
-      memberName: `${member.name} ${member.surname}`.trim(),
-      status: "present",
-      markedBy: "admin",
-      scannedAt: serverTimestamp(),
+      // Write attendance
+      transaction.set(attendanceRef, {
+        meetingId,
+        memberId: member.memberId || "N/A",
+        memberUID,
+        memberName: `${member.name} ${member.surname}`.trim(),
+        status: "present",
+        markedBy: "admin",
+        scannedAt: serverTimestamp(),
+        method: "admin_scan"
+      });
+
+      // Increment counter
+      transaction.update(meetingRef, { attendanceCount: increment(1) });
+      transaction.update(userRef, { attendanceCount: increment(1) });
+
+      return "SUCCESS" as AttendanceResult;
     });
 
-    // Increment counter
-    transaction.update(meetingRef, { attendanceCount: increment(1) });
-    transaction.update(userRef, { attendanceCount: increment(1) });
-  });
-
-  return `${member.name} ${member.surname}`.trim();
+    return { 
+      status: resultStatus, 
+      name: `${member.name} ${member.surname}`.trim() 
+    };
+  } catch (err: any) {
+    console.error("[AttendanceAdmin] Failed:", err);
+    throw err;
+  }
 }
 
 /** Get all attendance records for a specific meeting */
