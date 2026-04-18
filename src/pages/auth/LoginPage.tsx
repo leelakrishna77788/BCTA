@@ -23,7 +23,11 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     if (!authLoading && currentUser && userRole) {
       const isAdmin = userRole === "admin" || userRole === "superadmin";
-      navigate(isAdmin ? "/admin/dashboard" : "/member/dashboard", { replace: true });
+      const target = isAdmin ? "/admin/dashboard" : "/member/dashboard";
+      
+      // Navigate instantly. The App-level VersionHandler will handle any 
+      // necessary reloads if a new code version was detected in the background.
+      navigate(target, { replace: true });
     }
   }, [authLoading, currentUser, userRole, navigate]);
 
@@ -36,14 +40,13 @@ const LoginPage: React.FC = () => {
       const docRef = doc(db, "users", cred.user.uid);
       const snap = await getDoc(docRef);
       const data = snap.exists() ? snap.data() : null;
-      const role = data?.role?.toLowerCase() || "member";
+      const role = (data?.role?.toLowerCase() || "member") as string;
+      const isAdmin = role === "admin" || role === "superadmin";
 
-      toast.success("Welcome back!");
-      if (role === "admin" || role === "superadmin") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/member/dashboard");
-      }
+      toast.success("Login successful!");
+      
+      const destination = isAdmin ? "/admin/dashboard" : "/member/dashboard";
+      navigate(destination, { replace: true });
     } catch (err: any) {
       console.error("Login detail err:", err);
       const msg =

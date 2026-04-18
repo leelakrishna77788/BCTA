@@ -5,7 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import toast from "react-hot-toast";
 import { ArrowLeft, RefreshCw, Clock, Shield, Play, Square, Download, ScanLine, QrCode, CheckCircle, AlertCircle, Loader2, Zap, ZapOff } from "lucide-react";
 import { db } from "../../../firebase/firebaseConfig";
-import { doc, onSnapshot, updateDoc, collection, addDoc, serverTimestamp, getDocs, query, where, increment, Timestamp } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, collection, addDoc, serverTimestamp, getDocs, query, where, increment, Timestamp, runTransaction, setDoc } from "firebase/firestore";
 
 // Simple robust UUID alternative to avoid ESM import issues with 'uuid' package
 const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -57,6 +57,7 @@ const MeetingQR: React.FC = () => {
     const [memberProcessing, setMemberProcessing] = useState(false);
     const [torchOn, setTorchOn] = useState(false);
     const [torchSupported, setTorchSupported] = useState(false);
+    const lastScanRef = useRef<number>(0);
 
     const rotationTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -349,6 +350,17 @@ const MeetingQR: React.FC = () => {
     const processMemberQR = async (raw: string) => {
         if (!id || processingLock.current) return;
         
+        // 0. Offline Check (Avoid silent failures)
+        if (!navigator.onLine) {
+            toast.error("No internet connection. Please check your network.");
+            return;
+        }
+
+        // 1. Throttle Scanner (Avoid rapid re-reads)
+        const nowMs = Date.now();
+        if (nowMs - lastScanRef.current < 2500) return; 
+        lastScanRef.current = nowMs;
+
         if (isScheduled) {
             toast.error("Cannot mark attendance: Meeting has not started yet.");
             return;
@@ -358,28 +370,45 @@ const MeetingQR: React.FC = () => {
         setMemberProcessing(true);
 
         try {
-            // Artificial delay for better UX (prevents flicker and gives time for unmounting)
-            await new Promise(resolve => setTimeout(resolve, 800));
-
             const data = JSON.parse(raw);
             if (data.type !== "member" || !data.uid) throw new Error("Invalid member QR");
 
-            const q = query(collection(db, "attendance"), where("meetingId", "==", id), where("memberUID", "==", data.uid));
-            const existing = await getDocs(q);
+            // 2. Atomic Transaction with Idempotent ID (meetingId_userId)
+            const attendanceDocId = `${id}_${data.uid}`;
+            const attendanceDocRef = doc(db, "attendance", attendanceDocId);
+            const meetingRef = doc(db, "meetings", id);
+            const userRef = doc(db, "users", data.uid);
 
-            if (!existing.empty) {
-                setMemberScanResult({ success: true, alreadyScanned: true, memberName: data.name });
-                return;
-            }
+            await runTransaction(db, async (transaction) => {
+                const docSnap = await transaction.get(attendanceDocRef);
+                
+                if (docSnap.exists()) {
+                    return "ALREADY_MARKED";
+                }
 
-            await addDoc(collection(db, "attendance"), {
-                meetingId: id, memberUID: data.uid, memberName: data.name,
-                markedAt: serverTimestamp(), markedBy: "admin", method: "admin_scan"
+                // Mark attendance
+                transaction.set(attendanceDocRef, {
+                    meetingId: id,
+                    memberUID: data.uid,
+                    memberName: data.name,
+                    markedAt: serverTimestamp(),
+                    markedBy: "admin",
+                    method: "admin_scan"
+                });
+
+                // Increment counts atomically
+                transaction.update(meetingRef, { attendanceCount: increment(1) });
+                transaction.update(userRef, { attendanceCount: increment(1) });
+                
+                return "SUCCESS";
+            }).then((status) => {
+                if (status === "ALREADY_MARKED") {
+                    setMemberScanResult({ success: true, alreadyScanned: true, memberName: data.name });
+                } else {
+                    setMemberScanResult({ success: true, memberName: data.name });
+                }
             });
 
-            await updateDoc(doc(db, "meetings", id), { attendanceCount: increment(1) });
-            await updateDoc(doc(db, "users", data.uid), { attendanceCount: increment(1) });
-            setMemberScanResult({ success: true, memberName: data.name });
         } catch (err: any) {
             console.error("[MeetingQR] Scan Error:", err);
             setMemberScanResult({ success: false, error: err.message === "Invalid member QR" ? "This is not a valid BCTA member ID" : "Verification Failed" });

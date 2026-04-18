@@ -10,6 +10,9 @@ import {
   serverTimestamp,
   Timestamp,
   updateDoc,
+  runTransaction,
+  setDoc,
+  increment,
 } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { getMeetingById } from "./meetingsService";
@@ -41,33 +44,35 @@ export async function recordAttendance(
   if (!member) throw new Error("User not found");
   if (member.status === "blocked") throw new Error("Your account is blocked from attending meetings");
 
-  // 4. Prevent duplicate
-  const dupSnap = await getDocs(
-    query(
-      collection(db, "attendance"),
-      where("meetingId", "==", meetingId),
-      where("memberUID", "==", memberUID)
-    )
-  );
-  if (!dupSnap.empty) {
-    const err = new Error("Attendance already marked");
-    (err as Error & { alreadyScanned?: boolean }).alreadyScanned = true;
-    throw err;
-  }
+  // 4. Atomic write with idempotent ID
+  const attendanceDocId = `${meetingId}_${memberUID}`;
+  const attendanceRef = doc(db, "attendance", attendanceDocId);
+  const meetingRef = doc(db, "meetings", meetingId);
+  const userRef = doc(db, "users", memberUID);
 
-  // 5. Write attendance record
-  await addDoc(collection(db, "attendance"), {
-    meetingId,
-    memberId: member.memberId,
-    memberUID,
-    memberName: `${member.name} ${member.surname}`.trim(),
-    status: "present",
-    markedBy: "self",
-    scannedAt: serverTimestamp(),
+  await runTransaction(db, async (transaction) => {
+    const docSnap = await transaction.get(attendanceRef);
+    if (docSnap.exists()) {
+      const err = new Error("Attendance already marked");
+      (err as any).alreadyScanned = true;
+      throw err;
+    }
+
+    // Write attendance record
+    transaction.set(attendanceRef, {
+      meetingId,
+      memberId: member.memberId,
+      memberUID,
+      memberName: `${member.name} ${member.surname}`.trim(),
+      status: "present",
+      markedBy: "self",
+      scannedAt: serverTimestamp(),
+    });
+
+    // Increment counters atomically
+    transaction.update(meetingRef, { attendanceCount: increment(1) });
+    transaction.update(userRef, { attendanceCount: increment(1) });
   });
-
-  // 6. Increment user's attendance counter atomically
-  await incrementAttendanceCount(memberUID);
 }
 
 /**
@@ -84,33 +89,35 @@ export async function recordAttendanceByAdmin(
   if (member.status === "blocked")
     throw new Error("This member is blocked and cannot be marked present");
 
-  // 2. Prevent duplicate
-  const dupSnap = await getDocs(
-    query(
-      collection(db, "attendance"),
-      where("meetingId", "==", meetingId),
-      where("memberUID", "==", memberUID)
-    )
-  );
-  if (!dupSnap.empty) {
-    const err = new Error("Attendance already marked");
-    (err as Error & { alreadyScanned?: boolean }).alreadyScanned = true;
-    throw err;
-  }
+  // 2. Atomic write with idempotent ID
+  const attendanceDocId = `${meetingId}_${memberUID}`;
+  const attendanceRef = doc(db, "attendance", attendanceDocId);
+  const meetingRef = doc(db, "meetings", meetingId);
+  const userRef = doc(db, "users", memberUID);
 
-  // 3. Write attendance
-  await addDoc(collection(db, "attendance"), {
-    meetingId,
-    memberId: member.memberId,
-    memberUID,
-    memberName: `${member.name} ${member.surname}`.trim(),
-    status: "present",
-    markedBy: "admin",
-    scannedAt: serverTimestamp(),
+  await runTransaction(db, async (transaction) => {
+    const docSnap = await transaction.get(attendanceRef);
+    if (docSnap.exists()) {
+      const err = new Error("Attendance already marked");
+      (err as any).alreadyScanned = true;
+      throw err;
+    }
+
+    // Write attendance
+    transaction.set(attendanceRef, {
+      meetingId,
+      memberId: member.memberId,
+      memberUID,
+      memberName: `${member.name} ${member.surname}`.trim(),
+      status: "present",
+      markedBy: "admin",
+      scannedAt: serverTimestamp(),
+    });
+
+    // Increment counter
+    transaction.update(meetingRef, { attendanceCount: increment(1) });
+    transaction.update(userRef, { attendanceCount: increment(1) });
   });
-
-  // 4. Increment counter
-  await incrementAttendanceCount(memberUID);
 
   return `${member.name} ${member.surname}`.trim();
 }

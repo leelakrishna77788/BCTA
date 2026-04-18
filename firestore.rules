@@ -64,9 +64,13 @@ service cloud.firestore {
     match /attendance/{docId} {
       allow read: if isAdmin() || isActiveUser();
 
-      // Member can only create for themselves; admin can create for anyone
+      // Enforce Idempotency + Auth + Meeting Status
       allow create: if isActiveUser() && (
-                      request.resource.data.memberUID == request.auth.uid || isAdmin()
+                      isAdmin() || (
+                        request.resource.data.memberUID == request.auth.uid &&
+                        docId == request.resource.data.meetingId + "_" + request.auth.uid &&
+                        get(/databases/$(database)/documents/meetings/$(request.resource.data.meetingId)).data.status == "active"
+                      )
                     );
       allow update, delete: if isAdmin();
     }

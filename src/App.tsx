@@ -1,10 +1,11 @@
 import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NotificationManager from "./components/shared/NotificationManager";
+import { lazyWithRetry } from "./utils/lazyRetry";
 
 
 // Scroll to top on route change
@@ -16,40 +17,61 @@ function ScrollToTop() {
   return null;
 }
 
+// Version & Update Handler (Smart Deferred Reload)
+function VersionHandler() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    // Check for pending background updates
+    const hasUpdate = localStorage.getItem("app_update_available");
+    if (hasUpdate === "true" && navigator.onLine) {
+      console.log("[VersionHandler] New version ready. Applying reload on navigation to:", pathname);
+      localStorage.removeItem("app_update_available");
+      
+      // Small timeout to ensure smoother transition
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    }
+  }, [pathname]);
+
+  return null;
+}
+
 // Auth
-const LoginPage = React.lazy(() => import("./pages/auth/LoginPage"));
-const RegisterPage = React.lazy(() => import("./pages/auth/RegisterPage"));
-const LandingPage = React.lazy(() => import("./pages/LandingPage"));
-const ServicesPage = React.lazy(() => import("./pages/ServicesPage"));
-const AboutPage = React.lazy(() => import("./pages/AboutPage"));
-const MemberToolsPage = React.lazy(() => import("./pages/MemberToolsPage"));
-const ContactPage = React.lazy(() => import("./pages/ContactPage"));
-const PresidentsPage = React.lazy(() => import("./pages/PresidentsPage"));
+const LoginPage = lazyWithRetry(() => import("./pages/auth/LoginPage"));
+const RegisterPage = lazyWithRetry(() => import("./pages/auth/RegisterPage"));
+const LandingPage = lazyWithRetry(() => import("./pages/LandingPage"));
+const ServicesPage = lazyWithRetry(() => import("./pages/ServicesPage"));
+const AboutPage = lazyWithRetry(() => import("./pages/AboutPage"));
+const MemberToolsPage = lazyWithRetry(() => import("./pages/MemberToolsPage"));
+const ContactPage = lazyWithRetry(() => import("./pages/ContactPage"));
+const PresidentsPage = lazyWithRetry(() => import("./pages/PresidentsPage"));
 
 // Admin pages
-const AdminDashboard = React.lazy(() => import("./pages/admin/Dashboard"));
-const MemberList = React.lazy(() => import("./pages/admin/Members/MemberList"));
-const MemberDetail = React.lazy(() => import("./pages/admin/Members/MemberDetail"));
-const AddEditMember = React.lazy(() => import("./pages/admin/Members/AddEditMember"));
-const AddAdmin = React.lazy(() => import("./pages/admin/Members/AddAdmin"));
-const MeetingList = React.lazy(() => import("./pages/admin/Meetings/MeetingList"));
-const MeetingQR = React.lazy(() => import("./pages/admin/Meetings/MeetingQR"));
-const AttendanceDashboard = React.lazy(() => import("./pages/admin/Meetings/AttendanceDashboard"));
-const GlobalAttendance = React.lazy(() => import("./pages/admin/Meetings/GlobalAttendance"));
-const ShopList = React.lazy(() => import("./pages/admin/Shops/ShopList"));
-const PaymentsDashboard = React.lazy(() => import("./pages/admin/Payments/PaymentsDashboard"));
-const PaymentsHistory = React.lazy(() => import("./pages/admin/Payments/PaymentsHistory"));
-const ComplaintsList = React.lazy(() => import("./pages/admin/Complaints/ComplaintsList"));
-const SendNotification = React.lazy(() => import("./pages/admin/Notifications/SendNotification"));
+const AdminDashboard = lazyWithRetry(() => import("./pages/admin/Dashboard"));
+const MemberList = lazyWithRetry(() => import("./pages/admin/Members/MemberList"));
+const MemberDetail = lazyWithRetry(() => import("./pages/admin/Members/MemberDetail"));
+const AddEditMember = lazyWithRetry(() => import("./pages/admin/Members/AddEditMember"));
+const AddAdmin = lazyWithRetry(() => import("./pages/admin/Members/AddAdmin"));
+const MeetingList = lazyWithRetry(() => import("./pages/admin/Meetings/MeetingList"));
+const MeetingQR = lazyWithRetry(() => import("./pages/admin/Meetings/MeetingQR"));
+const AttendanceDashboard = lazyWithRetry(() => import("./pages/admin/Meetings/AttendanceDashboard"));
+const GlobalAttendance = lazyWithRetry(() => import("./pages/admin/Meetings/GlobalAttendance"));
+const ShopList = lazyWithRetry(() => import("./pages/admin/Shops/ShopList"));
+const PaymentsDashboard = lazyWithRetry(() => import("./pages/admin/Payments/PaymentsDashboard"));
+const PaymentsHistory = lazyWithRetry(() => import("./pages/admin/Payments/PaymentsHistory"));
+const ComplaintsList = lazyWithRetry(() => import("./pages/admin/Complaints/ComplaintsList"));
+const SendNotification = lazyWithRetry(() => import("./pages/admin/Notifications/SendNotification"));
 
 // Member pages
-const MemberDashboard = React.lazy(() => import("./pages/member/MemberDashboard"));
-const MyProfile = React.lazy(() => import("./pages/member/MyProfile"));
-const ScanQR = React.lazy(() => import("./pages/member/ScanQR"));
-const MyPayments = React.lazy(() => import("./pages/member/MyPayments"));
-const RaiseComplaint = React.lazy(() => import("./pages/member/RaiseComplaint"));
-const Emergency = React.lazy(() => import("./pages/member/Emergency"));
-const MyNotifications = React.lazy(() => import("./pages/member/MyNotifications"));
+const MemberDashboard = lazyWithRetry(() => import("./pages/member/MemberDashboard"));
+const MyProfile = lazyWithRetry(() => import("./pages/member/MyProfile"));
+const ScanQR = lazyWithRetry(() => import("./pages/member/ScanQR"));
+const MyPayments = lazyWithRetry(() => import("./pages/member/MyPayments"));
+const RaiseComplaint = lazyWithRetry(() => import("./pages/member/RaiseComplaint"));
+const Emergency = lazyWithRetry(() => import("./pages/member/Emergency"));
+const MyNotifications = lazyWithRetry(() => import("./pages/member/MyNotifications"));
 
 const ADMIN_ROLES = ["admin", "superadmin"] as const;
 
@@ -84,9 +106,64 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 }
 
 function App() {
+  // Version Control System
+  useEffect(() => {
+    const checkVersion = async () => {
+      try {
+        // fetch with no-cache to get real JSON from server
+        const res = await fetch("/version.json?t=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) return;
+        
+        const data = await res.json();
+        const serverVersion = data.version;
+        const localVersion = localStorage.getItem("app_version");
+
+        if (localVersion && localVersion !== serverVersion) {
+          console.warn("[App] Version mismatch. Server:", serverVersion, "Local:", localVersion);
+          localStorage.setItem("app_update_available", "true");
+          toast((t) => (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">New version available!</span>
+              <button 
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  window.location.reload();
+                }}
+                className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors"
+              >
+                Reload Now
+              </button>
+            </div>
+          ), {
+            icon: "🚀",
+            duration: 10000,
+            position: "bottom-right"
+          });
+        }
+        
+        // Update local version after check
+        localStorage.setItem("app_version", serverVersion);
+      } catch (e) {
+        console.log("[VersionCheck] Failed:", e);
+      }
+    };
+
+    checkVersion();
+    const interval = setInterval(checkVersion, 10 * 60 * 1000); // 10 minutes
+    return () => clearInterval(interval);
+  }, []);
+
+  // Backwards compatibility / cleanup
+  useEffect(() => {
+    if (sessionStorage.getItem("loginReload")) {
+      sessionStorage.removeItem("loginReload");
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <VersionHandler />
       <AuthProvider>
         <NotificationManager />
         <Toaster

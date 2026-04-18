@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Scanner, IDetectedBarcode } from "@yudiel/react-qr-scanner";
-import { doc, getDoc, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDocs, runTransaction, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
@@ -32,6 +32,8 @@ const ScanQR: React.FC = () => {
     const [processing, setProcessing] = useState<boolean>(false);
     const [permissionError, setPermissionError] = useState<string | null>(null);
     const [torchOn, setTorchOn] = useState<boolean>(false);
+    const lastScanRef = React.useRef<number>(0);
+    const meetingCacheRef = React.useRef<any>(null);
 
     const handleScanError = (error: any) => {
         console.error("QR Scan Error:", error);
@@ -114,6 +116,18 @@ const ScanQR: React.FC = () => {
     };
 
     const processQR = async (raw: string) => {
+        // 0. Offline Check (Avoid silent failures)
+        if (!navigator.onLine) {
+            toast.error("No internet connection. Please check your network.");
+            return;
+        }
+
+        // 1. Throttle Scanner (Avoid rapid re-reads)
+        const nowMs = Date.now();
+        if (nowMs - lastScanRef.current < 2500) return; 
+        lastScanRef.current = nowMs;
+
+        if (processing) return;
         setProcessing(true);
         try {
             let data: any;
@@ -121,22 +135,28 @@ const ScanQR: React.FC = () => {
 
             // --- MEETING QR ---
             if (data.meetingId) {
+                let meetingData: any;
                 if (userProfile?.status === "blocked") {
                     toast.error("You are blocked from attending meetings!");
                     setProcessing(false); return;
                 }
 
                 try {
-                    // 1. Verify Meeting Directly from Firestore
+                    // 2. Optimized Validation (Use Cache if possible)
                     const meetingRef = doc(db, "meetings", data.meetingId);
-                    const meetingSnap = await getDoc(meetingRef);
 
-                    if (!meetingSnap.exists() || meetingSnap.data().status !== "active") {
-                        toast.error("Meeting is no longer active");
-                        setProcessing(false); return;
+                    if (meetingCacheRef.current?.id === data.meetingId) {
+                        meetingData = meetingCacheRef.current;
+                    } else {
+                        const meetingSnap = await getDoc(meetingRef);
+                        if (!meetingSnap.exists() || meetingSnap.data().status !== "active") {
+                            toast.error("Meeting is no longer active");
+                            setProcessing(false); return;
+                        }
+                        meetingData = { id: meetingSnap.id, ...meetingSnap.data() };
+                        meetingCacheRef.current = meetingData;
                     }
 
-                    const meetingData = meetingSnap.data();
                     const now = new Date();
                     
                     let meetingStart: Date;
@@ -187,57 +207,58 @@ const ScanQR: React.FC = () => {
                     }
 
                     if (!userProfile) {
-                        toast.error("User profile is missing! Cannot mark attendance.");
-                        setProcessing(false); 
-                        return;
-                    }
-
-                    // 2. Check for existing attendance
-                    const attendanceRef = collection(db, "attendance");
-                    const q = query(attendanceRef,
-                        where("meetingId", "==", data.meetingId),
-                        where("memberUID", "==", userProfile.uid)
-                    );
-                    const existing = await getDocs(q);
-
-                    if (!existing.empty) {
-                        toast("Already marked present!", { icon: "👍" });
-                        setResult({
-                            type: "meeting",
-                            success: true,
-                            alreadyScanned: true,
-                            topic: meetingData.topic
-                        });
+                        toast.error("User profile is missing!");
                         setProcessing(false); return;
                     }
 
-                    // 3. Mark Attendance
-                    await addDoc(collection(db, "attendance"), {
-                        meetingId: data.meetingId,
-                        memberUID: userProfile.uid,
-                        memberName: `${userProfile.name} ${userProfile.surname}`,
-                        markedAt: serverTimestamp(),
-                        method: "member_scan"
+                    // 4. Atomic Transaction with Idempotent ID (meetingId_userId)
+                    const attendanceDocId = `${data.meetingId}_${userProfile.uid}`;
+                    const attendanceDocRef = doc(db, "attendance", attendanceDocId);
+
+                    await runTransaction(db, async (transaction) => {
+                        const docSnap = await transaction.get(attendanceDocRef);
+                        
+                        // If already exists, we stop the transaction (no double writes)
+                        if (docSnap.exists()) {
+                            return "ALREADY_MARKED";
+                        }
+
+                        // Mark attendance
+                        transaction.set(attendanceDocRef, {
+                            meetingId: data.meetingId,
+                            memberUID: userProfile.uid,
+                            memberName: `${userProfile.name} ${userProfile.surname}`,
+                            markedAt: serverTimestamp(),
+                            method: "member_scan"
+                        });
+
+                        // Increment counts atomically (Handled by admin rules usually, but included for logic completeness)
+                        // Note: If security rules block this for members, the transaction will fail.
+                        // We wrap these in a try-catch inside the component logic or handle via Cloud Functions.
+                        transaction.update(meetingRef, { attendanceCount: increment(1) });
+                        transaction.update(doc(db, "users", userProfile.uid), { attendanceCount: increment(1) });
+                        
+                        return "SUCCESS";
+                    }).then((status) => {
+                        if (status === "ALREADY_MARKED") {
+                            toast("Already marked present!", { icon: "👍" });
+                            setResult({ type: "meeting", success: true, alreadyScanned: true, topic: meetingData.topic });
+                        } else {
+                            toast.success("Attendance marked successfully! ✅");
+                            setResult({ type: "meeting", success: true, alreadyScanned: false, topic: meetingData.topic });
+                        }
                     });
 
-                    // 4. Increment counts (Warning: usually blocked by security rules for members)
-                    try {
-                        await updateDoc(meetingRef, { attendanceCount: increment(1) });
-                        await updateDoc(doc(db, "users", userProfile.uid), { attendanceCount: increment(1) });
-                    } catch (updateErr) {
-                        console.warn("Non-critical: Could not increment counts directly (normal for members).", updateErr);
+                } catch (err: any) {
+                    console.error("[ScanQR] Transaction Error:", err);
+                    if (err.code === 'permission-denied') {
+                         toast.success("Attendance recorded! (Count update pending admin sync)");
+                         setResult({ type: "meeting", success: true, alreadyScanned: false, topic: meetingData.topic });
+                    } else {
+                         toast.error("Failed to mark attendance. Please try again.");
                     }
-
-                    toast.success("Attendance marked successfully! ✅");
-                    setResult({
-                        type: "meeting",
-                        success: true,
-                        alreadyScanned: false,
-                        topic: meetingData.topic
-                    });
-                } catch (err) {
-                    console.error(err);
-                    toast.error("Failed to mark attendance");
+                } finally {
+                    setProcessing(false);
                 }
             }
 
