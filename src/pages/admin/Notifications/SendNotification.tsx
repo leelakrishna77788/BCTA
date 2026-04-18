@@ -93,7 +93,7 @@ const SendNotification: React.FC = () => {
                 sentAt: serverTimestamp(),
                 target: "all",
             });
-            
+
             // FCM Broadcast via API
             try {
                 const idToken = await auth.currentUser?.getIdToken();
@@ -164,36 +164,36 @@ const SendNotification: React.FC = () => {
     const selectedType = NOTIFICATION_TYPES.find((t) => t.value === form.type);
 
     return (
-        <div className="space-y-6 animate-fade-in pb-10">
+        <div className="space-y-0 animate-fade-in pt-0 pb-4">
             <div>
-                <h1 className="page-title mb-1 text-3xl sm:text-4xl">Notifications</h1>
-                <p className="text-slate-500 font-medium text-sm tracking-tight">
+                <h1 className="page-title text-2xl sm:text-3xl">Notifications</h1>
+                <p className="text-slate-500 font-medium text-xs sm:text-sm tracking-tight mb-2 sm:mb-4">
                     Broadcast platform-wide alerts and updates
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-0">
                 {/* Send Form - Spans 3 columns on xl */}
                 <div
-                    className="xl:col-span-3 glass-card rounded-2xl sm:rounded-3xl border border-white/40 p-6 sm:p-10 premium-shadow flex flex-col h-full"
+                    className="xl:col-span-3 glass-card rounded-2xl border border-white/40 p-4 sm:p-6 premium-shadow flex flex-col h-full"
                     style={{ background: "rgba(255, 255, 255, 0.7)" }}
                 >
                     <form
                         onSubmit={handleSend}
-                        className="space-y-6 flex flex-col flex-1"
+                        className="space-y-3 sm:space-y-4 flex flex-col"
                     >
-                        <div className="flex-1 space-y-6">
+                        <div className="space-y-2">
                             <div>
-                                <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-4 block">
+                                <label className="label text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">
                                     Select Category
                                 </label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                     {NOTIFICATION_TYPES.map((t) => (
                                         <button
                                             key={t.value}
                                             type="button"
                                             onClick={() => setForm((p) => ({ ...p, type: t.value }))}
-                                            className={`text-xs px-4 py-2.5 rounded-xl font-black uppercase tracking-widest border transition-all duration-300 ${form.type === t.value ? "border-indigo-200 shadow-lg " + t.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}
+                                            className={`text-[9px] sm:text-[10px] px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg font-bold uppercase tracking-wider border transition-all duration-300 ${form.type === t.value ? "border-indigo-200 shadow-sm " + t.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}
                                         >
                                             {t.label}
                                         </button>
@@ -201,9 +201,9 @@ const SendNotification: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-6">
+                            <div className="grid grid-cols-1 gap-1 space-y-2">
                                 <div>
-                                    <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">
+                                    <label className="label text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 block">
                                         Heading*
                                     </label>
                                     <input
@@ -213,12 +213,12 @@ const SendNotification: React.FC = () => {
                                         }
                                         required
                                         placeholder="What is this about?"
-                                        className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-4"
+                                        className="input-field rounded-xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-2 sm:py-3 text-sm"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="label text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">
+                                    <label className="label text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 block">
                                         Content*
                                     </label>
                                     <textarea
@@ -227,9 +227,9 @@ const SendNotification: React.FC = () => {
                                             setForm((p) => ({ ...p, body: e.target.value }))
                                         }
                                         required
-                                        rows={5}
+                                        rows={2}
                                         placeholder="Write the main message here..."
-                                        className="input-field rounded-2xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-4 resize-none"
+                                        className="input-field rounded-xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-2 sm:py-3 text-sm resize-none"
                                     />
                                 </div>
                             </div>
@@ -263,11 +263,11 @@ const SendNotification: React.FC = () => {
                         <button
                             type="submit"
                             disabled={sending}
-                            className="group w-full py-5 rounded-2xl text-white font-black uppercase tracking-widest transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 mt-auto"
+                            className="group w-full py-3 sm:py-4 rounded-xl text-white font-bold text-sm uppercase tracking-wider transition-all duration-500 hover:shadow-[0_10px_25px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
                             style={{ background: "var(--gradient-primary)" }}
                         >
                             <Send
-                                size={18}
+                                size={16}
                                 className="transition-transform group-hover:translate-x-1"
                             />
                             {sending ? "Processing..." : "Broadcast to All"}
@@ -277,7 +277,7 @@ const SendNotification: React.FC = () => {
 
                 {/* History - Spans 2 columns on xl */}
                 <div
-                    className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow"
+                    className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow h-full"
                     style={{ background: "rgba(255, 255, 255, 0.6)" }}
                 >
                     <div className="flex items-center justify-between p-6 sm:p-8 border-b border-white/30">
@@ -297,7 +297,7 @@ const SendNotification: React.FC = () => {
                             </button>
                         )}
                     </div>
-                    <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto min-h-[400px] xl:max-h-none max-h-[600px] scrollbar-hide">
+                    <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto min-h-0 scrollbar-hide">
                         {sent.map((n, i) => {
                             const t =
                                 NOTIFICATION_TYPES.find((x) => x.value === n.type) ||
