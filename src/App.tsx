@@ -40,7 +40,6 @@ function VersionHandler() {
 
 // Auth
 const LoginPage = lazyWithRetry(() => import("./pages/auth/LoginPage"));
-const RegisterPage = lazyWithRetry(() => import("./pages/auth/RegisterPage"));
 const LandingPage = lazyWithRetry(() => import("./pages/LandingPage"));
 const ServicesPage = lazyWithRetry(() => import("./pages/ServicesPage"));
 const AboutPage = lazyWithRetry(() => import("./pages/AboutPage"));
@@ -200,7 +199,6 @@ function App() {
             <Route path="/presidents" element={<ErrorBoundary><PresidentsPage /></ErrorBoundary>} />
             <Route path="/contact" element={<ErrorBoundary><ContactPage /></ErrorBoundary>} />
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
 
             {/* Admin routes */}
             <Route
