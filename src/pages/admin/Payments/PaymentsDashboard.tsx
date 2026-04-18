@@ -421,7 +421,7 @@ const PaymentsDashboard: React.FC = () => {
                                     <button
                                             onClick={() => setMarkUnpaidConfirm(m)}
                                         disabled={processingId === m.uid}
-                                        className="h-11 w-full rounded-xl bg-indigo-600 text-white font-bold text-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
+                                        className="h-11 w-full rounded-xl bg-white text-slate-900 font-bold text-sm transition-colors hover:bg-slate-50 border border-slate-200 disabled:opacity-50"
                                     >
                                         {processingId === m.uid ? "..." : "Undo Payment"}
                                     </button>
@@ -465,7 +465,7 @@ const PaymentsDashboard: React.FC = () => {
                                         <button
                                             onClick={() => setMarkUnpaidConfirm(m)}
                                             disabled={processingId === m.uid}
-                                            className="h-10 lg:h-11 w-full lg:w-[160px] rounded-xl bg-indigo-600 text-white font-bold text-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
+                                            className="h-10 lg:h-11 w-full lg:w-[160px] rounded-xl bg-white text-slate-900 font-bold text-sm transition-colors hover:bg-slate-50 border border-slate-200 disabled:opacity-50"
                                         >
                                             {processingId === m.uid ? "..." : "Undo Payment"}
                                         </button>
