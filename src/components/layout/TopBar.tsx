@@ -16,6 +16,8 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../shared/LanguageSwitcher";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -30,6 +32,7 @@ interface NotificationDoc {
 }
 
 const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
+  const { t, i18n } = useTranslation();
   const { currentUser, userProfile, userRole, logout } = useAuth();
   const navigate = useNavigate();
   const [notifs, setNotifs] = useState<NotificationDoc[]>([]);
@@ -94,19 +97,19 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   const deleteNotification = useCallback(async (id: string) => {
     try {
       await deleteDoc(doc(db, "notifications", id));
-      toast.success("Notification deleted");
+      toast.success(t("topbar.notificationDeleted"));
       setDeleteConfirm(null);
     } catch (err: any) {
-      toast.error("Failed to delete notification");
+      toast.error(t("topbar.failedToDelete"));
     }
-  }, []);
+  }, [t]);
   const handleLogout = async () => {
     try {
       await logout();
-      toast.success("Logged out successfully");
+      toast.success(t("topbar.loggedOut"));
       navigate("/login");
     } catch (err) {
-      toast.error("Logout failed");
+      toast.error(t("topbar.logoutFailed"));
     }
   };
 
@@ -134,6 +137,9 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
         {/* Placeholder or other left-side items can go here */}
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
+        {/* Language Switcher */}
+        <LanguageSwitcher aria-label={t("common.switchLanguage")} variant="light" />
+
         {/* Notification Bell */}
         <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button
@@ -170,10 +176,10 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
               />
               <div className="px-5 py-3 flex items-center justify-between">
                 <h3 className="text-sm font-bold text-slate-900">
-                  Notifications
+                  {t("topbar.notifications")}
                 </h3>
                 <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider text-indigo-600 bg-indigo-50">
-                  Latest
+                  {t("topbar.latest")}
                 </span>
               </div>
               <div className="space-y-0.5 max-h-80 overflow-y-auto scrollbar-hide">
@@ -183,7 +189,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                     className="px-5 py-3 hover:bg-slate-50/80 transition-colors cursor-pointer group relative"
                   >
                     <p className="text-xs font-bold text-indigo-600 mb-0.5">
-                      {n.type === "broadcast" ? "📢 BROADCAST" : "🔔 ALERT"}
+                      {n.type === "broadcast" ? `📢 ${t("topbar.broadcast")}` : `🔔 ${t("topbar.alert")}`}
                     </p>
                     <p className="text-sm text-slate-700 font-medium line-clamp-2 leading-tight group-hover:text-slate-900">
                       {n.message}
@@ -191,21 +197,22 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                     <p className="text-[10px] text-slate-400 mt-1 font-semibold uppercase tracking-tight">
                       {n.sentAt
                         ? n.sentAt.toDate
-                          ? n.sentAt.toDate().toLocaleTimeString()
+                          ? n.sentAt.toDate().toLocaleTimeString(i18n.language === 'te' ? 'te-IN' : 'en-IN')
                           : n.sentAt._seconds
                             ? new Date(
                               n.sentAt._seconds * 1000,
-                            ).toLocaleTimeString()
-                            : new Date(n.sentAt).toLocaleTimeString()
-                        : "Just now"}
+                            ).toLocaleTimeString(i18n.language === 'te' ? 'te-IN' : 'en-IN')
+                            : new Date(n.sentAt).toLocaleTimeString(i18n.language === 'te' ? 'te-IN' : 'en-IN')
+                        : t("topbar.justNow")}
                     </p>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeleteConfirm(n.id);
                       }}
+                      aria-label={t("common.delete")}
                       className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-50 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-500 transition-all"
-                      title="Delete notification"
+                      title={t("common.delete")}
                     >
                       <Trash2 size={13} />
                     </button>
@@ -215,7 +222,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                   <div className="px-5 py-8 text-center">
                     <span className="text-3xl opacity-20 block mb-2">📭</span>
                     <p className="text-xs text-slate-400 font-medium">
-                      No new notifications
+                      {t("topbar.noNewNotifications")}
                     </p>
                   </div>
                 )}
@@ -226,29 +233,29 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
 
         {/* Delete Confirmation Modal */}
         {deleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-100 p-4 animate-fade-in">
             <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in">
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
                 <Trash2 size={24} className="text-red-600" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 text-center mb-2">
-                Delete Notification?
+                {t("topbar.deleteNotification")}
               </h3>
               <p className="text-sm text-slate-600 text-center mb-6">
-                Are you sure you want to delete this notification? This action cannot be undone.
+                {t("topbar.deleteNotificationMsg")}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteConfirm(null)}
                   className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
                 <button
                   onClick={() => deleteNotification(deleteConfirm)}
                   className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all"
                 >
-                  Delete
+                  {t("common.delete")}
                 </button>
               </div>
             </div>
@@ -268,6 +275,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
         >
           {showProfileMenu && (
             <div
+              aria-label={t("common.toggleMenu")}
               ref={profileMenuRef}
               className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden md:hidden"
             >
@@ -282,7 +290,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                 }}
                 className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
               >
-                {userRole?.toLowerCase() === "admin" ? "Add Admin" : "Profile"}
+                {userRole?.toLowerCase() === "admin" ? t("topbar.addAdmin") : t("topbar.profile")}
               </button>
 
               {/* Logout */}
@@ -290,16 +298,16 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                 onClick={handleLogout}
                 className="w-full text-left px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition"
               >
-                Logout
+                {t("topbar.logout")}
               </button>
             </div>
           )}
           <div className="block text-right">
             <p className="text-xs font-bold text-slate-800 leading-none group-hover:text-indigo-700 transition-colors tracking-tight">
-              {userProfile?.name || currentUser?.displayName || "User"}
+              {userProfile?.name || currentUser?.displayName || t("common.user")}
             </p>
             <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-widest mt-1">
-              {userRole || "Member"}
+              {userRole || t("common.member")}
             </p>
           </div>
           {userProfile?.photoURL || currentUser?.photoURL ? (
@@ -316,7 +324,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
               {(
                 userProfile?.name?.[0] ||
                 currentUser?.displayName?.[0] ||
-                "U"
+                t("common.u")
               ).toUpperCase()}
             </div>
           )}

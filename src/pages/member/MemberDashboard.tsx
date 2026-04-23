@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import {
   collection,
@@ -60,6 +61,7 @@ interface MeetingData {
 
 const MemberDashboard: React.FC = () => {
   const { userProfile, currentUser } = useAuth();
+  const { t, i18n } = useTranslation();
 
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [myPayments, setMyPayments] = useState<PaymentData[]>([]);
@@ -127,12 +129,12 @@ const MemberDashboard: React.FC = () => {
   }, [currentUser]);
 
   const deleteNotification = async (id: string) => {
-    if (!window.confirm("Delete this notification?")) return;
+    if (!window.confirm(t("memberDashboard.deleteNotifConfirm"))) return;
     try {
       await deleteDoc(doc(db, "notifications", id));
-      toast.success("Notification deleted");
+      toast.success(t("memberDashboard.notificationDeleted"));
     } catch (err: any) {
-      toast.error("Failed to delete notification");
+      toast.error(t("memberDashboard.failedDeleteNotif"));
     }
   };
 
@@ -150,9 +152,9 @@ const MemberDashboard: React.FC = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
+    if (hour < 12) return t("memberDashboard.goodMorning");
+    if (hour < 17) return t("memberDashboard.goodAfternoon");
+    return t("memberDashboard.goodEvening");
   };
   const getDeadlineInfo = () => {
     const today = new Date();
@@ -220,11 +222,11 @@ const MemberDashboard: React.FC = () => {
           {/* Left Content */}
           <div>
             <p className="font-semibold text-base sm:text-3xl">
-              Monthly Deadline
+              {t("memberDashboard.monthlyDeadline")}
             </p>
 
             <p className="text-xs sm:text-sm">
-              Due by{" "}
+              {t("memberDashboard.dueBy")}{" "}
               {deadline.date.toLocaleDateString("en-IN", {
                 day: "numeric",
                 month: "short",
@@ -232,14 +234,14 @@ const MemberDashboard: React.FC = () => {
             </p>
 
             <div className="text-xs sm:text-sm font-medium mt-1">
-              Amount: <span className="text-blue-700 font-bold">₹100/-</span>
+              {t("memberDashboard.amount")}: <span className="text-blue-700 font-bold">₹100/-</span>
             </div>
           </div>
 
           {/* Right Content (always right) */}
           <div className="text-right">
             <p className="text-lg sm:text-2xl font-bold whitespace-nowrap">
-              {deadline.daysLeft} days left
+              {t("memberDashboard.daysLeft", { count: deadline.daysLeft })}
             </p>
           </div>
         </div>
@@ -249,18 +251,18 @@ const MemberDashboard: React.FC = () => {
             ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
             : [
                 {
-                  label: "Meetings Attended",
+                  label: t("memberDashboard.meetingsAttended"),
                   value: myAttendanceCount,
                   icon: Users,
                   gradient: "from-violet-500 to-purple-600",
                   bgGradient: "from-violet-50 to-purple-50",
                   iconBg: "bg-violet-100",
                   iconColor: "text-violet-600",
-                  trend: "+2 this month",
+                  trend: t("memberDashboard.thisMonth"),
                 },
                 {
-                  label: "Payment Status",
-                  value: isCurrentMonthPaid ? "Paid" : "Pending",
+                  label: t("memberDashboard.paymentStatus"),
+                  value: isCurrentMonthPaid ? t("common.paid") : t("common.pending"),
                   icon: CreditCard,
                   gradient: isCurrentMonthPaid
                     ? "from-emerald-500 to-teal-600"
@@ -276,11 +278,11 @@ const MemberDashboard: React.FC = () => {
                     : "text-amber-600",
                   trend:
                     totalPaid > 0
-                      ? `₹${totalPaid.toLocaleString()} paid`
-                      : "No payments yet",
+                      ? t("memberDashboard.totalPaid", { amount: totalPaid.toLocaleString() })
+                      : t("memberDashboard.noPaymentsYet"),
                 },
                 {
-                  label: "Total Due",
+                  label: t("memberDashboard.totalDue"),
                   value: `₹${totalDue.toLocaleString()}`,
                   icon: TrendingUp,
                   gradient:
@@ -294,7 +296,7 @@ const MemberDashboard: React.FC = () => {
                   iconBg: totalDue > 0 ? "bg-rose-100" : "bg-emerald-100",
                   iconColor:
                     totalDue > 0 ? "text-rose-600" : "text-emerald-600",
-                  trend: totalDue === 0 ? "All clear!" : "Outstanding balance",
+                  trend: totalDue === 0 ? t("memberDashboard.allClear") : t("memberDashboard.outstandingBalance"),
                 },
               ].map((stat, idx) => (
                 <div
@@ -361,7 +363,7 @@ const MemberDashboard: React.FC = () => {
                     <div className="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center">
                       ⛶
                     </div>
-                    <span className="text-[11px]">Scan</span>
+                    <span className="text-[11px]">{t("memberDashboard.scan")}</span>
                   </Link>
                   <Link
                     to="/member/payments"
@@ -370,7 +372,7 @@ const MemberDashboard: React.FC = () => {
                     <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center">
                       <CreditCard size={20} />
                     </div>
-                    <span className="text-[11px]">Payments</span>
+                    <span className="text-[11px]">{t("memberDashboard.payments")}</span>
                   </Link>
                   <Link
                     to="/member/complaint"
@@ -379,7 +381,7 @@ const MemberDashboard: React.FC = () => {
                     <div className="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center">
                       📝
                     </div>
-                    <span className="text-[11px]">Complaint</span>
+                    <span className="text-[11px]">{t("memberDashboard.complaint")}</span>
                   </Link>
 
                   <Link
@@ -389,7 +391,7 @@ const MemberDashboard: React.FC = () => {
                     <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
                       🚨
                     </div>
-                    <span className="text-[11px]">Emergency</span>
+                    <span className="text-[11px]">{t("memberDashboard.emergencyBtn")}</span>
                   </Link>
                 </div>
               </div>
@@ -400,8 +402,8 @@ const MemberDashboard: React.FC = () => {
                 {
                   to: "/member/payments",
                   icon: <CreditCard size={24} />,
-                  title: "Payments",
-                  sub: "View history",
+                  title: t("memberDashboard.payments"),
+                  sub: t("memberDashboard.viewHistory"),
                   gradient: "from-emerald-500 to-teal-600",
                   bg: "bg-gradient-to-br from-emerald-50 to-teal-50",
                   hoverBg:
@@ -410,8 +412,8 @@ const MemberDashboard: React.FC = () => {
                 {
                   to: "/member/complaint",
                   icon: "📝",
-                  title: "Raise Complaint",
-                  sub: "Report issues",
+                  title: t("memberDashboard.raiseComplaint"),
+                  sub: t("memberDashboard.reportIssues"),
                   gradient: "from-orange-500 to-amber-600",
                   bg: "bg-gradient-to-br from-orange-50 to-amber-50",
                   hoverBg:
@@ -420,8 +422,8 @@ const MemberDashboard: React.FC = () => {
                 {
                   to: "/member/emergency",
                   icon: "🚨",
-                  title: "Emergency",
-                  sub: "Quick help",
+                  title: t("memberDashboard.emergencyBtn"),
+                  sub: t("memberDashboard.quickHelp"),
                   gradient: "from-red-500 to-rose-600",
                   bg: "bg-gradient-to-br from-red-50 to-rose-50",
                   hoverBg: "group-hover:from-red-100 group-hover:to-rose-100",
@@ -475,9 +477,9 @@ const MemberDashboard: React.FC = () => {
                         <CalendarDays size={24} className="text-white" />
                       </div>
                       <span>
-                        Committee Meetings
+                        {t("memberDashboard.committeeMeetings")}
                         <span className="block text-sm font-medium text-slate-500 mt-0.5">
-                          Your upcoming sessions
+                          {t("memberDashboard.upcomingSessions")}
                         </span>
                       </span>
                     </h2>
@@ -485,7 +487,7 @@ const MemberDashboard: React.FC = () => {
                       to="/member/meetings"
                       className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white hover:bg-indigo-600 rounded-xl text-sm font-bold transition-colors duration-300 shadow-lg hover:shadow-xl"
                     >
-                      View All Meetings
+                      {t("memberDashboard.viewAllMeetings")}
                       <ArrowUpRight size={16} />
                     </Link>
                   </div>
@@ -524,7 +526,9 @@ const MemberDashboard: React.FC = () => {
                                     : "bg-slate-100 text-slate-600 border border-slate-200"
                                 }`}
                               >
-                                {m.status}
+                                {m.status === "active"
+                                  ? t("memberDashboard.active")
+                                  : t("memberDashboard.expired")}
                               </span>
                             </div>
 
@@ -544,12 +548,17 @@ const MemberDashboard: React.FC = () => {
                                 {m.date?.toDate
                                   ? m.date
                                       .toDate()
-                                      .toLocaleDateString("en-IN", {
-                                        weekday: "short",
-                                        month: "short",
-                                        day: "numeric",
-                                      })
-                                  : m.date || "TBD"}
+                                      .toLocaleDateString(
+                                        i18n.language === "te"
+                                          ? "te-IN"
+                                          : "en-IN",
+                                        {
+                                          weekday: "short",
+                                          month: "short",
+                                          day: "numeric",
+                                        },
+                                      )
+                                  : m.date || t("memberDashboard.tbd")}
                               </div>
                               <div className="flex items-center gap-3 text-slate-600 text-sm font-semibold">
                                 <Clock size={16} className="text-indigo-500" />
@@ -563,7 +572,7 @@ const MemberDashboard: React.FC = () => {
                               className="mt-5 w-full py-3.5 bg-gradient-to-r from-slate-900 to-slate-800 text-white hover:from-indigo-600 hover:to-violet-600 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg group/btn"
                             >
                               <span className="text-lg">📷</span>
-                              Scan to Attend
+                              {t("memberDashboard.scanToAttend")}
                               <ArrowUpRight
                                 size={16}
                                 className="opacity-0 group-hover/btn:opacity-100 transform translate-x-0 group-hover/btn:translate-x-1 transition-all"
@@ -579,10 +588,10 @@ const MemberDashboard: React.FC = () => {
                         <CalendarDays size={40} className="text-slate-400" />
                       </div>
                       <p className="font-black text-xl text-slate-700 mb-2">
-                        No Upcoming Meetings
+                        {t("memberDashboard.noUpcomingMeetings")}
                       </p>
                       <p className="text-slate-500 font-medium">
-                        We'll notify you when new sessions are scheduled.
+                        {t("memberDashboard.notifyWhenScheduled")}
                       </p>
                     </div>
                   )}
@@ -617,12 +626,12 @@ const MemberDashboard: React.FC = () => {
                       className="w-1/3 text-center py-2.5 bg-blue-800 text-white rounded-xl text-sm font-semibold shadow-sm 
         hover:bg-blue-900 hover:shadow-md active:scale-95 transition-all duration-200"
                     >
-                      Scan QR
+                      {t("memberDashboard.scanQR")}
                     </div>
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 mt-1 group-hover:text-slate-700 transition-colors duration-300">
-                  Tap to open scanner
+                  {t("memberDashboard.tapToOpenScanner")}
                 </p>
               </div>
             </Link>
@@ -635,7 +644,7 @@ const MemberDashboard: React.FC = () => {
                     <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
                       <Bell size={18} className="text-white" />
                     </div>
-                    Notifications
+                    {t("memberDashboard.notifications")}
                   </h2>
                   {notifications.length > 0 && (
                     <span className="relative flex h-3 w-3">
@@ -718,9 +727,9 @@ const MemberDashboard: React.FC = () => {
                     <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                       <span className="text-4xl opacity-50">📭</span>
                     </div>
-                    <p className="font-bold text-slate-700">All caught up!</p>
+                    <p className="font-bold text-slate-700">{t("memberDashboard.allCaughtUp")}</p>
                     <p className="text-sm text-slate-500 mt-1">
-                      No new notifications
+                      {t("memberDashboard.noNewNotifications")}
                     </p>
                   </div>
                 )}

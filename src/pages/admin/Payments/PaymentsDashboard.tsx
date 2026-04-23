@@ -8,6 +8,7 @@ import { CreditCard, TrendingUp, AlertCircle, CheckCircle, CalendarDays, History
 import { markMemberFeePaid, removeMemberFeePaid } from "../../../services/paymentsService";
 import { useAuth } from "../../../context/AuthContext";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 interface Member {
@@ -26,18 +27,21 @@ interface PaymentDoc {
     [key: string]: any;
 }
 
-const monthsList = [
-    { value: 1, label: "January" }, { value: 2, label: "February" }, { value: 3, label: "March" },
-    { value: 4, label: "April" }, { value: 5, label: "May" }, { value: 6, label: "June" },
-    { value: 7, label: "July" }, { value: 8, label: "August" }, { value: 9, label: "September" },
-    { value: 10, label: "October" }, { value: 11, label: "November" }, { value: 12, label: "December" }
-];
-
-const currentYearNumeric = new Date().getFullYear();
-const yearsList = [currentYearNumeric - 1, currentYearNumeric, currentYearNumeric + 1];
-
 const PaymentsDashboard: React.FC = () => {
+    const { t } = useTranslation();
     const { currentUser } = useAuth();
+    
+    const monthsList = useMemo(() => [
+        { value: 1, label: t("payments.months.1") }, { value: 2, label: t("payments.months.2") }, { value: 3, label: t("payments.months.3") },
+        { value: 4, label: t("payments.months.4") }, { value: 5, label: t("payments.months.5") }, { value: 6, label: t("payments.months.6") },
+        { value: 7, label: t("payments.months.7") }, { value: 8, label: t("payments.months.8") }, { value: 9, label: t("payments.months.9") },
+        { value: 10, label: t("payments.months.10") }, { value: 11, label: t("payments.months.11") }, { value: 12, label: t("payments.months.12") }
+    ], [t]);
+
+    const yearsList = useMemo(() => {
+        const currentYearNumeric = new Date().getFullYear();
+        return [currentYearNumeric - 1, currentYearNumeric, currentYearNumeric + 1];
+    }, []);
     const [members, setMembers] = useState<Member[]>([]);
     const [payments, setPayments] = useState<PaymentDoc[]>([]);
     
@@ -150,11 +154,11 @@ const PaymentsDashboard: React.FC = () => {
         setProcessingId(member.uid);
         try {
             await markMemberFeePaid(member.uid, member.memberId, `${member.name} ${member.surname || ""}`.trim(), selectedMonth, selectedYear, currentUser.uid);
-            toast.success(`Fee collected from ${member.name}`);
+            toast.success(t("payments.dashboard.toasts.feeCollected", { name: member.name }));
             setMarkPaidConfirm(null);
         } catch (error) {
             console.error(error);
-            toast.error("Failed to mark fee as paid.");
+            toast.error(t("payments.dashboard.toasts.markFailed"));
         } finally {
             setProcessingId(null);
         }
@@ -164,11 +168,11 @@ const PaymentsDashboard: React.FC = () => {
         setProcessingId(member.uid);
         try {
             await removeMemberFeePaid(member.uid, selectedMonth, selectedYear);
-            toast.success(`Payment removed for ${member.name}`);
+            toast.success(t("payments.dashboard.toasts.paymentRemoved", { name: member.name }));
             setMarkUnpaidConfirm(null);
         } catch (error) {
             console.error(error);
-            toast.error("Failed to remove payment.");
+            toast.error(t("payments.dashboard.toasts.removeFailed"));
         } finally {
             setProcessingId(null);
         }
@@ -177,9 +181,9 @@ const PaymentsDashboard: React.FC = () => {
     return (
         <>
             {markPaidConfirm && typeof document !== "undefined" && createPortal(
-                <div className="fixed inset-0 z-[9999] overflow-hidden overscroll-none bg-black/30 backdrop-blur-md animate-fade-in">
-                    <div className="flex h-[100dvh] w-full items-center justify-center p-2 sm:p-4">
-                        <div className="relative w-[min(420px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain rounded-[1.5rem] sm:rounded-[2rem] bg-white p-4 sm:p-8 shadow-2xl border border-slate-200">
+                <div className="fixed inset-0 z-9999 overflow-hidden overscroll-none bg-black/30 backdrop-blur-md animate-fade-in">
+                    <div className="flex h-dvh w-full items-center justify-center p-2 sm:p-4">
+                        <div className="relative w-[min(420px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain rounded-3xl sm:rounded-4xl bg-white p-4 sm:p-8 shadow-2xl border border-slate-200">
                             <div className="absolute right-3 top-3 opacity-10 text-indigo-600">
                                 <CheckCircle size={64} className="sm:w-[84px] sm:h-[84px]" />
                             </div>
@@ -188,22 +192,25 @@ const PaymentsDashboard: React.FC = () => {
                                 <CheckCircle size={24} className="sm:w-7 sm:h-7" />
                             </div>
 
-                            <h2 className="text-xl sm:text-2xl font-black text-slate-900">Mark as Paid</h2>
+                            <h2 className="text-xl sm:text-2xl font-black text-slate-900">{t("payments.dashboard.modal.markTitle")}</h2>
                             <p className="mt-2 sm:mt-3 text-xs sm:text-sm font-semibold leading-relaxed text-slate-500">
-                                You are about to mark <span className="text-slate-900">{markPaidConfirm.name} {markPaidConfirm.surname || ""}</span> as paid for <span className="text-slate-900">{monthsList.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>.
+                                {t("payments.dashboard.modal.markDesc", { 
+                                    name: `${markPaidConfirm.name} ${markPaidConfirm.surname || ""}`,
+                                    period: `${monthsList.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
+                                })}
                             </p>
 
                             <div className="mt-4 sm:mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
                                 <div className="flex items-center justify-between gap-4 py-1 text-xs sm:text-sm">
-                                    <span className="font-semibold text-slate-500">Member:</span>
+                                    <span className="font-semibold text-slate-500">{t("payments.dashboard.modal.memberLabel")}</span>
                                     <span className="font-bold text-slate-900 text-right">{markPaidConfirm.name} {markPaidConfirm.surname || ""}</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-4 py-1 text-xs sm:text-sm">
-                                    <span className="font-semibold text-slate-500">Amount:</span>
+                                    <span className="font-semibold text-slate-500">{t("payments.dashboard.modal.amount")}:</span>
                                     <span className="font-black text-slate-900 text-base sm:text-lg">₹100</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-4 py-1 text-xs sm:text-sm">
-                                    <span className="font-semibold text-slate-500">Period:</span>
+                                    <span className="font-semibold text-slate-500">{t("payments.dashboard.modal.period")}:</span>
                                     <span className="font-bold text-slate-900 text-right">{monthsList.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>
                                 </div>
                             </div>
@@ -213,14 +220,14 @@ const PaymentsDashboard: React.FC = () => {
                                     onClick={() => setMarkPaidConfirm(null)}
                                     className="flex-1 rounded-2xl border border-slate-200 bg-white py-3 sm:py-3.5 font-bold text-slate-700 hover:bg-slate-50"
                                 >
-                                    Cancel
+                                    {t("payments.dashboard.actions.cancel")}
                                 </button>
                                 <button
                                     onClick={() => handleMarkPaid(markPaidConfirm)}
                                     disabled={processingId === markPaidConfirm.uid}
                                     className="flex-1 rounded-2xl bg-indigo-600 py-3 sm:py-3.5 font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50"
                                 >
-                                    {processingId === markPaidConfirm.uid ? "Processing..." : "Confirm Payment"}
+                                    {processingId === markPaidConfirm.uid ? t("payments.dashboard.actions.processing") : t("payments.dashboard.actions.confirm")}
                                 </button>
                             </div>
                         </div>
@@ -231,8 +238,8 @@ const PaymentsDashboard: React.FC = () => {
 
             {markUnpaidConfirm && typeof document !== "undefined" && createPortal(
                 <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm animate-fade-in">
-                    <div className="flex h-[100dvh] w-full items-center justify-center p-2 sm:p-4">
-                        <div className="relative w-[min(420px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain rounded-[1.5rem] sm:rounded-[2rem] bg-white p-4 sm:p-8 shadow-2xl border border-slate-200">
+                    <div className="flex h-dvh w-full items-center justify-center p-2 sm:p-4">
+                        <div className="relative w-[min(420px,calc(100vw-1rem))] max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain rounded-3xl sm:rounded-4xl bg-white p-4 sm:p-8 shadow-2xl border border-slate-200">
                             <div className="absolute right-3 top-3 opacity-10 text-indigo-600">
                                 <CheckCircle size={64} className="sm:w-[84px] sm:h-[84px]" />
                             </div>
@@ -241,22 +248,25 @@ const PaymentsDashboard: React.FC = () => {
                                 <CheckCircle size={24} className="sm:w-7 sm:h-7" />
                             </div>
 
-                            <h2 className="text-xl sm:text-2xl font-black text-slate-900">Undo Payment</h2>
+                            <h2 className="text-xl sm:text-2xl font-black text-slate-900">{t("payments.dashboard.modal.undoTitle")}</h2>
                             <p className="mt-2 sm:mt-3 text-xs sm:text-sm font-semibold leading-relaxed text-slate-500">
-                                You are about to remove payment for <span className="text-slate-900">{markUnpaidConfirm.name} {markUnpaidConfirm.surname || ""}</span> for <span className="text-slate-900">{monthsList.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>.
+                                {t("payments.dashboard.modal.undoDesc", {
+                                    name: `${markUnpaidConfirm.name} ${markUnpaidConfirm.surname || ""}`,
+                                    period: `${monthsList.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
+                                })}
                             </p>
 
                             <div className="mt-4 sm:mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
                                 <div className="flex items-center justify-between gap-4 py-1 text-xs sm:text-sm">
-                                    <span className="font-semibold text-slate-500">Member:</span>
+                                    <span className="font-semibold text-slate-500">{t("payments.dashboard.modal.memberLabel")}</span>
                                     <span className="font-bold text-slate-900 text-right">{markUnpaidConfirm.name} {markUnpaidConfirm.surname || ""}</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-4 py-1 text-xs sm:text-sm">
-                                    <span className="font-semibold text-slate-500">Amount:</span>
+                                    <span className="font-semibold text-slate-500">{t("payments.dashboard.modal.amount")}:</span>
                                     <span className="font-black text-slate-900 text-base sm:text-lg">₹100</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-4 py-1 text-xs sm:text-sm">
-                                    <span className="font-semibold text-slate-500">Period:</span>
+                                    <span className="font-semibold text-slate-500">{t("payments.dashboard.modal.period")}:</span>
                                     <span className="font-bold text-slate-900 text-right">{monthsList.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>
                                 </div>
                             </div>
@@ -266,14 +276,14 @@ const PaymentsDashboard: React.FC = () => {
                                     onClick={() => setMarkUnpaidConfirm(null)}
                                     className="flex-1 rounded-2xl border border-slate-200 bg-white py-3 sm:py-3.5 font-bold text-slate-700 hover:bg-slate-50"
                                 >
-                                    Cancel
+                                    {t("payments.dashboard.actions.cancel")}
                                 </button>
                                 <button
                                     onClick={() => handleMarkUnpaid(markUnpaidConfirm)}
                                     disabled={processingId === markUnpaidConfirm.uid}
                                     className="flex-1 rounded-2xl bg-indigo-600 py-3 sm:py-3.5 font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50"
                                 >
-                                    {processingId === markUnpaidConfirm.uid ? "Processing..." : "Undo Payment"}
+                                    {processingId === markUnpaidConfirm.uid ? t("payments.dashboard.actions.processing") : t("payments.dashboard.actions.undoPayment")}
                                 </button>
                             </div>
                         </div>
@@ -286,8 +296,8 @@ const PaymentsDashboard: React.FC = () => {
             <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex flex-col gap-2 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div className="pr-[190px] sm:pr-0">
-                        <h1 className="page-title mb-0 text-2xl sm:text-3xl">Payments Overview</h1>
-                        <p className="hidden sm:block text-slate-500 text-sm mt-2">Track monthly ₹100 member fees dynamically</p>
+                        <h1 className="page-title mb-0 text-2xl sm:text-3xl">{t("payments.dashboard.title")}</h1>
+                        <p className="hidden sm:block text-slate-500 text-sm mt-2">{t("payments.dashboard.subtitle")}</p>
                     </div>
 
                     <div className="w-full lg:w-auto lg:ml-auto flex flex-col lg:flex-row gap-2 lg:gap-3 lg:items-center">
@@ -321,7 +331,7 @@ const PaymentsDashboard: React.FC = () => {
                             className="self-center lg:self-auto h-10 px-5 rounded-xl border border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 font-semibold text-sm inline-flex items-center justify-center gap-2 whitespace-nowrap"
                         >
                             <History size={16} />
-                            Payment History
+                            {t("payments.dashboard.paymentHistory")}
                         </Link>
                     </div>
                 </div>
@@ -329,10 +339,10 @@ const PaymentsDashboard: React.FC = () => {
 
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
                 {[
-                    { label: "Total Members", value: totalMembers, color: "bg-indigo-600", icon: CreditCard },
-                    { label: "Collected Amount", value: `₹${totalCollected.toLocaleString()}`, color: "bg-emerald-500", icon: CheckCircle },
-                    { label: "Pending Members", value: pendingMembersCount, color: "bg-rose-500", icon: AlertCircle },
-                    { label: "Paid Members", value: paidMembersCount, color: "bg-teal-500", icon: TrendingUp },
+                    { label: t("payments.dashboard.stats.totalMembers"), value: totalMembers, color: "bg-indigo-600", icon: CreditCard },
+                    { label: t("payments.dashboard.stats.collectedAmount"), value: `₹${totalCollected.toLocaleString()}`, color: "bg-emerald-500", icon: CheckCircle },
+                    { label: t("payments.dashboard.stats.pendingMembers"), value: pendingMembersCount, color: "bg-rose-500", icon: AlertCircle },
+                    { label: t("payments.dashboard.stats.paidMembers"), value: paidMembersCount, color: "bg-teal-500", icon: TrendingUp },
                 ].map((s) => (
                     <div key={s.label} className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3 sm:gap-4">
                         <div className={`w-11 h-11 ${s.color} rounded-2xl flex items-center justify-center shrink-0 shadow-sm`}>
@@ -353,7 +363,7 @@ const PaymentsDashboard: React.FC = () => {
                         onClick={() => setFilter(f)}
                         className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-colors border ${filter === f ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"}`}
                     >
-                        {f}
+                        {t(`payments.dashboard.filters.${f}`)}
                     </button>
                 ))}
             </div>
@@ -378,11 +388,11 @@ const PaymentsDashboard: React.FC = () => {
                     ))
                 ) : filtered.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center text-slate-400 shadow-sm">
-                        No members found
+                        {t("payments.dashboard.noMembers")}
                     </div>
                 ) : (
                     filtered.map((m) => (
-                        <div key={m.uid} className={`rounded-2xl lg:rounded-3xl border bg-white p-4 sm:p-5 lg:p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-[1px] ${m.computedStatus !== "paid" ? "border-rose-200" : "border-slate-200"}`}>
+                        <div key={m.uid} className={`rounded-2xl lg:rounded-3xl border bg-white p-4 sm:p-5 lg:p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-px ${m.computedStatus !== "paid" ? "border-rose-200" : "border-slate-200"}`}>
                             {/* Mobile/Tablet Layout */}
                             <div className="lg:hidden flex flex-col gap-4">
                                 {/* Row 1: Member Info + Status Badge */}
@@ -392,18 +402,18 @@ const PaymentsDashboard: React.FC = () => {
                                         <p className="mt-1 inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-mono text-slate-500 truncate">{m.memberId || "N/A"}</p>
                                     </div>
                                     <span className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-extrabold tracking-wide ${m.computedStatus === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
-                                        {m.computedStatus === "paid" ? "Paid" : "Pending"}
+                                        {m.computedStatus === "paid" ? t("payments.dashboard.status.paid") : t("payments.dashboard.status.pending")}
                                     </span>
                                 </div>
 
                                 {/* Row 2: Fee and Period Blocks */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Monthly Fee</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.dashboard.monthlyFee")}</p>
                                         <p className="mt-1 text-sm font-bold text-slate-900">₹100</p>
                                     </div>
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Period</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.dashboard.period")}</p>
                                         <p className="mt-1 text-sm font-bold text-slate-900">{monthsList.find((item) => item.value === selectedMonth)?.label} {selectedYear}</p>
                                     </div>
                                 </div>
@@ -415,15 +425,15 @@ const PaymentsDashboard: React.FC = () => {
                                         disabled={processingId === m.uid}
                                         className="h-11 w-full rounded-xl bg-indigo-600 text-white font-bold text-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
                                     >
-                                        {processingId === m.uid ? "Processing..." : "Mark Paid"}
+                                        {processingId === m.uid ? t("payments.dashboard.actions.processing") : t("payments.dashboard.actions.markPaid")}
                                     </button>
                                 ) : (
                                     <button
-                                            onClick={() => setMarkUnpaidConfirm(m)}
+                                        onClick={() => setMarkUnpaidConfirm(m)}
                                         disabled={processingId === m.uid}
                                         className="h-11 w-full rounded-xl bg-white text-slate-900 font-bold text-sm transition-colors hover:bg-slate-50 border border-slate-200 disabled:opacity-50"
                                     >
-                                        {processingId === m.uid ? "..." : "Undo Payment"}
+                                        {processingId === m.uid ? t("common.processingShort") : t("payments.dashboard.actions.undoPayment")}
                                     </button>
                                 )}
                             </div>
@@ -439,11 +449,11 @@ const PaymentsDashboard: React.FC = () => {
                                 {/* Column 2: Fee and Period */}
                                 <div className="grid grid-cols-2 gap-3 lg:px-6 lg:border-r lg:border-slate-200">
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Monthly Fee</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.dashboard.monthlyFee")}</p>
                                         <p className="mt-1 text-sm font-bold text-slate-900">₹100</p>
                                     </div>
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Period</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.dashboard.period")}</p>
                                         <p className="mt-1 text-sm font-bold text-slate-900">{monthsList.find((item) => item.value === selectedMonth)?.label} {selectedYear}</p>
                                     </div>
                                 </div>
@@ -451,7 +461,7 @@ const PaymentsDashboard: React.FC = () => {
                                 {/* Column 3: Status + Action */}
                                 <div className="lg:min-w-[240px] lg:pl-6 flex flex-col items-stretch lg:items-center lg:justify-center gap-2 min-w-0">
                                     <span className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-extrabold tracking-wide ${m.computedStatus === "paid" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
-                                        {m.computedStatus === "paid" ? "Paid" : "Pending"}
+                                        {m.computedStatus === "paid" ? t("payments.dashboard.status.paid") : t("payments.dashboard.status.pending")}
                                     </span>
                                     {m.computedStatus !== "paid" ? (
                                         <button
@@ -459,7 +469,7 @@ const PaymentsDashboard: React.FC = () => {
                                             disabled={processingId === m.uid}
                                             className="h-10 lg:h-11 w-full lg:w-[160px] rounded-xl bg-indigo-600 text-white font-bold text-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
                                         >
-                                            {processingId === m.uid ? "Processing..." : "Mark Paid"}
+                                            {processingId === m.uid ? t("payments.dashboard.actions.processing") : t("payments.dashboard.actions.markPaid")}
                                         </button>
                                     ) : (
                                         <button
@@ -467,7 +477,7 @@ const PaymentsDashboard: React.FC = () => {
                                             disabled={processingId === m.uid}
                                             className="h-10 lg:h-11 w-full lg:w-[160px] rounded-xl bg-white text-slate-900 font-bold text-sm transition-colors hover:bg-slate-50 border border-slate-200 disabled:opacity-50"
                                         >
-                                            {processingId === m.uid ? "..." : "Undo Payment"}
+                                            {processingId === m.uid ? t("common.processingShort") : t("payments.dashboard.actions.undoPayment")}
                                         </button>
                                     )}
                                 </div>

@@ -2,20 +2,23 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { assets } from "../../assets/assets";
-
-const navLinks = [
-  { to: "/", label: "Home" },
-  { to: "/about", label: "About" },
-  { to: "/services", label: "Services" },
-  { to: "/presidents", label: "Presidents" },
-  { to: "/contact", label: "Contact" },
-];
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const Navbar: React.FC = () => {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
+
+  const navLinks = [
+    { to: "/", label: t("nav.home") },
+    { to: "/about", label: t("nav.about") },
+    { to: "/services", label: t("nav.services") },
+    { to: "/presidents", label: t("nav.presidents") },
+    { to: "/contact", label: t("nav.contact") },
+  ];
 
   useEffect(() => {
     const handleScroll = (): void => setScrolled(window.scrollY > 30);
@@ -98,18 +101,20 @@ const Navbar: React.FC = () => {
 
         {/* RIGHT SECTION */}
         <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher variant="light" />
+
           <Link
             to="/login"
             className="relative inline-flex items-center justify-center px-5 sm:px-6 py-2 text-sm font-semibold text-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-[0_0_20px_rgba(99,102,241,0.25)] hover:-translate-y-0.5 active:translate-y-0"
             style={{ background: "var(--gradient-primary)" }}
           >
-            <span className="relative z-10">Login</span>
+            <span className="relative z-10">{t("nav.login")}</span>
           </Link>
 
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="md:hidden p-2 text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-all duration-200"
-            aria-label="Toggle menu"
+            aria-label={t("common.toggleMenu")}
           >
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>

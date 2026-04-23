@@ -3,6 +3,7 @@ import { Calendar, Award, Users, TrendingUp, ChevronDown } from "lucide-react";
 import { presidents } from "../assets/assets";
 import Navbar from "../components/shared/Navbar";
 import Footer from "../components/shared/Footer";
+import { useTranslation } from "react-i18next";
 
 const ERA_COLORS = [
   { bg: "from-amber-400 to-orange-500", light: "bg-amber-50", border: "border-amber-200", text: "text-amber-600", dot: "bg-amber-500", badge: "bg-amber-100 text-amber-700" },
@@ -11,19 +12,21 @@ const ERA_COLORS = [
   { bg: "from-emerald-400 to-teal-600", light: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-600", dot: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-700" },
 ];
 
-const DESCRIPTIONS = [
-  "Led BCTA through its founding years, establishing the foundation for a strong community of mobile repair technicians. Pioneered the first member registration system and organized initial training workshops.",
-  "Expanded BCTA's reach across Bhimavaram, introducing quality standards and professional ethics. Launched the first annual technical conference and strengthened member collaboration.",
-  "Modernized BCTA operations with digital tools and online platforms. Implemented the QR-based attendance system and enhanced member communication channels for better connectivity.",
-  "Currently leading BCTA towards innovation and excellence. Focusing on skill development programs, industry partnerships, and leveraging technology to empower all members.",
-];
-
-const MEMBERS = ["50+ Members", "120+ Members", "200+ Members", "260+ Members"];
-const ERAS = ["Foundation Era", "Growth Phase", "Digital Transform", "Innovation Era"];
 const STAT_COLORS = ["bg-amber-400", "bg-violet-400", "bg-emerald-400"];
 
 const PresidentsPage: React.FC = () => {
+  const { t } = useTranslation();
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const DESCRIPTIONS = [
+    t("presidents.desc1"),
+    t("presidents.desc2"),
+    t("presidents.desc3"),
+    t("presidents.desc4"),
+  ];
+
+  const MEMBERS = [t("presidents.members1"), t("presidents.members2"), t("presidents.members3"), t("presidents.members4")];
+  const ERAS = [t("presidents.foundationEra"), t("presidents.growthPhase"), t("presidents.digitalTransform"), t("presidents.innovationEra")];
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -41,12 +44,12 @@ const PresidentsPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-slate-50 to-indigo-100 font-sans scrollbar-hide">
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100 font-sans scrollbar-hide">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-        .font-display { font-family: 'Playfair Display', serif; }
-        .font-body { font-family: 'DM Sans', sans-serif; }
+        .font-display { font-family: 'Playfair Display', var(--app-font); }
+        .font-body { font-family: 'DM Sans', var(--app-font); }
 
         .observe-card {
           opacity: 1;
@@ -108,21 +111,21 @@ const PresidentsPage: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-16">
             <div className="flex-1">
               <h1 className="font-display text-[clamp(3rem,8vw,7rem)] font-black leading-[0.92] text-slate-900 mb-8">
-                <div className="hero-line"><span>The</span></div>
-                <div className="hero-line"><span className="text-blue-900">Presidents</span></div>
-                <div className="hero-line"><span>of BCTA</span></div>
+                <div className="hero-line"><span>{t("presidents.the")}</span></div>
+                <div className="hero-line"><span className="text-blue-900">{t("presidents.presidentsTitle")}</span></div>
+                <div className="hero-line"><span>{t("presidents.ofBCTA")}</span></div>
               </h1>
               <p className="font-body text-slate-500 text-base sm:text-lg max-w-md leading-relaxed">
-                Four leaders. One vision. The dedicated presidents who have shaped BCTA into a thriving community of mobile repair professionals since its founding.
+                {t("presidents.subtitle")}
               </p>
             </div>
 
             {/* Stats — centered on mobile, column on desktop */}
             <div className="flex flex-row justify-center lg:flex-col gap-4 lg:gap-3 lg:pb-4 lg:min-w-[200px]">
               {[
-                { value: "6+",   label: "Years Active" },
-                { value: "4",    label: "Presidents"   },
-                { value: "260+", label: "Members"      },
+                { value: "6+",   label: t("presidents.yearsActive") },
+                { value: "4",    label: t("presidents.presidentsLabel") },
+                { value: "260+", label: t("presidents.membersLabel") },
               ].map((s, i) => (
                 <div key={i} className="flex-1 lg:flex-none bg-white rounded-2xl px-4 py-3 lg:px-5 lg:py-4 border border-slate-200 shadow-sm stat-card">
                   <div className="font-display text-xl lg:text-2xl font-black text-slate-900 leading-none">{s.value}</div>
@@ -152,16 +155,16 @@ const PresidentsPage: React.FC = () => {
                 {isLast && (
                   <div className="absolute top-2 right-2 z-20 flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow uppercase tracking-wider">
                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                    Current
+                    {t("presidents.current")}
                   </div>
                 )}
-                <div className="image-zoom w-full aspect-[3/4] overflow-hidden">
+                <div className="image-zoom w-full aspect-3/4 overflow-hidden">
                   <img
                     src={president.image}
                     alt={president.name}
                     className="w-full h-full object-cover object-top"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
                 </div>
                 {/* Name + meta overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-3">
@@ -199,7 +202,7 @@ const PresidentsPage: React.FC = () => {
                     {isLast && (
                       <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-emerald-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wider">
                         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        Current
+                        {t("presidents.current")}
                       </div>
                     )}
                     <div className="image-zoom w-full h-full min-h-[280px] overflow-hidden">
@@ -208,7 +211,7 @@ const PresidentsPage: React.FC = () => {
                         alt={president.name}
                         className="w-full h-full object-cover object-top"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent" />
                     </div>
                   </div>
 
@@ -221,23 +224,23 @@ const PresidentsPage: React.FC = () => {
                         </span>
                         <span className="flex items-center gap-1.5 text-slate-400 text-sm font-medium">
                           <Calendar size={13} />
-                          {president.year}
+                          {president.year.includes("Present") ? president.year.replace("Present", t("presidents.present")) : president.year}
                         </span>
                       </div>
 
                       <h2 className="font-display text-4xl font-black text-slate-900 leading-tight mb-1">
-                        {president.name}
+                        {t(`presidents.name${originalIndex + 1}`)}
                       </h2>
-                      <p className={`text-sm font-semibold ${color.text} mb-5`}>President, BCTA</p>
+                      <p className={`text-sm font-semibold ${color.text} mb-5`}>{t("presidents.presidentBCTA")}</p>
                       <p className="text-slate-500 text-base leading-relaxed">
-                        {DESCRIPTIONS[index]}
+                        {DESCRIPTIONS[originalIndex]}
                       </p>
                     </div>
 
                     <div className={`flex mt-6 pt-5 border-t ${color.border} flex-wrap items-center gap-3`}>
                       <div className={`flex items-center gap-2 ${color.light} rounded-xl px-4 py-2`}>
                         <Users size={14} className={color.text} />
-                        <span className={`text-xs font-black ${color.text}`}>{MEMBERS[index]}</span>
+                        <span className={`text-xs font-black ${color.text}`}>{MEMBERS[originalIndex]}</span>
                       </div>
                       <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-2">
                         <TrendingUp size={14} className="text-slate-500" />
@@ -246,7 +249,7 @@ const PresidentsPage: React.FC = () => {
                       {isLast && (
                         <div className="ml-auto flex items-center gap-1.5 text-emerald-600 text-xs font-black">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          In office
+                          {t("presidents.inOffice")}
                         </div>
                       )}
                     </div>
@@ -263,9 +266,9 @@ const PresidentsPage: React.FC = () => {
       <section className="hidden sm:block py-16 sm:py-24 px-4 font-body overflow-hidden relative">
         <div className="max-w-4xl mx-auto relative">
           <div className="text-center mb-14">
-            <span className="text-xs font-black uppercase tracking-widest text-indigo-500">History</span>
+            <span className="text-xs font-black uppercase tracking-widest text-indigo-500">{t("presidents.history")}</span>
             <h2 className="font-display text-4xl sm:text-5xl font-black text-slate-900 mt-3">
-              Leadership Timeline
+              {t("presidents.leadershipTimeline")}
             </h2>
           </div>
 
@@ -291,7 +294,7 @@ const PresidentsPage: React.FC = () => {
                     </div>
 
                     {/* Center dot */}
-                    <div className={`absolute left-1/2 -translate-x-1/2 z-10 timeline-dot w-4 h-4 rounded-full bg-gradient-to-br ${color.bg} border-4 border-white shadow-lg`} />
+                    <div className={`absolute left-1/2 -translate-x-1/2 z-10 timeline-dot w-4 h-4 rounded-full bg-linear-to-br ${color.bg} border-4 border-white shadow-lg`} />
 
                     {/* Image */}
                     <div className="flex-1 flex items-center justify-center">

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Users,
   CalendarDays,
@@ -118,6 +119,7 @@ interface DashboardStats {
 }
 
 const AdminDashboard: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [stats, setStats] = useState<DashboardStats>({
     totalMembers: 0,
     activeMembers: 0,
@@ -240,8 +242,8 @@ const AdminDashboard: React.FC = () => {
 
   const pieData = useMemo(
     () => [
-      { name: "Active", value: stats.activeMembers, color: "#10b981" },
-      { name: "Blocked", value: stats.blockedMembers, color: "#f43f5e" },
+      { name: t("common.active"), value: stats.activeMembers, color: "#10b981" },
+      { name: t("common.blocked"), value: stats.blockedMembers, color: "#f43f5e" },
     ],
     [stats.activeMembers, stats.blockedMembers],
   );
@@ -250,7 +252,7 @@ const AdminDashboard: React.FC = () => {
     () => [
       {
         icon: Users,
-        label: "Total Members",
+        label: t("adminDashboard.totalMembers"),
         value: stats.totalMembers,
         gradient: "var(--gradient-accent)",
         iconColor: "text-indigo-600",
@@ -258,7 +260,7 @@ const AdminDashboard: React.FC = () => {
       },
       {
         icon: UserCheck,
-        label: "Active Members",
+        label: t("adminDashboard.activeMembers"),
         value: stats.activeMembers,
         gradient: "var(--gradient-success)",
         iconColor: "text-emerald-600",
@@ -266,7 +268,7 @@ const AdminDashboard: React.FC = () => {
       },
       {
         icon: UserX,
-        label: "Blocked Members",
+        label: t("adminDashboard.blockedMembers"),
         value: stats.blockedMembers,
         gradient: "linear-gradient(135deg, #f43f5e, #fb7185)",
         iconColor: "text-rose-600",
@@ -274,7 +276,7 @@ const AdminDashboard: React.FC = () => {
       },
       {
         icon: CalendarDays,
-        label: "Meetings Held",
+        label: t("adminDashboard.meetingsHeld"),
         value: stats.totalMeetings,
         gradient: "linear-gradient(135deg, #8b5cf6, #a78bfa)",
         iconColor: "text-violet-600",
@@ -282,7 +284,7 @@ const AdminDashboard: React.FC = () => {
       },
       {
         icon: CreditCard,
-        label: "Pending Payments",
+        label: t("adminDashboard.pendingPayments"),
         value: stats.pendingPayments,
         gradient: "var(--gradient-warm)",
         iconColor: "text-amber-600",
@@ -290,24 +292,24 @@ const AdminDashboard: React.FC = () => {
       },
       {
         icon: MessageSquareWarning,
-        label: "Open Complaints",
+        label: t("adminDashboard.openComplaints"),
         value: stats.openComplaints,
         gradient: "linear-gradient(135deg, #ec4899, #f472b6)",
         iconColor: "text-pink-600",
         iconBg: "bg-pink-50",
       },
     ],
-    [stats],
+    [stats, t],
   );
 
   return (
     <div className="space-y-8 animate-fade-in pb-8">
       <div className="mb-2">
         <h1 className="text-lg sm:text-2xl font-black text-slate-900">
-          Welcome, Admin 👋
+          {t("adminDashboard.welcomeAdmin")}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 font-medium">
-          Manage your dashboard efficiently
+          {t("adminDashboard.manageEfficiently")}
         </p>
       </div>
       {/* Deadline Alert */}
@@ -318,26 +320,26 @@ const AdminDashboard: React.FC = () => {
         {/* Left Content */}
         <div>
           <p className="font-semibold text-base sm:text-3xl">
-            Monthly Deadline
+            {t("adminDashboard.monthlyDeadline")}
           </p>
 
           <p className="text-xs sm:text-sm">
-            Due by{" "}
-            {deadline.date.toLocaleDateString("en-IN", {
+            {t("adminDashboard.dueBy")}{" "}
+            {deadline.date.toLocaleDateString(i18n.language === 'te' ? 'te-IN' : 'en-IN', {
               day: "numeric",
               month: "short",
             })}
           </p>
 
           <div className="text-xs sm:text-sm font-medium mt-1">
-            Amount: <span className="text-blue-700 font-bold">₹100/-</span>
+            {t("adminDashboard.amount")}: <span className="text-blue-700 font-bold">₹100/-</span>
           </div>
         </div>
 
         {/* Right Content (always right) */}
         <div className="text-right">
           <p className="text-lg sm:text-2xl font-bold whitespace-nowrap">
-            {deadline.daysLeft} days left
+            {t("adminDashboard.daysLeft", { count: deadline.daysLeft })}
           </p>
         </div>
       </div>
@@ -354,10 +356,10 @@ const AdminDashboard: React.FC = () => {
         >
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-100">
             <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-              Recent Attendance
+              {t("adminDashboard.recentAttendance")}
             </h2>
             <span className="text-[9px] sm:text-[10px] font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2.5 py-1.5 rounded-lg">
-              Current Trends
+              {t("adminDashboard.currentTrends")}
             </span>
           </div>
           <div className="p-3 sm:p-6">
@@ -438,7 +440,7 @@ const AdminDashboard: React.FC = () => {
             ) : (
               <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-sm">
                 <span className="text-4xl mb-3 opacity-20">📊</span>
-                <p className="font-medium">No data available</p>
+                <p className="font-medium">{t("common.noData")}</p>
               </div>
             )}
           </div>
@@ -450,10 +452,10 @@ const AdminDashboard: React.FC = () => {
         >
           <div className="p-4 sm:p-6 border-b border-slate-100">
             <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-              Member Split
+              {t("adminDashboard.memberSplit")}
             </h2>
             <p className="text-[11px] text-slate-400 mt-0.5 font-medium">
-              Verification status
+              {t("adminDashboard.verificationStatus")}
             </p>
           </div>
           <div className="p-4 sm:p-6 flex-1 flex flex-col justify-center">
@@ -515,17 +517,17 @@ const AdminDashboard: React.FC = () => {
         <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-100">
           <div>
             <h2 className="text-base font-bold text-slate-900 tracking-tight">
-              Recent Registrations
+              {t("adminDashboard.recentRegistrations")}
             </h2>
             <p className="text-sm font-medium text-slate-400 mt-0.5">
-              The latest members added to the platform
+              {t("adminDashboard.latestMembers")}
             </p>
           </div>
           <Link
             to="/admin/members"
             className="flex items-center gap-1 text-indigo-600 text-sm font-bold hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
           >
-            View all &rarr;
+            {t("adminDashboard.viewAll")}
           </Link>
         </div>
         <div className="overflow-x-hidden text-sm scrollbar-hide">
@@ -537,11 +539,11 @@ const AdminDashboard: React.FC = () => {
             <table className="w-full block sm:table">
               <thead className="hidden sm:table-header-group">
                 <tr>
-                  <th className="table-header text-left pl-6 sm:pl-8">ID</th>
-                  <th className="table-header text-left">Name</th>
-                  <th className="table-header text-left">Status</th>
+                  <th className="table-header text-left pl-6 sm:pl-8">{t("adminDashboard.thId")}</th>
+                  <th className="table-header text-left">{t("adminDashboard.thName")}</th>
+                  <th className="table-header text-left">{t("adminDashboard.thStatus")}</th>
                   <th className="table-header text-right pr-6 sm:pr-8">
-                    Payment
+                    {t("adminDashboard.thPayment")}
                   </th>
                 </tr>
               </thead>
@@ -554,10 +556,10 @@ const AdminDashboard: React.FC = () => {
                     <td className="block sm:table-cell pb-1 sm:pb-0 pl-0 sm:pl-8 font-mono text-xs text-indigo-600 font-bold">
                       <div className="flex justify-between sm:block items-center">
                         <span className="sm:hidden text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                          Member ID
+                          {t("adminDashboard.memberId")}
                         </span>
                         {m.memberId || (
-                          <span className="text-slate-300">Pending</span>
+                          <span className="text-slate-300">{t("common.pending")}</span>
                         )}
                       </div>
                     </td>
@@ -567,7 +569,7 @@ const AdminDashboard: React.FC = () => {
                     <td className="block sm:table-cell py-1 sm:py-4">
                       <div className="flex justify-between sm:block items-center">
                         <span className="sm:hidden text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                          Status
+                          {t("adminDashboard.thStatus")}
                         </span>
                         <span
                           className={`inline-flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-md ${m.status === "active" ? "text-emerald-600 bg-emerald-50" : m.status === "pending" ? "text-amber-600 bg-amber-50" : "text-rose-600 bg-rose-50"}`}
@@ -575,19 +577,19 @@ const AdminDashboard: React.FC = () => {
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${m.status === "active" ? "bg-emerald-500" : m.status === "pending" ? "bg-amber-500" : "bg-rose-500"}`}
                           />
-                          {m.status}
+                          {t(`common.${m.status}`)}
                         </span>
                       </div>
                     </td>
                     <td className="block sm:table-cell py-1 sm:py-4 pr-0 sm:pr-8 text-left sm:text-right mt-2 sm:mt-0 pt-3 sm:pt-4 border-t border-slate-100 sm:border-0 border-dashed">
                       <div className="flex justify-between sm:block items-center">
                         <span className="sm:hidden text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                          Payment
+                          {t("adminDashboard.thPayment")}
                         </span>
                         <span
                           className={`text-xs font-bold px-2 py-0.5 rounded-md ${m.paymentStatus === "paid" ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50"}`}
                         >
-                          {m.paymentStatus}
+                          {t(`common.${m.paymentStatus}`)}
                         </span>
                       </div>
                     </td>

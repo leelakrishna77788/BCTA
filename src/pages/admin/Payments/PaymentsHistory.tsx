@@ -4,6 +4,7 @@ import { collection, onSnapshot, query, where, Timestamp } from "firebase/firest
 import { Link } from "react-router-dom";
 import { ArrowLeft, CalendarDays, ReceiptText, Search } from "lucide-react";
 import { db } from "../../../firebase/firebaseConfig";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 
 interface MemberDoc {
@@ -26,18 +27,6 @@ interface PaymentHistoryDoc {
   createdAt?: Timestamp | Date;
 }
 
-const monthsList = [
-  { value: 1, label: "January" }, { value: 2, label: "February" }, { value: 3, label: "March" },
-  { value: 4, label: "April" }, { value: 5, label: "May" }, { value: 6, label: "June" },
-  { value: 7, label: "July" }, { value: 8, label: "August" }, { value: 9, label: "September" },
-  { value: 10, label: "October" }, { value: 11, label: "November" }, { value: 12, label: "December" }
-];
-
-const monthLabel = (month?: number) => {
-  if (!month || month < 1 || month > 12) return "-";
-  return new Date(2026, month - 1, 1).toLocaleString("en-US", { month: "long" });
-};
-
 const toDate = (value?: Timestamp | Date) => {
   if (!value) return null;
   if (value instanceof Date) return value;
@@ -47,8 +36,22 @@ const toDate = (value?: Timestamp | Date) => {
 
 const currentYear = new Date().getFullYear();
 const historyStartYear = 2025;
-
+ 
 const PaymentsHistory: React.FC = () => {
+  const { t } = useTranslation();
+  
+  const monthsList = useMemo(() => [
+    { value: 1, label: t("payments.months.1") }, { value: 2, label: t("payments.months.2") }, { value: 3, label: t("payments.months.3") },
+    { value: 4, label: t("payments.months.4") }, { value: 5, label: t("payments.months.5") }, { value: 6, label: t("payments.months.6") },
+    { value: 7, label: t("payments.months.7") }, { value: 8, label: t("payments.months.8") }, { value: 9, label: t("payments.months.9") },
+    { value: 10, label: t("payments.months.10") }, { value: 11, label: t("payments.months.11") }, { value: 12, label: t("payments.months.12") }
+  ], [t]);
+
+  const monthLabel = (month?: number) => {
+    if (!month || month < 1 || month > 12) return "-";
+    return t(`payments.months.${month}`);
+  };
+
   const [rows, setRows] = useState<PaymentHistoryDoc[]>([]);
   const [membersByUid, setMembersByUid] = useState<Record<string, MemberDoc>>({});
   const [loading, setLoading] = useState(true);
@@ -96,7 +99,7 @@ const PaymentsHistory: React.FC = () => {
       },
       (err) => {
         console.error("Payments history fetch error:", err);
-        toast.error("Failed to load payments history");
+        toast.error(t("payments.history.toasts.loadFailed"));
         setRows([]);
         setLoading(false);
       }
@@ -149,15 +152,15 @@ const PaymentsHistory: React.FC = () => {
       <div className="relative rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="pt-10 sm:pt-0">
-            <h1 className="page-title mb-0 text-2xl sm:text-3xl">Payments History</h1>
-            <p className="text-slate-500 text-sm mt-2">View complete monthly fee records for all members</p>
+            <h1 className="page-title mb-0 text-2xl sm:text-3xl">{t("payments.history.title")}</h1>
+            <p className="text-slate-500 text-sm mt-2">{t("payments.history.subtitle")}</p>
           </div>
           <Link
             to="/admin/payments"
             className="absolute top-4 left-4 sm:static h-10 px-4 rounded-xl border border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 font-semibold text-sm inline-flex items-center justify-center gap-2"
           >
             <ArrowLeft size={16} />
-            Back to Payments
+            {t("payments.history.backToPayments")}
           </Link>
         </div>
       </div>
@@ -169,20 +172,20 @@ const PaymentsHistory: React.FC = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, member ID, UID, period..."
+              placeholder={t("payments.history.searchPlaceholder")}
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm text-slate-700 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           <div className="grid w-full grid-cols-2 gap-2 lg:max-w-[420px]">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2">
-              <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Month</label>
+              <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">{t("payments.history.table.month")}</label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="all">All Months</option>
+                <option value="all">{t("payments.history.allMonths")}</option>
                 {monthsList.map((month) => (
                   <option key={month.value} value={String(month.value)}>{month.label}</option>
                 ))}
@@ -190,13 +193,13 @@ const PaymentsHistory: React.FC = () => {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2">
-              <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Year</label>
+              <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">{t("payments.history.table.year")}</label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="all">All Years</option>
+                <option value="all">{t("payments.history.allYears")}</option>
                 {yearOptions.map((year) => (
                   <option key={year} value={String(year)}>{year}</option>
                 ))}
@@ -221,7 +224,7 @@ const PaymentsHistory: React.FC = () => {
           ))
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center text-slate-400 shadow-sm">
-            No payment history found
+            {t("payments.history.noHistory")}
           </div>
         ) : (
           filtered.map((row) => {
@@ -241,25 +244,25 @@ const PaymentsHistory: React.FC = () => {
                     </p>
                   </div>
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-                    <ReceiptText size={12} /> Paid
+                    <ReceiptText size={12} /> {t("payments.dashboard.status.paid")}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Amount</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.history.table.amount")}</p>
                     <p className="mt-1 text-sm font-bold text-slate-900">₹{Number(row.amount || 0).toLocaleString()}</p>
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Month</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.history.table.month")}</p>
                     <p className="mt-1 text-sm font-bold text-slate-900">{monthLabel(row.month)}</p>
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Year</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.history.table.year")}</p>
                     <p className="mt-1 text-sm font-bold text-slate-900">{row.year || "-"}</p>
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Paid On</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.history.table.collectedAt")}</p>
                     <p className="mt-1 text-sm font-bold text-slate-900 inline-flex items-center gap-1">
                       <CalendarDays size={13} />
                       {paidDate ? paidDate.toLocaleDateString("en-IN") : "-"}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Phone, MapPin, Siren, Heart, ShieldCheck } from "lucide-react";
 
 interface LocationData {
@@ -6,24 +7,25 @@ interface LocationData {
     lng: number;
 }
 
-const EMERGENCY_CONTACTS = [
-    { label: "Police", number: "100", gradient: "linear-gradient(135deg, #1e1b4b, #4338ca)", icon: ShieldCheck, emoji: "🚓" },
-    { label: "Ambulance", number: "108", gradient: "linear-gradient(135deg, #dc2626, #ef4444)", icon: Heart, emoji: "🚑" },
-    { label: "Fire", number: "101", gradient: "linear-gradient(135deg, #ea580c, #f97316)", icon: Siren, emoji: "🚒" },
-    { label: "Women Helpline", number: "1091", gradient: "linear-gradient(135deg, #db2777, #f472b6)", icon: Phone, emoji: "👩" },
-    { label: "Disaster", number: "1078", gradient: "linear-gradient(135deg, #d97706, #fbbf24)", icon: Siren, emoji: "⚠️" },
-];
-
-const HOSPITAL_DATA = [
-    { name: "Government Hospital Bhimavaram", type: "Government", phone: "08816-223456", distance: "0.5 km" },
-    { name: "Sri Ramana Hospital", type: "Private", phone: "08816-234567", distance: "1.2 km" },
-    { name: "Care Hospital", type: "Multi-Specialty", phone: "08816-245678", distance: "2.0 km" },
-    { name: "Bhimavaram Hospital & Research Center", type: "Private", phone: "08816-256789", distance: "2.8 km" },
-];
-
 const Emergency: React.FC = () => {
+    const { t } = useTranslation();
     const [location, setLocation] = useState<LocationData | null>(null);
     const [locationError, setLocationError] = useState<string | null>(null);
+
+    const EMERGENCY_CONTACTS = [
+        { label: t("emergency.police"), number: "100", gradient: "linear-gradient(135deg, #1e1b4b, #4338ca)", icon: ShieldCheck, emoji: "🚓" },
+        { label: t("emergency.ambulance"), number: "108", gradient: "linear-gradient(135deg, #dc2626, #ef4444)", icon: Heart, emoji: "🚑" },
+        { label: t("emergency.fire"), number: "101", gradient: "linear-gradient(135deg, #ea580c, #f97316)", icon: Siren, emoji: "🚒" },
+        { label: t("emergency.womenHelpline"), number: "1091", gradient: "linear-gradient(135deg, #db2777, #f472b6)", icon: Phone, emoji: "👩" },
+        { label: t("emergency.disaster"), number: "1078", gradient: "linear-gradient(135deg, #d97706, #fbbf24)", icon: Siren, emoji: "⚠️" },
+    ];
+
+    const HOSPITAL_DATA = [
+        { name: "Government Hospital Bhimavaram", type: "Government", phone: "08816-223456", distance: "0.5 km" },
+        { name: "Sri Ramana Hospital", type: "Private", phone: "08816-234567", distance: "1.2 km" },
+        { name: "Care Hospital", type: "Multi-Specialty", phone: "08816-245678", distance: "2.0 km" },
+        { name: "Bhimavaram Hospital & Research Center", type: "Private", phone: "08816-256789", distance: "2.8 km" },
+    ];
 
     useEffect(() => {
         if (navigator.geolocation) {
@@ -44,8 +46,8 @@ const Emergency: React.FC = () => {
     return (
         <div className="space-y-5 animate-fade-in">
             <div>
-                <h1 className="page-title mb-0">Emergency Services</h1>
-                <p className="text-slate-500 text-sm font-medium">Quick access to emergency contacts and nearby help</p>
+                <h1 className="page-title mb-0">{t("emergency.title")}</h1>
+                <p className="text-slate-500 text-sm font-medium">{t("emergency.subtitle")}</p>
             </div>
 
             {/* Location banner */}
@@ -53,16 +55,16 @@ const Emergency: React.FC = () => {
                 <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-200/60">
                     <MapPin size={16} className="text-emerald-600" />
                     <p className="text-sm text-emerald-700 font-medium">
-                        Location detected: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                        {t("emergency.locationDetected")}: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
                     </p>
                 </div>
             ) : locationError ? (
                 <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/60">
-                    <p className="text-xs text-amber-700 font-medium">{locationError} — showing Bhimavaram area results</p>
+                    <p className="text-xs text-amber-700 font-medium">{locationError} — {t("emergency.showingBhimavaram")}</p>
                 </div>
             ) : (
                 <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200/60">
-                    <p className="text-xs text-indigo-700 font-medium">Detecting your location...</p>
+                    <p className="text-xs text-indigo-700 font-medium">{t("emergency.detectingLocation")}</p>
                 </div>
             )}
 
@@ -70,7 +72,7 @@ const Emergency: React.FC = () => {
             <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
               style={{ boxShadow: "var(--shadow-sm)" }}
             >
-                <h2 className="text-sm font-bold text-slate-800 mb-4">🆘 Emergency Quick Dial</h2>
+                <h2 className="text-sm font-bold text-slate-800 mb-4">{t("emergency.quickDial")}</h2>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                     {EMERGENCY_CONTACTS.map(c => (
                         <a key={c.label} href={`tel:${c.number}`}
@@ -90,10 +92,10 @@ const Emergency: React.FC = () => {
               style={{ boxShadow: "var(--shadow-sm)" }}
             >
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-bold text-slate-800">🏥 Nearby Hospitals</h2>
+                    <h2 className="text-sm font-bold text-slate-800">{t("emergency.nearbyHospitals")}</h2>
                     <button onClick={() => openMaps("hospitals+near+me")}
                         className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5 font-semibold">
-                        Open in Maps <MapPin size={11} />
+                        {t("emergency.openInMaps")} <MapPin size={11} />
                     </button>
                 </div>
                 <div className="space-y-2 stagger-children">
@@ -116,15 +118,15 @@ const Emergency: React.FC = () => {
             <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
               style={{ boxShadow: "var(--shadow-sm)" }}
             >
-                <h2 className="text-sm font-bold text-slate-800 mb-4">🗺️ Find Nearby on Google Maps</h2>
+                <h2 className="text-sm font-bold text-slate-800 mb-4">{t("emergency.findNearby")}</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 stagger-children">
                     {[
-                        { label: "Hospitals", query: "hospitals", emoji: "🏥" },
-                        { label: "Ambulance", query: "ambulance+service", emoji: "🚑" },
-                        { label: "Police Station", query: "police+station", emoji: "🚓" },
-                        { label: "Pharmacy", query: "pharmacy+medical+store", emoji: "💊" },
-                        { label: "Blood Bank", query: "blood+bank", emoji: "🩸" },
-                        { label: "Fire Station", query: "fire+station", emoji: "🚒" },
+                        { label: t("emergency.hospitals"), query: "hospitals", emoji: "🏥" },
+                        { label: t("emergency.ambulance"), query: "ambulance+service", emoji: "🚑" },
+                        { label: t("emergency.policeStation"), query: "police+station", emoji: "🚓" },
+                        { label: t("emergency.pharmacy"), query: "pharmacy+medical+store", emoji: "💊" },
+                        { label: t("emergency.bloodBank"), query: "blood+bank", emoji: "🩸" },
+                        { label: t("emergency.fireStation"), query: "fire+station", emoji: "🚒" },
                     ].map(item => (
                         <button key={item.label}
                             onClick={() => openMaps(item.query)}

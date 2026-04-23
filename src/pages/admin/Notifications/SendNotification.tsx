@@ -14,6 +14,7 @@ import { db, auth } from "../../../firebase/firebaseConfig";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { Bell, Send, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface NotificationForm {
     title: string;
@@ -33,32 +34,28 @@ interface Notification {
 const NOTIFICATION_TYPES = [
     {
         value: "meeting",
-        label: "📅 Meeting Alert",
         color: "bg-slate-100 text-[#4f46e5]",
     },
     {
         value: "payment",
-        label: "💳 Payment Reminder",
         color: "bg-amber-100 text-amber-700",
     },
     {
         value: "block",
-        label: "🚫 Block Notice",
         color: "bg-red-100 text-red-700",
     },
     {
         value: "emergency",
-        label: "🚨 Emergency Update",
         color: "bg-rose-100 text-rose-700",
     },
     {
         value: "general",
-        label: "📢 General Announcement",
         color: "bg-slate-100 text-slate-700",
     },
 ];
 
 const SendNotification: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const [form, setForm] = useState<NotificationForm>({
         title: "",
         body: "",
@@ -83,7 +80,7 @@ const SendNotification: React.FC = () => {
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.type) {
-            toast.error("Please select a notification category");
+            toast.error(t("notifications.toasts.categoryRequired"));
             return;
         }
         setSending(true);
@@ -113,21 +110,21 @@ const SendNotification: React.FC = () => {
                 // We don't block the UI as Firestore doc is already added
             }
 
-            toast.success("Notification sent to all members!");
+            toast.success(t("notifications.toasts.sent"));
             setForm({ title: "", body: "", type: "" });
         } catch (err: any) {
             console.error("Failed to send notification:", err);
-            toast.error("Failed to send notification");
+            toast.error(t("notifications.toasts.error"));
         } finally {
             setSending(false);
         }
     };
 
     const deleteNotification = async (id: string) => {
-        if (!window.confirm("Delete this notification?")) return;
+        if (!window.confirm(t("notifications.history.deleteConfirm"))) return;
         try {
             await deleteDoc(doc(db, "notifications", id));
-            toast.success("Notification deleted successfully");
+            toast.success(t("notifications.toasts.deleted"));
         } catch (err: any) {
             console.error("[deleteNotification] Error:", err);
             toast.error(
@@ -140,7 +137,7 @@ const SendNotification: React.FC = () => {
         if (sent.length === 0) return;
         if (
             !window.confirm(
-                `Are you sure you want to clear all ${sent.length} notifications? This cannot be undone.`,
+                t("notifications.history.clearAllConfirm", { count: sent.length })
             )
         )
             return;
@@ -152,10 +149,10 @@ const SendNotification: React.FC = () => {
                 batch.delete(doc(db, "notifications", n.id));
             });
             await batch.commit();
-            toast.success("All notifications cleared!");
+            toast.success(t("notifications.toasts.cleared"));
         } catch (err: any) {
             console.error("[handleClearAll] Error:", err);
-            toast.error("Failed to clear notifications");
+            toast.error(t("notifications.toasts.error"));
         } finally {
             setSending(false);
         }
@@ -166,9 +163,9 @@ const SendNotification: React.FC = () => {
     return (
         <div className="space-y-0 animate-fade-in pt-0 pb-4">
             <div>
-                <h1 className="page-title text-2xl sm:text-3xl">Notifications</h1>
+                <h1 className="page-title text-2xl sm:text-3xl">{t("notifications.title")}</h1>
                 <p className="text-slate-500 font-medium text-xs sm:text-sm tracking-tight mb-2 sm:mb-4">
-                    Broadcast platform-wide alerts and updates
+                    {t("notifications.subtitle")}
                 </p>
             </div>
 
@@ -185,17 +182,17 @@ const SendNotification: React.FC = () => {
                         <div className="space-y-2">
                             <div>
                                 <label className="label text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">
-                                    Select Category
+                                    {t("notifications.form.category")}
                                 </label>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {NOTIFICATION_TYPES.map((t) => (
+                                    {NOTIFICATION_TYPES.map((type) => (
                                         <button
-                                            key={t.value}
+                                            key={type.value}
                                             type="button"
-                                            onClick={() => setForm((p) => ({ ...p, type: t.value }))}
-                                            className={`text-[9px] sm:text-[10px] px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg font-bold uppercase tracking-wider border transition-all duration-300 ${form.type === t.value ? "border-indigo-200 shadow-sm " + t.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}
+                                            onClick={() => setForm((p) => ({ ...p, type: type.value }))}
+                                            className={`text-[9px] sm:text-[10px] px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg font-bold uppercase tracking-wider border transition-all duration-300 ${form.type === type.value ? "border-indigo-200 shadow-sm " + type.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}
                                         >
-                                            {t.label}
+                                            {t(`notifications.types.${type.value}`)}
                                         </button>
                                     ))}
                                 </div>
@@ -204,7 +201,7 @@ const SendNotification: React.FC = () => {
                             <div className="grid grid-cols-1 gap-1 space-y-2">
                                 <div>
                                     <label className="label text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 block">
-                                        Heading*
+                                        {t("notifications.form.heading")}
                                     </label>
                                     <input
                                         value={form.title}
@@ -212,14 +209,14 @@ const SendNotification: React.FC = () => {
                                             setForm((p) => ({ ...p, title: e.target.value }))
                                         }
                                         required
-                                        placeholder="What is this about?"
+                                        placeholder={t("notifications.form.placeholders.heading")}
                                         className="input-field rounded-xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-2 sm:py-3 text-sm"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="label text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 block">
-                                        Content*
+                                        {t("notifications.form.content")}
                                     </label>
                                     <textarea
                                         value={form.body}
@@ -228,7 +225,7 @@ const SendNotification: React.FC = () => {
                                         }
                                         required
                                         rows={2}
-                                        placeholder="Write the main message here..."
+                                        placeholder={t("notifications.form.placeholders.content")}
                                         className="input-field rounded-xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-2 sm:py-3 text-sm resize-none"
                                     />
                                 </div>
@@ -244,7 +241,7 @@ const SendNotification: React.FC = () => {
                                     }}
                                 >
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 text-slate-400">
-                                        Live Preview
+                                        {t("notifications.form.preview")}
                                     </p>
                                     <div
                                         className={`p-4 rounded-xl shadow-sm border ${selectedType?.color || "bg-slate-100"} border-white/40`}
@@ -253,7 +250,7 @@ const SendNotification: React.FC = () => {
                                             {form.title}
                                         </p>
                                         <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed">
-                                            {form.body || "Message body will appear here..."}
+                                            {form.body || t("notifications.form.previewPlaceholder")}
                                         </p>
                                     </div>
                                 </div>
@@ -270,7 +267,7 @@ const SendNotification: React.FC = () => {
                                 size={16}
                                 className="transition-transform group-hover:translate-x-1"
                             />
-                            {sending ? "Processing..." : "Broadcast to All"}
+                            {sending ? t("notifications.form.processing") : t("notifications.form.submit")}
                         </button>
                     </form>
                 </div>
@@ -285,7 +282,7 @@ const SendNotification: React.FC = () => {
                             <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
                                 <Bell size={18} />
                             </div>
-                            Feed History
+                            {t("notifications.history.title")}
                         </h2>
                         {sent.length > 0 && (
                             <button
@@ -293,13 +290,13 @@ const SendNotification: React.FC = () => {
                                 disabled={sending}
                                 className="text-[10px] font-black text-rose-500 hover:bg-rose-500 hover:text-white uppercase tracking-[0.15em] px-4 py-2 rounded-xl transition-all border border-rose-100 disabled:opacity-50"
                             >
-                                Clear all
+                                {t("notifications.history.clearAll")}
                             </button>
                         )}
                     </div>
                     <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto min-h-0 scrollbar-hide">
                         {sent.map((n, i) => {
-                            const t =
+                            const typeInfo =
                                 NOTIFICATION_TYPES.find((x) => x.value === n.type) ||
                                 NOTIFICATION_TYPES[4];
                             return (
@@ -309,7 +306,7 @@ const SendNotification: React.FC = () => {
                                     style={{ animationDelay: `${i * 0.05}s` }}
                                 >
                                     <div
-                                        className={`p-5 rounded-2xl border transition-all duration-300 hover:bg-white/80 ${t.color.split(" ")[1]} ${t.color.split(" ")[0]} border-white/60 relative premium-shadow`}
+                                        className={`p-5 rounded-2xl border transition-all duration-300 hover:bg-white/80 ${typeInfo.color.split(" ")[1]} ${typeInfo.color.split(" ")[0]} border-white/60 relative premium-shadow`}
                                     >
                                         <div className="flex justify-between items-start mb-2">
                                             <p className="font-black text-[15px] pr-8 tracking-tight leading-tight">
@@ -318,7 +315,7 @@ const SendNotification: React.FC = () => {
                                             <button
                                                 onClick={() => deleteNotification(n.id)}
                                                 className="absolute top-3 right-3 z-10 p-2 rounded-lg bg-white text-red-500 hover:bg-red-50 hover:text-red-600 transition-all shadow-sm"
-                                                title="Delete"
+                                                title={t("common.delete")}
                                             >
                                                 <Trash2 size={13} />
                                             </button>
@@ -329,11 +326,11 @@ const SendNotification: React.FC = () => {
                                         <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-auto pt-3 border-t border-white/20">
                                             <span className="bg-white/50 px-2.5 py-1 rounded-lg">
                                                 🕒{" "}
-                                                {n.sentAt?.toDate?.().toLocaleDateString("en-IN") ||
-                                                    "Online"}
+                                                {n.sentAt?.toDate?.().toLocaleDateString(i18n.language === 'te' ? 'te-IN' : 'en-IN') ||
+                                                    t("notifications.labels.online")}
                                             </span>
                                             <span className="bg-white/50 px-2.5 py-1 rounded-lg">
-                                                Target: {n.target || "All"}
+                                                {t("notifications.history.target")}: {n.target || t("notifications.labels.all")}
                                             </span>
                                         </div>
                                     </div>
@@ -344,7 +341,7 @@ const SendNotification: React.FC = () => {
                             <div className="flex flex-col items-center justify-center py-20 opacity-30">
                                 <Bell size={48} className="mb-4" />
                                 <p className="text-sm font-black uppercase tracking-widest">
-                                    No sent logs
+                                    {t("notifications.history.empty")}
                                 </p>
                             </div>
                         )}

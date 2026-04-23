@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
@@ -85,23 +86,30 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-300 via-blue-150 to-yellow-400 p-4">
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 max-w-lg w-full border-2 border-red-200">
-            <h2 className="text-2xl font-black text-red-600 mb-4">Oops! Something went wrong</h2>
-            <p className="text-slate-700 mb-4">We encountered an error while loading this page.</p>
-            <pre className="bg-red-50 p-4 rounded-lg text-xs text-red-800 overflow-auto mb-4">{this.state.error?.message}</pre>
-            <button
-              onClick={() => window.location.href = '/'}
-              className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition"
-            >
-              Go to Home
-            </button>
-          </div>
-        </div>
+        <ErrorBoundaryFallback error={this.state.error} />
       );
     }
     return this.props.children;
   }
+}
+
+function ErrorBoundaryFallback({ error }: { error?: Error }) {
+  const { t } = useTranslation();
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-300 via-blue-150 to-yellow-400 p-4">
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 max-w-lg w-full border-2 border-red-200">
+        <h2 className="text-2xl font-black text-red-600 mb-4">{t('app.oops')}</h2>
+        <p className="text-slate-700 mb-4">{t('app.errorMessage')}</p>
+        <pre className="bg-red-50 p-4 rounded-lg text-xs text-red-800 overflow-auto mb-4">{error?.message}</pre>
+        <button
+          onClick={() => window.location.href = '/'}
+          className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition"
+        >
+          {t('app.goHome')}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function App() {
@@ -186,7 +194,7 @@ function App() {
               <div className="relative w-48 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
                 <div className="absolute inset-0 bg-linear-to-r from-indigo-500 via-violet-500 to-indigo-500 w-full rounded-full animate-loading-progress shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
               </div>
-              <p className="mt-6 text-indigo-300/60 font-bold text-[10px] uppercase tracking-[0.2em] animate-pulse">Initializing Portal</p>
+              <p className="mt-6 text-indigo-300/60 font-bold text-[10px] uppercase tracking-[0.2em] animate-pulse">BCTA</p>
             </div>
           </div>
         }>

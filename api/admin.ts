@@ -27,17 +27,7 @@ async function getCachedAccessToken(serviceAccount: any, scopes: string[]): Prom
   return cachedAccessToken;
 }
 
-// Define local types if @vercel/node is missing
-interface VercelRequest {
-  method?: string;
-  headers: Record<string, any>;
-  body: any;
-}
-interface VercelResponse {
-  status: (code: number) => VercelResponse;
-  json: (body: any) => VercelResponse;
-  setHeader: (name: string, value: string | string[]) => VercelResponse;
-}
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
 type AdminAction = "deleteUser" | "revokeTokens" | "createUser" | "bulkDeleteUsers" | "broadcastNotification";
 

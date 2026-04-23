@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
 import Navbar from "../components/shared/Navbar";
 import Footer from "../components/shared/Footer";
+import { useTranslation } from "react-i18next";
 
 const ContactPage: React.FC = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -14,9 +16,8 @@ const ContactPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
     console.log("Form submitted:", formData);
-    alert("Thank you for contacting us! We'll get back to you soon.");
+    alert(t("contact.thankYou"));
     setFormData({ name: "", email: "", phone: "", message: "" });
   };
 
@@ -36,10 +37,10 @@ const ContactPage: React.FC = () => {
         {/* Hero Section */}
         <div className="text-center mb-12">
           <h2 className="text-4xl sm:text-5xl font-black text-slate-900 mb-4">
-            Get in <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Touch</span>
+            {t("contact.getIn")} <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">{t("contact.touch")}</span>
           </h2>
           <p className="text-slate-600/70 text-lg max-w-2xl mx-auto">
-            Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+            {t("contact.subtitle")}
           </p>
         </div>
 
@@ -47,7 +48,7 @@ const ContactPage: React.FC = () => {
           {/* Contact Information */}
           <div className="space-y-6">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border-2 border-indigo-100">
-              <h3 className="text-2xl font-black text-slate-900 mb-6">Contact Information</h3>
+              <h3 className="text-2xl font-black text-slate-900 mb-6">{t("contact.contactInfo")}</h3>
               
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
@@ -55,10 +56,9 @@ const ContactPage: React.FC = () => {
                     <MapPin size={24} className="text-white" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900 mb-1">Address</h4>
+                    <h4 className="font-bold text-slate-900 mb-1">{t("contact.address")}</h4>
                     <p className="text-slate-600/70">
-                      Bhimavaram, West Godavari District<br />
-                      Andhra Pradesh, India
+                      {t("contact.bhimavaramAP")}
                     </p>
                   </div>
                 </div>
@@ -68,7 +68,7 @@ const ContactPage: React.FC = () => {
                     <Phone size={24} className="text-white" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900 mb-1">Phone</h4>
+                    <h4 className="font-bold text-slate-900 mb-1">{t("contact.phone")}</h4>
                     <p className="text-slate-600/70">+91 9000000000</p>
                     <p className="text-slate-600/70">+91 9000000001</p>
                   </div>
@@ -79,7 +79,7 @@ const ContactPage: React.FC = () => {
                     <Mail size={24} className="text-white" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900 mb-1">Email</h4>
+                    <h4 className="font-bold text-slate-900 mb-1">{t("contact.email")}</h4>
                     <p className="text-slate-600/70">info@bcta.org</p>
                     <p className="text-slate-600/70">support@bcta.org</p>
                   </div>
@@ -90,9 +90,9 @@ const ContactPage: React.FC = () => {
                     <Clock size={24} className="text-white" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900 mb-1">Office Hours</h4>
-                    <p className="text-slate-600/70">Monday - Saturday: 9:00 AM - 6:00 PM</p>
-                    <p className="text-slate-600/70">Sunday: Closed</p>
+                    <h4 className="font-bold text-slate-900 mb-1">{t("contact.officeHours")}</h4>
+                    <p className="text-slate-600/70">{t("contact.weekdays")}</p>
+                    <p className="text-slate-600/70">{t("contact.sunday")}</p>
                   </div>
                 </div>
               </div>
@@ -103,7 +103,7 @@ const ContactPage: React.FC = () => {
               <div className="w-full h-full bg-indigo-100 rounded-xl flex items-center justify-center">
                 <div className="text-center">
                   <MapPin size={48} className="text-indigo-600 mx-auto mb-2" />
-                  <p className="text-slate-900 font-medium">Map Location</p>
+                  <p className="text-slate-900 font-medium">{t("contact.mapLocation")}</p>
                   <p className="text-sm text-slate-600/70">Bhimavaram, Andhra Pradesh</p>
                 </div>
               </div>
@@ -112,12 +112,12 @@ const ContactPage: React.FC = () => {
 
           {/* Contact Form */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border-2 border-indigo-100">
-            <h3 className="text-2xl font-black text-slate-900 mb-6">Send us a Message</h3>
+            <h3 className="text-2xl font-black text-slate-900 mb-6">{t("contact.sendMessage")}</h3>
             
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="name" className="block text-sm font-semibold text-slate-900 mb-2">
-                  Your Name *
+                  {t("contact.yourName")}
                 </label>
                 <input
                   type="text"
@@ -127,13 +127,13 @@ const ContactPage: React.FC = () => {
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white/50 backdrop-blur-sm transition"
-                  placeholder="Enter your name"
+                  placeholder={t("contact.namePlaceholder")}
                 />
               </div>
 
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-slate-900 mb-2">
-                  Email Address *
+                  {t("contact.emailAddress")}
                 </label>
                 <input
                   type="email"
@@ -143,13 +143,13 @@ const ContactPage: React.FC = () => {
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white/50 backdrop-blur-sm transition"
-                  placeholder="your.email@example.com"
+                  placeholder={t("contact.emailPlaceholder")}
                 />
               </div>
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-semibold text-slate-900 mb-2">
-                  Phone Number
+                  {t("contact.phoneNumber")}
                 </label>
                 <input
                   type="tel"
@@ -158,13 +158,13 @@ const ContactPage: React.FC = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white/50 backdrop-blur-sm transition"
-                  placeholder="+91 9000000000"
+                  placeholder={t("contact.phonePlaceholder")}
                 />
               </div>
 
               <div>
                 <label htmlFor="message" className="block text-sm font-semibold text-slate-900 mb-2">
-                  Message *
+                  {t("contact.message")}
                 </label>
                 <textarea
                   id="message"
@@ -174,7 +174,7 @@ const ContactPage: React.FC = () => {
                   required
                   rows={5}
                   className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-500 bg-white/50 backdrop-blur-sm transition resize-none"
-                  placeholder="Write your message here..."
+                  placeholder={t("contact.messagePlaceholder")}
                 />
               </div>
 
@@ -182,7 +182,7 @@ const ContactPage: React.FC = () => {
                 type="submit"
                 className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
               >
-                Send Message <Send size={18} />
+                {t("contact.sendBtn")} <Send size={18} />
               </button>
             </form>
           </div>
@@ -190,23 +190,23 @@ const ContactPage: React.FC = () => {
 
         {/* Quick Links */}
         <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border-2 border-indigo-200 text-center">
-          <h3 className="text-2xl font-black text-slate-900 mb-4">Need Immediate Assistance?</h3>
+          <h3 className="text-2xl font-black text-slate-900 mb-4">{t("contact.needAssistance")}</h3>
           <p className="text-slate-600/70 mb-6 max-w-xl mx-auto">
-            For urgent matters, please login to the member portal or contact us directly
+            {t("contact.urgentMatters")}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/login"
               className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-lg"
             >
-              Login to Portal
+              {t("contact.loginToPortal")}
             </Link>
             <a
               href="tel:+919000000000"
               className="inline-flex items-center gap-2 border-2 border-indigo-600 text-slate-900 bg-white/40 backdrop-blur-sm font-bold px-8 py-3 rounded-xl hover:bg-white/60 transition-all"
             >
               <Phone size={18} />
-              Call Now
+              {t("contact.callNow")}
             </a>
           </div>
         </div>

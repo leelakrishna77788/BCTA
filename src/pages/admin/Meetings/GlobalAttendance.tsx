@@ -15,6 +15,7 @@ import {
 import { db } from "../../../firebase/firebaseConfig";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 interface Meeting {
   id: string;
@@ -33,6 +34,7 @@ interface Member {
 }
 
 const GlobalAttendance: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -72,10 +74,10 @@ const GlobalAttendance: React.FC = () => {
           .map((m) => ({
             ...m,
             displayDate: m.date?.toDate
-              ? m.date.toDate().toLocaleDateString()
+              ? m.date.toDate().toLocaleDateString(i18n.language === 'te' ? 'te-IN' : 'en-IN')
               : typeof m.date === "string"
                 ? m.date
-                : "No Date",
+                : t("common.noDate"),
           }))
           .slice(0, 20); // Show more meetings now that it's structurable
         setMeetings(mList);
@@ -123,7 +125,7 @@ const GlobalAttendance: React.FC = () => {
         uList.forEach((m) => {
           if ((memberPresences[m.id] || 0) > maxP) {
             maxP = memberPresences[m.id] || 0;
-            topM = m.name || "Unknown";
+            topM = m.name || t("common.unknown");
           }
         });
 
@@ -146,9 +148,13 @@ const GlobalAttendance: React.FC = () => {
   const handleDownloadExcel = () => {
     try {
       // 1. Prepare Headers
-      const staticHeaders = ["Member Name", "Member ID", "Total Presence"];
+      const staticHeaders = [
+        t("meetings.globalReport.excel.memberName"),
+        t("meetings.globalReport.excel.memberId"),
+        t("meetings.globalReport.excel.totalPresence")
+      ];
       const meetingHeaders = meetings.map(
-        (m) => `${m.displayDate} - ${m.topic || "Meeting"}`,
+        (m) => `${m.displayDate} - ${m.topic || (i18n.language === 'te' ? "సమావేశం" : "Meeting")}`,
       );
       const headers = [...staticHeaders, ...meetingHeaders];
 
@@ -159,17 +165,17 @@ const GlobalAttendance: React.FC = () => {
         ).length;
         
         // Ensure we're using the human-readable BCTA-ID, not the long Firestore UID
-        const row = [member.name || "Unknown", member.memberId || "Pending", attendedCount];
+        const row = [member.name || (i18n.language === 'te' ? "తెలియదు" : "Unknown"), member.memberId || (i18n.language === 'te' ? "పెండింగ్‌లో ఉంది" : "Pending"), attendedCount];
 
         meetings.forEach((m) => {
-          row.push(attendanceMap[member.id]?.[m.id] ? "Present" : "Absent");
+          row.push(attendanceMap[member.id]?.[m.id] ? t("meetings.statsDashboard.present") : t("meetings.statsDashboard.absent"));
         });
 
         return row;
       });
 
       // 3. Convert to CSV String (Structured with title spacing)
-      const reportTitle = `"Global Attendance Report - Generated on: ${new Date().toLocaleDateString()}"`;
+      const reportTitle = `"${t("meetings.globalReport.excel.reportTitle")} - ${t("meetings.globalReport.excel.generatedOn")}: ${new Date().toLocaleDateString()}"`;
       
       const csvContent = [
         reportTitle, // Custom title for visual spacing in excel
@@ -194,10 +200,10 @@ const GlobalAttendance: React.FC = () => {
       link.click();
       document.body.removeChild(link);
 
-      toast.success("Attendance report structured and downloaded!");
+      toast.success(t("meetings.globalReport.successToast"));
     } catch (err) {
       console.error("CSV Export Error:", err);
-      toast.error("Failed to generate report");
+      toast.error(t("meetings.globalReport.failToast"));
     }
   };
 
@@ -210,10 +216,10 @@ const GlobalAttendance: React.FC = () => {
         </div>
         <div className="text-center">
           <p className="text-slate-900 font-black text-xl tracking-tight mb-1">
-            Generating Global Matrix
+            {t("meetings.globalReport.generating")}
           </p>
           <p className="text-slate-400 text-sm font-medium">
-            Please wait while we compile the attendance records...
+            {t("meetings.globalReport.pleaseWait")}
           </p>
         </div>
       </div>
@@ -227,7 +233,7 @@ const GlobalAttendance: React.FC = () => {
             <AlertCircle size={40} />
           </div>
           <h2 className="text-rose-900 font-black text-2xl mb-3 tracking-tight">
-            Report Generation Failed
+            {t("meetings.globalReport.failed")}
           </h2>
           <p className="text-rose-700/70 mb-8 font-medium leading-relaxed">
             {error}
@@ -236,7 +242,7 @@ const GlobalAttendance: React.FC = () => {
             onClick={() => window.location.reload()}
             className="w-full py-4 bg-rose-600 text-white rounded-2xl font-bold shadow-xl shadow-rose-200 hover:bg-rose-700 transition-all active:scale-[0.98]"
           >
-            Retry Generation
+            {t("meetings.globalReport.retry")}
           </button>
         </div>
       </div>
@@ -255,10 +261,10 @@ const GlobalAttendance: React.FC = () => {
           </button>
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight tracking-tighter">
-              Attendance Report
+              {t("meetings.globalReport.title")}
             </h1>
             <p className="text-slate-500 font-medium text-[10px] sm:text-sm mt-1 uppercase sm:normal-case tracking-wider sm:tracking-normal">
-              Cross-meeting attendance matrix
+               {t("meetings.globalReport.subtitle")}
             </p>
           </div>
         </div>
@@ -271,7 +277,7 @@ const GlobalAttendance: React.FC = () => {
             size={18}
             className="group-hover:-translate-y-0.5 transition-transform"
           />
-          <span>Download Report</span>
+          <span>{t("meetings.globalReport.download")}</span>
         </button>
       </div>
 
@@ -279,29 +285,29 @@ const GlobalAttendance: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={<Users size={20} />}
-          label="Total Members"
+          label={t("meetings.statsDashboard.totalMembers")}
           value={members.length}
           color="blue"
         />
         <StatCard
           icon={<Calendar size={20} />}
-          label="Processed Meetings"
+          label={t("meetings.globalReport.processedMeetings")}
           value={meetings.length}
           color="purple"
         />
         <StatCard
           icon={<TrendingUp size={20} />}
-          label="Avg. Attendance"
+          label={t("meetings.globalReport.avgAttendance")}
           value={stats.avgAttendance}
           color="emerald"
-          suffix="per mtg"
+          suffix={i18n.language === 'te' ? "సమావేశానికి" : "per mtg"}
         />
         <StatCard
           icon={<Award size={20} />}
-          label="Top Attendee"
+          label={t("meetings.globalReport.topAttendee")}
           value={stats.topMember}
           color="amber"
-          subValue="Most Consistent"
+          subValue={i18n.language === 'te' ? "అత్యంత నిలకడైన" : "Most Consistent"}
         />
       </div>
 
@@ -316,7 +322,7 @@ const GlobalAttendance: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <div className="w-2.5 h-2.5 bg-[#4f46e5] rounded-full animate-pulse"></div>
                     <span className="tracking-tight uppercase text-xs text-slate-500">
-                      Member Directory
+                      {t("meetings.globalReport.directory")}
                     </span>
                   </div>
                 </th>
@@ -333,7 +339,7 @@ const GlobalAttendance: React.FC = () => {
                       style={{ maxWidth: "120px" }}
                       title={m.topic}
                     >
-                      {m.topic || "Meeting"}
+                      {m.topic || t("meetings.meeting")}
                     </div>
                   </th>
                 ))}
@@ -358,7 +364,7 @@ const GlobalAttendance: React.FC = () => {
                       <div className="flex items-center gap-4">
                         <div className="relative">
                           <div className="w-11 h-11 rounded-[1.25rem] bg-linear-to-br from-slate-800 to-slate-900 flex items-center justify-center text-white font-black text-sm shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                            {(member.name?.[0] || "U").toUpperCase()}
+                            {(member.name?.[0] || t("common.u")).toUpperCase()}
                           </div>
                           <div
                             className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold text-white shadow-sm ${attendancePercent > 70 ? "bg-emerald-500" : "bg-slate-400"}`}
@@ -371,7 +377,7 @@ const GlobalAttendance: React.FC = () => {
                             {member.name}
                           </p>
                           <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">
-                            {member.memberId || "PENDING"}
+                            {member.memberId || t("common.pending")}
                           </p>
                         </div>
                       </div>
@@ -423,14 +429,14 @@ const GlobalAttendance: React.FC = () => {
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-50">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white font-black text-xs">
-                      {(member.name?.[0] || "U").toUpperCase()}
+                      {(member.name?.[0] || t("common.u")).toUpperCase()}
                     </div>
                     <div>
                       <p className="font-black text-slate-900 text-sm leading-tight">
                         {member.name}
                       </p>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                        {member.memberId || "PENDING"}
+                        {member.memberId || t("common.pending")}
                       </p>
                     </div>
                   </div>
@@ -441,7 +447,7 @@ const GlobalAttendance: React.FC = () => {
                       {attendancePercent}%
                     </div>
                     <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">
-                      {attendedCount}/{meetings.length} Met
+                      {attendedCount}/{meetings.length} {t("meetings.globalReport.met")}
                     </p>
                   </div>
                 </div>
@@ -479,7 +485,7 @@ const GlobalAttendance: React.FC = () => {
                         </span>
                       </div>
                       <span className="text-[8px] font-bold text-slate-400 uppercase">
-                        More
+                        {t("meetings.globalReport.more")}
                       </span>
                     </div>
                   )}
@@ -495,11 +501,10 @@ const GlobalAttendance: React.FC = () => {
               <Users size={40} className="text-slate-200" />
             </div>
             <h3 className="text-slate-900 font-black text-2xl tracking-tight">
-              No Members Found
+              {t("meetings.globalReport.noMembers")}
             </h3>
             <p className="text-slate-400 text-sm max-w-xs mx-auto mt-2 font-medium">
-              Only users with the active "member" role will appear in this
-              compiled report.
+              {t("meetings.globalReport.noMembersDesc")}
             </p>
           </div>
         )}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
   QrCode,
@@ -110,120 +111,7 @@ function Reveal({
   );
 }
 
-const SERVICES = [
-  {
-    id: 5,
-    title: "Camera Repair & Replacement",
-    description:
-      "Fix blurry photos, camera crashes, and hardware issues with professional front and rear camera repair services.",
-    features: [
-      "Front Camera Replacement",
-      "Rear Camera Repair",
-      "Lens Cleaning & Fix",
-      "Focus & Sensor Fix",
-    ],
-    gradient: "linear-gradient(135deg, #ec4899, #be185d)",
-    icon: "📸",
-  },
-  {
-    id: 6,
-    title: "Charging Port & Connector Repair",
-    description:
-      "Resolve charging issues with precision repair or replacement of charging ports and connectors.",
-    features: [
-      "Charging Port Replacement",
-      "Loose Connector Fix",
-      "Fast Charging Repair",
-      "USB Type-C / Lightning Support",
-    ],
-    gradient: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-    icon: "🔌",
-  },
-  {
-    id: 7,
-    title: "Speaker & Microphone Repair",
-    description:
-      "Fix audio issues including low sound, no sound, or microphone problems for clear communication.",
-    features: [
-      "Speaker Replacement",
-      "Microphone Fix",
-      "Audio IC Repair",
-      "Noise Issue Fix",
-    ],
-    gradient: "linear-gradient(135deg, #22c55e, #15803d)",
-    icon: "🔊",
-  },
-  {
-    id: 8,
-    title: "Water Damage Treatment",
-    description:
-      "Advanced cleaning and repair solutions for water-damaged devices to restore functionality.",
-    features: [
-      "Liquid Cleaning",
-      "Drying Treatment",
-      "Corrosion Removal",
-      "Component Recovery",
-    ],
-    gradient: "linear-gradient(135deg, #06b6d4, #0e7490)",
-    icon: "💧",
-  },
-  {
-    id: 9,
-    title: "Network & Signal Issue Repair",
-    description:
-      "Fix weak signals, no network issues, and SIM detection problems with expert diagnostics.",
-    features: [
-      "No Signal Fix",
-      "SIM Slot Repair",
-      "Antenna Repair",
-      "IMEI Repair",
-    ],
-    gradient: "linear-gradient(135deg, #6366f1, #4338ca)",
-    icon: "📡",
-  },
-  {
-    id: 10,
-    title: "Phone Accessories & Parts",
-    description:
-      "Wide range of mobile accessories and spare parts available including chargers, cases, and more.",
-    features: [
-      "Original Accessories",
-      "Tempered Glass",
-      "Back Covers",
-      "Chargers & Cables",
-    ],
-    gradient: "linear-gradient(135deg, #f43f5e, #be123c)",
-    icon: "🛍️",
-  },
-  {
-    id: 11,
-    title: "Phone Cleaning & Maintenance",
-    description:
-      "Keep your device in top condition with professional internal and external cleaning services.",
-    features: [
-      "Dust Cleaning",
-      "Internal Service",
-      "Thermal Cleaning",
-      "Performance Boost",
-    ],
-    gradient: "linear-gradient(135deg, #14b8a6, #0f766e)",
-    icon: "🧼",
-  },
-  {
-    id: 12,
-    title: "Display Glass Refurbishing",
-    description:
-      "Cost-effective glass replacement without changing the full display using advanced refurbishing technology.",
-    features: [
-      "Glass Only Replacement",
-      "OCA Lamination",
-      "Bubble Removal",
-      "Cost Saving Repair",
-    ],
-    gradient: "linear-gradient(135deg, #a855f7, #6b21a8)",
-    icon: "🪟",
-  },
-];
+// SERVICES array moved inside component for i18n access
 
 /* ── Live Stats Hook ── */
 import { collection, onSnapshot, query, where } from "firebase/firestore";
@@ -306,9 +194,21 @@ function usePlatformStats() {
 
 /* ═══════════════════════════════════════════════════ */
 const LandingPage: React.FC = () => {
+  const { t } = useTranslation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const platformStats = usePlatformStats();
+
+  const SERVICES = [
+    { id: 5, title: t("landing.cameraRepair"), description: t("landing.cameraRepairDesc"), features: [t("landing.cameraFeature1"), t("landing.cameraFeature2"), t("landing.cameraFeature3"), t("landing.cameraFeature4")], gradient: "linear-gradient(135deg, #ec4899, #be185d)", icon: "📸" },
+    { id: 6, title: t("landing.chargingRepair"), description: t("landing.chargingRepairDesc"), features: [t("landing.chargingFeature1"), t("landing.chargingFeature2"), t("landing.chargingFeature3"), t("landing.chargingFeature4")], gradient: "linear-gradient(135deg, #0ea5e9, #0369a1)", icon: "🔌" },
+    { id: 7, title: t("landing.speakerRepair"), description: t("landing.speakerRepairDesc"), features: [t("landing.speakerFeature1"), t("landing.speakerFeature2"), t("landing.speakerFeature3"), t("landing.speakerFeature4")], gradient: "linear-gradient(135deg, #22c55e, #15803d)", icon: "🔊" },
+    { id: 8, title: t("landing.waterDamage"), description: t("landing.waterDamageDesc"), features: [t("landing.waterFeature1"), t("landing.waterFeature2"), t("landing.waterFeature3"), t("landing.waterFeature4")], gradient: "linear-gradient(135deg, #06b6d4, #0e7490)", icon: "💧" },
+    { id: 9, title: t("landing.networkRepair"), description: t("landing.networkRepairDesc"), features: [t("landing.networkFeature1"), t("landing.networkFeature2"), t("landing.networkFeature3"), t("landing.networkFeature4")], gradient: "linear-gradient(135deg, #6366f1, #4338ca)", icon: "📡" },
+    { id: 10, title: t("landing.accessories"), description: t("landing.accessoriesDesc"), features: [t("landing.accessoriesFeature1"), t("landing.accessoriesFeature2"), t("landing.accessoriesFeature3"), t("landing.accessoriesFeature4")], gradient: "linear-gradient(135deg, #f43f5e, #be123c)", icon: "🛍️" },
+    { id: 11, title: t("landing.cleaning"), description: t("landing.cleaningDesc"), features: [t("landing.cleaningFeature1"), t("landing.cleaningFeature2"), t("landing.cleaningFeature3"), t("landing.cleaningFeature4")], gradient: "linear-gradient(135deg, #14b8a6, #0f766e)", icon: "🧼" },
+    { id: 12, title: t("landing.glassRefurbish"), description: t("landing.glassRefurbishDesc"), features: [t("landing.glassFeature1"), t("landing.glassFeature2"), t("landing.glassFeature3"), t("landing.glassFeature4")], gradient: "linear-gradient(135deg, #a855f7, #6b21a8)", icon: "🪟" },
+  ];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -394,26 +294,21 @@ const LandingPage: React.FC = () => {
           />
           <div
             className="text-center max-w-5xl relative z-10"
-            style={{
-              fontFamily:
-                '"Lucida Sans", "Lucida Grande", "Lucida Sans Unicode", "Times New Roman", serif',
-            }}
           >
             <Reveal dy={20} delay={0.2}>
               <h1 className="text-4xl sm:text-6xl md:text-8xl font-black mb-6 sm:mb-8 leading-[1.05] px-2 tracking-tighter">
                 <span className="text-slate-900 drop-shadow-sm">
-                  The digital platform for
+                  {t("landing.heroTitle1")}
                 </span>
                 <br />
                 <span className="gradient-text bg-linear-to-r from-indigo-700 via-violet-700 to-indigo-800 bg-clip-text text-transparent lucida">
-                  Bhimavaram Cellphones Technicians
+                  {t("landing.heroTitle2")}
                 </span>
               </h1>
             </Reveal>
             <Reveal dy={20} delay={0.4}>
               <p className="text-slate-600 max-w-2xl mx-auto mb-10 sm:mb-12 text-lg sm:text-xl md:text-2xl px-4 font-medium leading-relaxed opacity-90">
-                A unified association portal designed for professional unity,
-                instant communication, and association management.
+                {t("landing.heroSubtitle")}
               </p>
             </Reveal>
             <Reveal
@@ -426,7 +321,7 @@ const LandingPage: React.FC = () => {
                 className="group w-auto inline-flex items-center justify-center gap-3 text-white px-6 py-4 rounded-2xl font-black transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] hover:-translate-y-2 active:scale-95 text-sm sm:text-lg"
                 style={{ background: "var(--gradient-primary)" }}
               >
-                Portal
+                {t("landing.portal")}
                 <ArrowRight
                   size={20}
                   className="transition-transform duration-500 group-hover:translate-x-2"
@@ -437,7 +332,7 @@ const LandingPage: React.FC = () => {
                 href="#services"
                 className="w-auto inline-flex items-center justify-center gap-3 bg-white/40 backdrop-blur-xl text-slate-900 border border-white/80 px-6 py-4 rounded-2xl font-bold hover:bg-white/80 transition-all duration-500 hover:-translate-y-1 shadow-lg active:scale-95 text-sm sm:text-lg"
               >
-                Services
+                {t("landing.services")}
               </a>
             </Reveal>
           </div>
@@ -450,10 +345,10 @@ const LandingPage: React.FC = () => {
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <Reveal className="text-center mb-10 sm:mb-14">
               <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">
-                Leadership
+                {t("landing.leadership")}
               </p>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                BCTA Presidents
+                {t("landing.bctaPresidents")}
               </h2>
             </Reveal>
 
@@ -514,10 +409,10 @@ const LandingPage: React.FC = () => {
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <Reveal className="text-center mb-12 sm:mb-16">
               <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">
-                What We Do
+                {t("landing.whatWeDo")}
               </p>
               <h2 className="text-3xl sm:text-5xl font-black text-slate-900 mb-3 sm:mb-4 tracking-tight">
-                Our{" "}
+                {t("landing.ourServices")}{" "}
                 <span
                   className="gradient-text"
                   style={{
@@ -527,11 +422,11 @@ const LandingPage: React.FC = () => {
                     backgroundClip: "text",
                   }}
                 >
-                  Services
+                  {t("landing.servicesWord")}
                 </span>
               </h2>
               <p className="text-slate-500 text-base sm:text-lg max-w-2xl mx-auto px-4 font-medium">
-                Professional mobile repair services by expert technicians
+                {t("landing.servicesSubtitle")}
               </p>
             </Reveal>
 
@@ -606,7 +501,7 @@ const LandingPage: React.FC = () => {
                 className="group inline-flex items-center gap-2 text-white font-bold px-8 py-3.5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-[0_0_30px_rgba(99,102,241,0.25)] hover:-translate-y-0.5"
                 style={{ background: "var(--gradient-primary)" }}
               >
-                View All Services{" "}
+                {t("landing.viewAllServices")}{" "}
                 <ArrowRight
                   size={18}
                   className="transition-transform group-hover:translate-x-1"
@@ -621,21 +516,21 @@ const LandingPage: React.FC = () => {
           <div className="max-w-5xl mx-auto">
             <Reveal className="text-center mb-12 sm:mb-16">
               <p className="text-indigo-600 font-semibold text-[11px] uppercase tracking-[0.2em] mb-3">
-                By the numbers
+                {t("landing.byTheNumbers")}
               </p>
               <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">
-                BCTA's growing impact
+                {t("landing.growingImpact")}
               </h2>
             </Reveal>
             <div className="grid grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto items-stretch">
               {[
                 {
-                  label: "Active Members",
+                  label: t("landing.activeMembers"),
                   end: Math.max(platformStats.members, 0),
                   suffix: "",
                 },
                 {
-                  label: "Meetings Tracked",
+                  label: t("landing.meetingsTracked"),
                   end: Math.max(platformStats.meetings, 0),
                   suffix: "",
                 },
@@ -679,15 +574,13 @@ const LandingPage: React.FC = () => {
 
           <Reveal className="relative z-10 max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2.5 bg-white/60 backdrop-blur-md border border-white/50 rounded-full px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] mb-8 text-indigo-700 shadow-xl shadow-indigo-500/5 ring-4 ring-indigo-500/5">
-              <Zap size={14} className="text-indigo-600" /> Ready to transform
-              your association?
+              <Zap size={14} className="text-indigo-600" /> {t("landing.readyToTransform")}
             </div>
             <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight mb-5 text-slate-900">
-              Go digital with BCTA
+              {t("landing.goDigital")}
             </h2>
             <p className="text-slate-500 text-lg leading-relaxed mb-10 max-w-xl mx-auto font-medium">
-              Log in to the BCTA Portal and start managing your association with
-              real-time data, QR attendance, and instant notifications.
+              {t("landing.goDigitalDesc")}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -695,7 +588,7 @@ const LandingPage: React.FC = () => {
                 className="group inline-flex items-center gap-3 text-white font-black px-10 py-5 rounded-2xl transition-all duration-500 hover:shadow-[0_20px_50px_rgba(99,102,241,0.4)] text-lg hover:-translate-y-2"
                 style={{ background: "var(--gradient-primary)" }}
               >
-                Open the Portal{" "}
+                {t("landing.openPortal")}{" "}
                 <ArrowRight
                   size={18}
                   className="transition-transform group-hover:translate-x-1"

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Scanner, IDetectedBarcode } from "@yudiel/react-qr-scanner";
 import { QRCodeSVG } from "qrcode.react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, RefreshCw, Clock, Shield, Play, Square, Download, ScanLine, QrCode, CheckCircle, AlertCircle, Loader2, Zap, ZapOff } from "lucide-react";
 import { db } from "../../../firebase/firebaseConfig";
 import { doc, onSnapshot, updateDoc, Timestamp } from "firebase/firestore";
@@ -11,10 +12,7 @@ import { recordAttendanceByAdmin } from "../../../services/attendanceService";
 // Simple robust UUID alternative to avoid ESM import issues with 'uuid' package
 const generateId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-const TABS = [
-    { id: "showqr", label: "Show Meeting QR", icon: QrCode },
-    { id: "scanmember", label: "Scan Member QR", icon: ScanLine },
-];
+// TABS implementation is now inline and localized inside the component
 
 interface Meeting {
     id: string;
@@ -33,6 +31,7 @@ interface ScanResult {
 }
 
 const MeetingQR: React.FC = () => {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("showqr");
@@ -253,13 +252,13 @@ const MeetingQR: React.FC = () => {
                         setCountdown(45);
                     }
                 } else {
-                    setError("Meeting not found.");
+                    setError(t("meetings.qrTerminal.notFound"));
                 }
                 setLoading(false);
             },
             (err) => {
                 console.error("[MeetingQR] Error:", err);
-                setError("Access Denied or Database Error");
+                setError(t("meetings.qrTerminal.accessDenied"));
                 setLoading(false);
             }
         );
@@ -312,7 +311,7 @@ const MeetingQR: React.FC = () => {
         
         // Strict Time Enforcement
         if (isConcluded) {
-            toast.error("This meeting has already concluded. Attendance cannot be started.", { 
+            toast.error(t("meetings.qrTerminal.concludedError"), { 
                 id: "meeting-concluded",
                 icon: "🚫" 
             });
@@ -324,14 +323,14 @@ const MeetingQR: React.FC = () => {
         console.log(`[MeetingQR] startAttendance checks - serverTime: ${currentTime}, meetingStart: ${meetingStart}, meetingEnd: ${meetingEnd}`);
 
         if (currentTime < meetingStart) {
-            toast.error("Meeting has not started yet. Please wait until the exact start time.", {
+            toast.error(t("meetings.qrTerminal.waitError"), {
                 id: "meeting-not-started"
             });
             return;
         }
 
         if (currentTime > meetingEnd) {
-            toast.error("Meeting has ended.", { id: "meeting-ended" });
+            toast.error(t("meetings.qrTerminal.endedError"), { id: "meeting-ended" });
             return;
         }
 
@@ -346,10 +345,10 @@ const MeetingQR: React.FC = () => {
                 sessionExpiresAt: Timestamp.fromDate(meetingEnd) // Keep track of full session
             });
             setCountdown(45);
-            toast.success("Attendance terminal active!", { id: "meeting-active" });
+            toast.success(t("meetings.qrTerminal.activeToast"), { id: "meeting-active" });
         } catch (err: any) {
             console.error("[MeetingQR] Start Flow ERROR:", err);
-            const msg = err.code ? `[${err.code}] ${err.message}` : "Failed to start";
+            const msg = err.code ? `[${err.code}] ${err.message}` : t("meetings.qrTerminal.failedStart");
             toast.error(msg, { id: "start-error", duration: 6000 });
         } finally {
             processingLock.current = false;
@@ -362,7 +361,7 @@ const MeetingQR: React.FC = () => {
         
         // 0. Offline Check (Avoid silent failures)
         if (!navigator.onLine) {
-            toast.error("No internet connection. Please check your network.");
+            toast.error(t("meetings.qrTerminal.offlineError"));
             return;
         }
 
@@ -372,7 +371,7 @@ const MeetingQR: React.FC = () => {
         lastScanRef.current = nowMs;
 
         if (isScheduled) {
-            toast.error("Cannot mark attendance: Meeting has not started yet.");
+            toast.error(t("meetings.qrTerminal.notStartedError"));
             return;
         }
         
@@ -394,15 +393,15 @@ const MeetingQR: React.FC = () => {
             }
         } catch (err: any) {
             console.error("[MeetingQR] Scan Error:", err);
-            setMemberScanResult({ success: false, error: err.message === "Invalid member QR" ? "This is not a valid BCTA member ID" : "Verification Failed" });
+            setMemberScanResult({ success: false, error: err.message === "Invalid member QR" ? t("meetings.qrTerminal.invalidQrError") : t("meetings.qrTerminal.verifyFailedError") });
         } finally {
             setMemberProcessing(false);
             processingLock.current = false;
         }
     };
 
-    if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto mb-4" /> Loading Meeting QR Terminal...</div>;
-    if (error || !meeting) return <div className="p-10 text-center text-rose-600 font-bold">{error || "Document load error"}</div>;
+    if (loading) return <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto mb-4" /> {t("meetings.qrTerminal.loading")}</div>;
+    if (error || !meeting) return <div className="p-10 text-center text-rose-600 font-bold">{error || t("meetings.qrTerminal.accessDenied")}</div>;
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 p-4 animate-fade-in">
@@ -412,13 +411,16 @@ const MeetingQR: React.FC = () => {
             </div>
 
             <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl w-fit">
-                {TABS.map(t => {
-                    const Icon = t.icon;
+                {[
+                    { id: "showqr", label: t("meetings.qrTerminal.tabs.showQr"), icon: QrCode },
+                    { id: "scanmember", label: t("meetings.qrTerminal.tabs.scanMember"), icon: ScanLine },
+                ].map(tabItem => {
+                    const Icon = tabItem.icon;
                     return (
-                        <button key={t.id} onClick={() => { setActiveTab(t.id); setMemberScanResult(null); }}
-                            className={`px-6 py-2 rounded-xl text-sm font-bold flex items-center justify-center ${activeTab === t.id ? "bg-white shadow text-[#4f46e5]" : "text-slate-500"}`}>
+                        <button key={tabItem.id} onClick={() => { setActiveTab(tabItem.id); setMemberScanResult(null); }}
+                            className={`px-6 py-2 rounded-xl text-sm font-bold flex items-center justify-center ${activeTab === tabItem.id ? "bg-white shadow text-[#4f46e5]" : "text-slate-500"}`}>
                             <Icon size={16} className="mr-2" />
-                            {t.label}
+                            {tabItem.label}
                         </button>
                     )
                 })}
@@ -434,22 +436,22 @@ const MeetingQR: React.FC = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="text-xl font-bold text-slate-800 tracking-tight">
-                                        {isConcluded ? "Session Concluded" : "Attendance Mode"}
+                                        {isConcluded ? t("meetings.qrTerminal.sessionConcluded") : t("meetings.qrTerminal.attendanceMode")}
                                     </h3>
                                     <p className="text-sm text-slate-500 max-w-xs mx-auto">
                                         {isConcluded 
-                                            ? "This meeting has ended or explicitly expired. No further attendance can be marked."
-                                            : "Generate a rolling QR code for members to mark their attendance."}
+                                            ? t("meetings.qrTerminal.concludedDesc")
+                                            : t("meetings.qrTerminal.modeDesc")}
                                     </p>
                                 </div>
                                 {!isConcluded && (
                                     <button onClick={startAttendance} className="btn-primary px-10 h-14 w-full shadow-lg shadow-indigo-900/20 active:scale-95 transition-transform">
-                                        <Play size={18} className="mr-2" /> Start Flow
+                                        <Play size={18} className="mr-2" /> {t("meetings.qrTerminal.startFlow")}
                                     </button>
                                 )}
                                 {isConcluded && (
                                     <div className="flex items-center gap-2 justify-center py-3 px-6 bg-amber-50 rounded-xl border border-amber-100 text-amber-700 text-sm font-bold">
-                                        <Clock size={16} /> Data Collection Locked
+                                        <Clock size={16} /> {t("meetings.qrTerminal.dataLocked")}
                                     </div>
                                 )}
                             </div>
@@ -469,13 +471,13 @@ const MeetingQR: React.FC = () => {
                                         
                                         {/* Status Indicators */}
                                         <div className="absolute -top-3 -right-3 w-14 h-14 bg-[#4f46e5] rounded-2xl border-4 border-white flex flex-col items-center justify-center text-white font-bold shadow-xl animate-pulse ring-4 ring-[#4f46e5]/10">
-                                            <span className="text-xs leading-none opacity-80 mb-0.5">EST</span>
+                                            <span className="text-xs leading-none opacity-80 mb-0.5">{t("meetings.qrTerminal.est")}</span>
                                             <span className="text-base leading-none">{countdown}s</span>
                                         </div>
                                         
                                         <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-[2px] px-4 py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-1.5 whitespace-nowrap">
                                             <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span>
-                                            Active Session
+                                            {t("meetings.qrTerminal.activeSession")}
                                         </div>
                                     </div>
                                 </div>
@@ -484,15 +486,15 @@ const MeetingQR: React.FC = () => {
                                      <div className="flex flex-col gap-1 items-center">
                                         <p className="text-[#4f46e5] font-black text-sm uppercase tracking-widest flex items-center gap-2">
                                             <span className="w-2 h-0.5 bg-[#4f46e5]/30 rounded-full"></span>
-                                            Meeting Access Pass
+                                            {t("meetings.qrTerminal.accessPass")}
                                             <span className="w-2 h-0.5 bg-[#4f46e5]/30 rounded-full"></span>
                                         </p>
-                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Dynamic Token: {meeting?.qrToken?.substring(0, 8)}</p>
+                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{t("meetings.qrTerminal.dynamicToken", { token: meeting?.qrToken?.substring(0, 8) })}</p>
                                      </div>
 
                                     <button onClick={stopAttendance} className="btn-danger w-full py-4 rounded-xl flex items-center justify-center gap-2 group hover:bg-red-700 transition-colors shadow-lg shadow-red-900/10">
                                         <Square size={16} fill="white" className="group-hover:scale-110 transition-transform" /> 
-                                        <span className="font-bold tracking-wide">Terminate Session</span>
+                                        <span className="font-bold tracking-wide">{t("meetings.qrTerminal.terminate")}</span>
                                     </button>
                                 </div>
                             </div>
@@ -509,8 +511,8 @@ const MeetingQR: React.FC = () => {
                         <div className="flex items-center gap-3">
                             <Clock className={isActive ? "text-emerald-500" : "text-slate-300"} />
                             <div>
-                                <p className="font-bold">{isActive ? "Flowing" : "Offline"}</p>
-                                <p className="text-xs text-slate-500">Status</p>
+                                <p className="font-bold">{isActive ? t("meetings.qrTerminal.flowing") : t("meetings.qrTerminal.offline")}</p>
+                                <p className="text-xs text-slate-500">{t("meetings.qrTerminal.status")}</p>
                             </div>
                         </div>
                         {isActive && <div className="text-3xl font-black text-[#4f46e5]">{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</div>}
@@ -528,25 +530,25 @@ const MeetingQR: React.FC = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <h3 className="text-xl font-bold text-white tracking-tight">
-                                        {isConcluded ? "Verification Locked" : "Manual Verification"}
+                                        {isConcluded ? t("meetings.qrTerminal.verificationLocked") : t("meetings.qrTerminal.manualVerification")}
                                     </h3>
                                     <p className="text-sm text-slate-400 leading-relaxed">
                                         {isConcluded 
-                                            ? "The verification terminal is disabled as this meeting has concluded."
-                                            : "Open the secure camera terminal to scan a member's digital ID for instant verification."}
+                                            ? t("meetings.qrTerminal.lockedDesc")
+                                            : t("meetings.qrTerminal.terminalDesc")}
                                     </p>
                                 </div>
                                 {!isConcluded && !isScheduled ? (
                                     <button onClick={() => setMemberScanning(true)} className="btn-primary w-full h-14 shadow-xl shadow-indigo-900/40 border border-white/10 active:scale-95 transition-transform font-bold">
-                                        Open Secure Terminal
+                                        {t("meetings.qrTerminal.openTerminal")}
                                     </button>
                                 ) : isConcluded ? (
                                     <div className="w-full py-4 px-6 bg-slate-800/50 rounded-2xl border border-slate-700 text-slate-500 text-sm font-bold flex items-center justify-center gap-2">
-                                        <Shield size={16} /> Restricted Access
+                                        <Shield size={16} /> {t("meetings.qrTerminal.restrictedAccess")}
                                     </div>
                                 ) : (
                                     <div className="w-full py-4 px-6 bg-slate-800/50 rounded-2xl border border-slate-700 text-slate-500 text-sm font-bold flex items-center justify-center gap-2">
-                                        <Clock size={16} /> Meeting has not started yet
+                                        <Clock size={16} /> {t("meetings.qrTerminal.notStartedYet")}
                                     </div>
                                 )}
                             </div>
@@ -554,7 +556,7 @@ const MeetingQR: React.FC = () => {
                             <div className="w-full max-w-sm space-y-8 animate-fade-in">
                                 <div className="relative aspect-square rounded-[36px] overflow-hidden border-4 border-slate-800 shadow-2xl group">
                                      {/* Premium Scanner Container */}
-                                    <div className="absolute inset-0 z-10 pointer-events-none border-[12px] border-slate-900">
+                                    <div className="absolute inset-0 z-10 pointer-events-none border-12 border-slate-900">
                                         {/* Glowing Corners */}
                                         <div className="absolute top-2 left-2 w-16 h-16 border-t-[5px] border-l-[5px] border-indigo-500 rounded-tl-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
                                         <div className="absolute top-2 right-2 w-16 h-16 border-t-[5px] border-r-[5px] border-indigo-500 rounded-tr-2xl shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
@@ -570,7 +572,7 @@ const MeetingQR: React.FC = () => {
                                     
                                     <Scanner
                                         onScan={((data: IDetectedBarcode[]) => { if (data?.[0]?.rawValue) { setMemberScanning(false); processMemberQR(data[0].rawValue); } }) as any}
-                                        onError={(e) => { toast.error("Camera Error"); setMemberScanning(false); }}
+                                        onError={(e) => { toast.error(t("meetings.qrTerminal.failToast")); setMemberScanning(false); }}
                                         styles={{ container: { height: '100%', width: '100%', backgroundColor: '#0f172a' } }}
                                         constraints={{ facingMode: 'environment' }}
                                         components={{
@@ -584,7 +586,7 @@ const MeetingQR: React.FC = () => {
                                     {/* HUD Overlays */}
                                     <div className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-1 bg-black/40 backdrop-blur-md rounded-full border border-white/10">
                                         <div className="w-1.5 h-1.5 bg-indigo-50/500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
-                                        <span className="text-[10px] font-black text-white/90 uppercase tracking-widest">Scanning Mode</span>
+                                        <span className="text-[10px] font-black text-white/90 uppercase tracking-widest">{t("meetings.qrTerminal.scanningMode")}</span>
                                     </div>
 
                                     {/* Torch Toggle Button - Visible only on Mobile or if explicitly supported */}
@@ -594,7 +596,7 @@ const MeetingQR: React.FC = () => {
                                                 e.stopPropagation(); 
                                                 const newState = !torchOn;
                                                 setTorchOn(newState);
-                                                toast.success(newState ? "Flashlight On" : "Flashlight Off", { duration: 1000 });
+                                                toast.success(newState ? t("meetings.qrTerminal.flashlightOn") : t("meetings.qrTerminal.flashlightOff"), { duration: 1000 });
                                             }}
                                             className={`absolute bottom-6 right-6 z-20 p-5 rounded-full transition-all duration-300 transform active:scale-95 ${torchOn ? 'bg-yellow-400 text-black shadow-[0_0_25px_rgba(250,204,21,0.6)] scale-110' : 'bg-white/10 text-white backdrop-blur-md border border-white/20'}`}
                                         >
@@ -603,7 +605,7 @@ const MeetingQR: React.FC = () => {
                                     )}
                                 </div>
                                 <button onClick={() => setMemberScanning(false)} className="w-full py-4 text-slate-400 font-bold hover:text-white transition-colors flex items-center justify-center gap-2 text-sm uppercase tracking-widest active:scale-95">
-                                    <Square size={14} /> Cancel Terminal
+                                    <Square size={14} /> {t("meetings.qrTerminal.cancelTerminal")}
                                 </button>
                             </div>
                         )
@@ -613,8 +615,8 @@ const MeetingQR: React.FC = () => {
                                 <Loader2 size={40} className="text-indigo-400 animate-spin" />
                              </div>
                              <div className="space-y-2">
-                                <h3 className="text-xl font-bold text-white tracking-tight">Verifying ID...</h3>
-                                <p className="text-slate-400 text-sm">Validating credentials against server...</p>
+                                <h3 className="text-xl font-bold text-white tracking-tight">{t("meetings.qrTerminal.verifyingId")}</h3>
+                                <p className="text-slate-400 text-sm">{t("meetings.qrTerminal.validating")}</p>
                              </div>
                         </div>
                     ) : memberScanResult ? (
@@ -628,17 +630,17 @@ const MeetingQR: React.FC = () => {
                             
                             <div className="space-y-1.5">
                                 <h3 className={`text-2xl font-bold ${memberScanResult?.success ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    {memberScanResult?.success ? 'Verification Successful' : 'Scan Failed'}
+                                    {memberScanResult?.success ? t("meetings.qrTerminal.verifySuccess") : t("meetings.qrTerminal.scanFailed")}
                                 </h3>
                                 <p className="text-slate-400 font-medium">
                                     {memberScanResult?.success 
-                                        ? (memberScanResult.alreadyScanned ? `${memberScanResult.memberName} already present` : `Confirmed: ${memberScanResult.memberName}`)
-                                        : (memberScanResult?.error || "Unknown Error")}
+                                        ? (memberScanResult.alreadyScanned ? t("meetings.qrTerminal.alreadyPresent", { name: memberScanResult.memberName }) : t("meetings.qrTerminal.confirmed", { name: memberScanResult.memberName }))
+                                        : (memberScanResult?.error || t("meetings.status.unknown"))}
                                 </p>
                             </div>
 
                             <button onClick={() => setMemberScanResult(null)} className="btn-primary px-10 h-14 w-full shadow-lg shadow-indigo-900/40 font-bold">
-                                Scan Next Member
+                                {t("meetings.qrTerminal.scanNext")}
                             </button>
                         </div>
                     ) : null}

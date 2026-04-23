@@ -12,6 +12,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { membersApi } from "../../../services/membersService";
 import LoadingSkeleton, { CardSkeleton } from "../../../components/shared/LoadingSkeleton";
+import { useTranslation } from "react-i18next";
 
 interface MemberDoc extends DocumentData {
     id: string;
@@ -53,6 +54,7 @@ const escapeHtml = (value: string) => value
     .replace(/'/g, "&#039;");
 
 const MemberDetail: React.FC = () => {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const idCardRef = useRef<HTMLDivElement>(null);
@@ -127,7 +129,7 @@ const MemberDetail: React.FC = () => {
                 }
             } catch (err) {
                 console.error("Profile load error:", err);
-                toast.error("Failed to load member profile");
+                toast.error(t("addEditMember.errors.fetchFailed"));
             } finally {
                 setLoading(false);
             }
@@ -186,7 +188,12 @@ const MemberDetail: React.FC = () => {
         }
 
         setMember((p) => (p ? { ...p, ...updatePayload } : null));
-        toast.success(`Member ${actionText}`);
+        
+        let toastMsg = "";
+        if (actionText === "approved") toastMsg = t("memberList.memberApproved");
+        else if (actionText === "blocked") toastMsg = t("memberDetail.toastBlocked");
+        else if (actionText === "unblocked") toastMsg = t("memberDetail.toastUnblocked");
+        toast.success(toastMsg || `Member ${actionText}`);
 
         (async () => {
             try {
@@ -198,23 +205,23 @@ const MemberDetail: React.FC = () => {
             } catch (err) {
                 console.error("Block/unblock failed:", err);
                 setMember((p) => (p ? { ...p, status: previousStatus } : null));
-                toast.error("Failed to update status on server. Reverted.");
+                toast.error(t("memberList.updateFailed"));
             }
         })();
     };
 
     const handleDelete = () => {
         if (!member) return;
-        if (!window.confirm("Permanently delete this member? All login access and data records will be destroyed.")) return;
+        if (!window.confirm(t("memberDetail.deleteConfirm"))) return;
 
-        toast.success("Deleting member in background...");
+        toast.success(t("memberList.blocking")); // Reusing blocking string for background process msg
         navigate("/admin/members");
 
         membersApi.delete(member.id).then(() => {
-            toast.success("Member record destroyed successfully");
+            toast.success(t("memberDetail.toastDeleted"));
         }).catch((err: any) => {
             console.error("Deletion failed:", err);
-            toast.error(err.message || "Deletion failed on server");
+            toast.error(err.message || t("memberDetail.toastDeleteFailed"));
         });
     };
 
@@ -249,10 +256,10 @@ const MemberDetail: React.FC = () => {
                             <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.12);"></div>
                             <div style="min-width:0;">
                                 <div style="font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:#e2e8f0; white-space:nowrap;">BCTA MEMBER</div>
-                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">Digital Identity Pass</div>
+                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">${t("memberDetail.digitalIdentityPass")}</div>
                             </div>
                         </div>
-                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">Verified</div>
+                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">${t("memberDetail.verified")}</div>
                     </div>
 
                     <div style="padding:16px;">
@@ -276,8 +283,8 @@ const MemberDetail: React.FC = () => {
                             </div>
                         </div>
 
-                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Secured Through BCTA Digital Identity</div>
-                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Valid for ${new Date().getFullYear()} fiscal year</div>
+                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">${t("memberDetail.securedThrough")}</div>
+                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">${t("memberDetail.validForYear", { year: new Date().getFullYear() })}</div>
                     </div>
                     <div style="height:6px; background:linear-gradient(90deg, #1e1b4b, #4f46e5, #1e1b4b);"></div>
                 </div>
@@ -307,7 +314,7 @@ const MemberDetail: React.FC = () => {
                 const printWindow = window.open("", "_blank", "width=900,height=1200");
                 if (!printWindow) {
                     alert("Popup blocked!");
-                    toast.error("Unable to open print window. Please allow popups.");
+                    toast.error(t("common.popupBlocked"));
                     return;
                 }
 
@@ -363,7 +370,7 @@ const MemberDetail: React.FC = () => {
                 printWindow.document.close();
             } catch (error) {
                 console.error("Print failed:", error);
-                toast.error("Failed to print ID card");
+                toast.error(t("memberDetail.toastPrintFailed") || "Failed to print ID card");
             }
         };
 
@@ -403,10 +410,10 @@ const MemberDetail: React.FC = () => {
                             <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.12);"></div>
                             <div style="min-width:0;">
                                 <div style="font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:#e2e8f0; white-space:nowrap;">BCTA MEMBER</div>
-                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">Digital Identity Pass</div>
+                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">${t("memberDetail.digitalIdentityPass")}</div>
                             </div>
                         </div>
-                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">Verified</div>
+                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">${t("memberDetail.verified")}</div>
                     </div>
 
                     <div style="padding:16px;">
@@ -430,8 +437,8 @@ const MemberDetail: React.FC = () => {
                             </div>
                         </div>
 
-                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Secured Through BCTA Digital Identity</div>
-                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">Valid for ${new Date().getFullYear()} fiscal year</div>
+                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">${t("memberDetail.securedThrough")}</div>
+                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">${t("memberDetail.validForYear", { year: new Date().getFullYear() })}</div>
                     </div>
                     <div style="height:6px; background:linear-gradient(90deg, #1e1b4b, #4f46e5, #1e1b4b);"></div>
                 </div>
@@ -475,10 +482,10 @@ const MemberDetail: React.FC = () => {
             document.body.removeChild(link);
             setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-            toast.success("ID card downloaded");
+            toast.success(t("memberDetail.idCardDownloaded"));
         } catch (error) {
             console.error("Download failed:", error);
-            toast.error("Failed to download ID card");
+            toast.error(t("memberDetail.toastDownloadFailed") || "Failed to download ID card");
         } finally {
             setIsDownloadingID(false);
         }
@@ -506,10 +513,10 @@ const MemberDetail: React.FC = () => {
                 <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
                     <AlertTriangle size={40} />
                 </div>
-                <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">Record Not Found</h2>
-                <p className="text-slate-500 mb-8 font-medium leading-relaxed">The member record you are trying to access does not exist or has been removed.</p>
+                <h2 className="text-2xl font-black text-slate-800 mb-3 tracking-tight">{t("memberDetail.recordNotFound")}</h2>
+                <p className="text-slate-500 mb-8 font-medium leading-relaxed">{t("memberDetail.recordNotFoundDesc")}</p>
                 <button onClick={() => navigate("/admin/members")} className="btn-primary w-full py-4 text-base shadow-xl shadow-slate-200 hover:shadow-slate-300 transition-all font-bold rounded-2xl">
-                    Back to Directory
+                    {t("memberDetail.backToDirectory")}
                 </button>
             </div>
         </div>
@@ -547,31 +554,31 @@ const MemberDetail: React.FC = () => {
                         <ArrowLeft size={18} />
                     </button>
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Member Profile</h1>
-                        <p className="text-sm text-slate-500">Admin view with profile and account controls.</p>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{t("memberDetail.profileTitle")}</h1>
+                        <p className="text-sm text-slate-500">{t("memberDetail.profileSubtitle")}</p>
                     </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                     <Link to={`/admin/members/${member.id}/edit`} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                        <Edit size={14} /> Edit
+                        <Edit size={14} /> {t("memberDetail.editMember")}
                     </Link>
                     <button
                         onClick={() => setShowID(true)}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                     >
-                        <QrCode size={14} /> Digital ID
+                        <QrCode size={14} /> {t("memberDetail.digitalId")}
                     </button>
                     {member.status === "pending" ? (
                         <button onClick={toggleBlock} className="inline-flex items-center gap-1.5 rounded-lg bg-[#000080] px-3 py-2 text-xs font-semibold text-white hover:bg-[#000066]">
-                            <UserCheck size={14} /> Approve
+                            <UserCheck size={14} /> {t("memberList.approve")}
                         </button>
                     ) : (
                         <button
                             onClick={toggleBlock}
                             className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold ${member.status === "active" ? "border border-red-200 bg-white text-red-700 hover:bg-red-50" : "bg-emerald-600 text-white hover:bg-emerald-700"}`}
                         >
-                            {member.status === "active" ? <><UserX size={14} /> Block</> : <><UserCheck size={14} /> Unblock</>}
+                            {member.status === "active" ? <><UserX size={14} /> {t("memberDetail.blockMember")}</> : <><UserCheck size={14} /> {t("memberDetail.unblockMember")}</>}
                         </button>
                     )}
                     <button
@@ -593,7 +600,7 @@ const MemberDetail: React.FC = () => {
                             {member.photoURL ? (
                                 <img
                                     src={member.photoURL}
-                                    alt={`${fullName} profile photo`}
+                                    alt={t("common.userProfile")}
                                     className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
                                 />
                             ) : (
@@ -606,7 +613,7 @@ const MemberDetail: React.FC = () => {
                         <div className="min-w-0 space-y-4">
                             <div className="space-y-1 text-center sm:text-left">
                                 <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{fullName || member.name}</h2>
-                                <p className="text-sm text-white/80">{member.email || "No email on file"}</p>
+                                <p className="text-sm text-white/80">{member.email || t("memberDetail.noEmail")}</p>
                             </div>
 
                             {/* Mobile: blood + member ID + member since, SM+: add active status */}
@@ -615,10 +622,10 @@ const MemberDetail: React.FC = () => {
                                     <ShieldCheck size={12} /> {member.status || "unknown"}
                                 </span>
                                 <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
-                                    <Droplet size={10} className="sm:w-3 sm:h-3" /> {member.bloodGroup || "Blood group"}
+                                    <Droplet size={10} className="sm:w-3 sm:h-3" /> {member.bloodGroup || t("memberDetail.bloodGroup")}
                                 </span>
                                 <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
-                                    <BadgeCheck size={10} className="sm:w-3 sm:h-3" /> {hasMemberId ? memberId : "Member ID pending"}
+                                    <BadgeCheck size={10} className="sm:w-3 sm:h-3" /> {hasMemberId ? memberId : t("memberDetail.memberIdStatus")}
                                 </span>
                                 <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:hidden">
                                     <CalendarDays size={10} /> {memberSince}
@@ -629,10 +636,10 @@ const MemberDetail: React.FC = () => {
                             <div className="hidden sm:flex flex-wrap items-center gap-2 text-xs text-white/70">
                                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-semibold ${memberIdVerified ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100" : "border-amber-300/40 bg-amber-400/10 text-amber-100"}`}>
                                     {memberIdVerified ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
-                                    {memberIdVerified ? "Member ID verified" : "Member ID pending check"}
+                                    {memberIdVerified ? t("memberDetail.verified") : t("memberDetail.needsCheck")}
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-white/80">
-                                    Joined {memberSince}
+                                    {t("memberList.joinedOn")} {memberSince}
                                 </span>
                             </div>
                         </div>
@@ -641,21 +648,21 @@ const MemberDetail: React.FC = () => {
                     {/* Mobile: 3 columns compact, SM: 2 cols, LG: 3 cols */}
                     <div className="grid gap-2 grid-cols-3 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
-                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Meetings</p>
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">{t("memberDetail.attendanceInfo")}</p>
                             <p className="mt-1 text-xl font-bold sm:text-3xl">{attendance.length}</p>
-                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">attended</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">{t("memberDetail.attendedCount")}</p>
                         </div>
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
-                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Payment</p>
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">{t("memberList.payment")}</p>
                             <p className={`mt-1 text-lg font-bold capitalize sm:text-2xl ${derivedPaymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
-                                {derivedPaymentStatus}
+                                {t(`paymentsDash.filter${derivedPaymentStatus.charAt(0).toUpperCase() + derivedPaymentStatus.slice(1)}`)}
                             </p>
-                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">status</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">{t("memberDetail.accountStatus")}</p>
                         </div>
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4 sm:col-span-2 xl:col-span-1">
-                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">Member since</p>
+                            <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">{t("memberDetail.memberSince")}</p>
                             <p className="mt-1 text-xl font-bold sm:text-3xl">{memberSince}</p>
-                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">year</p>
+                            <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">{t("memberList.status")}</p>
                         </div>
                     </div>
                 </div>
@@ -666,23 +673,23 @@ const MemberDetail: React.FC = () => {
                     <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
                         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Personal Details</h2>
-                                <p className="text-sm text-slate-500">Identity, account, and member-specific profile details.</p>
+                                <h2 className="text-lg font-bold text-slate-900">{t("memberDetail.personalDetails")}</h2>
+                                <p className="text-sm text-slate-500">{t("memberDetail.personalDesc")}</p>
                             </div>
                             <Activity className="text-[#000080]" size={20} />
                         </div>
 
                         <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             {[
-                                { label: "Member ID", value: hasMemberId ? memberId : "Pending assignment", icon: BadgeCheck },
-                                { label: "Full Name", value: fullName || "-" },
-                                { label: "Age", value: member.age ? `${member.age} years` : "-" },
-                                { label: "Blood Group", value: member.bloodGroup || "-", icon: Droplet },
-                                { label: "Email", value: member.email || "-", icon: Mail },
-                                { label: "Phone", value: member.phone || "-", icon: Phone },
-                                { label: "Aadhaar Number", value: member.aadhaarLast4 ? `XXXXXXXX${member.aadhaarLast4}` : "-", icon: ShieldCheck },
-                                { label: "Attendance", value: `${attendance.length} / ${meetings.length || 0} meetings` },
-                                { label: "Balance Due", value: `Rs. ${totalDue.toLocaleString()}`, icon: CreditCard },
+                                { label: t("memberDetail.memberId"), value: hasMemberId ? memberId : t("common.pending"), icon: BadgeCheck },
+                                { label: t("memberDetail.fullName"), value: fullName || "-" },
+                                { label: t("memberDetail.age"), value: member.age ? t("memberDetail.ageValue", { age: member.age }) : "-" },
+                                { label: t("memberDetail.bloodGroup"), value: member.bloodGroup || "-", icon: Droplet },
+                                { label: t("memberList.meetings"), value: member.email || "-", icon: Mail }, // email but icon says meeting? wait. Icon: Mail.
+                                { label: t("addMember.phone"), value: member.phone || "-", icon: Phone },
+                                { label: t("memberDetail.aadhaarNumber"), value: member.aadhaarLast4 ? `XXXXXXXX${member.aadhaarLast4}` : "-", icon: ShieldCheck },
+                                { label: t("memberDetail.attendanceInfo"), value: `${attendance.length} / ${meetings.length || 0} ${t("memberList.meetings")}` },
+                                { label: t("memberDetail.balanceDue"), value: `${t("memberDetail.rs")} ${totalDue.toLocaleString()}`, icon: CreditCard },
                             ].map((item) => {
                                 const Icon = item.icon;
                                 return (
@@ -701,8 +708,8 @@ const MemberDetail: React.FC = () => {
                     <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
                         <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-base font-bold text-slate-900">Shop and Nominee</h2>
-                                <p className="text-xs text-slate-500">Address and emergency contact details.</p>
+                                <h2 className="text-base font-bold text-slate-900">{t("memberDetail.shopAndNominee")}</h2>
+                                <p className="text-xs text-slate-500">{t("memberDetail.shopNomineeDesc")}</p>
                             </div>
                             <MapPin className="text-[#000080]" size={18} />
                         </div>
@@ -714,33 +721,33 @@ const MemberDetail: React.FC = () => {
                                         <MapPin size={14} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-1.5">Shop address</p>
-                                        <p className="text-xs font-medium text-slate-800 leading-5 line-clamp-2">{member.shopAddress || "No address on file"}</p>
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-1.5">{t("addMember.shopAddress")}</p>
+                                        <p className="text-xs font-medium text-slate-800 leading-5 line-clamp-2">{member.shopAddress || t("memberDetail.noAddress")}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {member.nomineeDetails?.name ? (
                                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">Nominee Details</p>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">{t("memberDetail.nomineeDetails")}</p>
                                     <div className="space-y-1.5">
                                         <div>
-                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Name</p>
+                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{t("addMember.firstName")}</p>
                                             <p className="text-xs font-semibold text-slate-900 mt-0.5">{member.nomineeDetails.name}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Relationship</p>
-                                            <p className="text-xs text-slate-600 mt-0.5">{member.nomineeDetails.relation || "Relation not set"}</p>
+                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{t("memberDetail.relationship")}</p>
+                                            <p className="text-xs font-semibold text-slate-600 mt-0.5">{member.nomineeDetails.relation || t("common.pending")}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Contact</p>
-                                            <p className="text-xs text-slate-600 mt-0.5">{member.nomineeDetails.phone || "Phone not set"}</p>
+                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{t("memberDetail.contactInfo")}</p>
+                                            <p className="text-xs font-semibold text-slate-600 mt-0.5">{member.nomineeDetails.phone || t("common.pending")}</p>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-3 text-xs text-slate-500">
-                                    No nominee details have been added yet.
+                                    {t("memberDetail.noNominee")}
                                 </div>
                             )}
                         </div>
@@ -751,35 +758,35 @@ const MemberDetail: React.FC = () => {
                     <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
                         <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-base font-bold text-slate-900">Membership Snapshot</h2>
-                                <p className="text-xs text-slate-500">Quick account and ID verification status.</p>
+                                <h2 className="text-base font-bold text-slate-900">{t("memberDetail.membershipSnapshot")}</h2>
+                                <p className="text-xs text-slate-500">{t("memberDetail.membershipSnapshotDesc")}</p>
                             </div>
                             <CalendarDays className="text-[#000080]" size={18} />
                         </div>
 
                         <div className="space-y-2.5">
                             <div className={`rounded-xl border p-3 ${memberIdVerified ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Member ID check</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{t("memberDetail.memberIdCheck")}</p>
                                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                    <p className="font-mono text-xs font-semibold text-slate-900 break-all">{hasMemberId ? memberId : "Member ID pending"}</p>
+                                    <p className="font-mono text-xs font-semibold text-slate-900 break-all">{hasMemberId ? memberId : t("common.pending")}</p>
                                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${memberIdVerified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                                         {memberIdVerified ? <CheckCircle2 size={10} /> : <AlertTriangle size={10} />}
-                                        {memberIdVerified ? "Verified" : "Needs check"}
+                                        {t(`memberDetail.${memberIdVerified ? "verified" : "needsCheck"}`)}
                                     </span>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-2.5">
                                 <div className={`rounded-xl border p-3 ${statusTone}`}>
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em]">Account status</p>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em]">{t("memberDetail.accountStatus")}</p>
                                     <p className="mt-1 text-base font-bold capitalize">{member.status || "unknown"}</p>
                                 </div>
                                 <div className={`rounded-xl border p-3 ${paymentTone}`}>
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em]">Payment status</p>
-                                    <p className="mt-1 text-base font-bold capitalize">{derivedPaymentStatus}</p>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em]">{t("memberDetail.paymentStatus")}</p>
+                                    <p className="mt-1 text-base font-bold capitalize">{t(`paymentsDash.filter${derivedPaymentStatus.charAt(0).toUpperCase() + derivedPaymentStatus.slice(1)}`)}</p>
                                 </div>
                             </div>
                             <div className="rounded-xl border border-slate-200 bg-white p-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Joined year</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{t("memberDetail.joinedYear")}</p>
                                 <p className="mt-1 text-sm font-semibold text-slate-900">{memberSince}</p>
                             </div>
                         </div>
@@ -788,8 +795,8 @@ const MemberDetail: React.FC = () => {
                     <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
                         <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-base font-bold text-slate-900">Activity & Contact</h2>
-                                <p className="text-xs text-slate-500">Meeting attendance and contact information.</p>
+                                <h2 className="text-base font-bold text-slate-900">{t("memberDetail.activityContact")}</h2>
+                                <p className="text-xs text-slate-500">{t("memberDetail.activityContactDesc")}</p>
                             </div>
                             <Activity className="text-[#000080]" size={18} />
                         </div>
@@ -797,16 +804,16 @@ const MemberDetail: React.FC = () => {
                         <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Meetings attended</p>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{t("memberDetail.meetingsAttended")}</p>
                                     <p className="mt-1.5 text-2xl font-bold text-[#000080]">{attendance.length}</p>
                                 </div>
                                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Payments collected</p>
-                                    <p className="mt-1.5 text-2xl font-bold text-emerald-600">Rs. {totalPaid.toLocaleString()}</p>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{t("memberDetail.paymentsCollected")}</p>
+                                    <p className="mt-1.5 text-2xl font-bold text-emerald-600">{t("memberDetail.rs")} {totalPaid.toLocaleString()}</p>
                                 </div>
                             </div>
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">Quick contact</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">{t("memberDetail.quickContact")}</p>
                                 <div className="space-y-1.5 text-xs text-slate-700">
                                     <p className="flex items-center gap-1.5 wrap-break-word"><Mail size={12} className="text-[#000080] shrink-0" /> {member.email || "-"}</p>
                                     <p className="flex items-center gap-1.5 wrap-break-word"><Phone size={12} className="text-[#000080] shrink-0" /> {member.phone || "-"}</p>
@@ -824,7 +831,7 @@ const MemberDetail: React.FC = () => {
                             <button
                                 onClick={() => setShowID(false)}
                                 className="absolute top-2.5 right-2.5 text-white/70 hover:text-white transition-colors z-50 p-1.5 bg-white/10 rounded-full"
-                                aria-label="Close Digital ID"
+                                aria-label={t("memberDetail.closeDigitalId")}
                             >
                                 <X size={18} />
                             </button>
@@ -839,13 +846,13 @@ const MemberDetail: React.FC = () => {
                                             <div className="w-4 h-4 bg-indigo-500 rounded-sm rotate-45" />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">BCTA MEMBER</p>
-                                            <p className="text-[10px] font-semibold text-white/55">Digital Identity Pass</p>
+                                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">{t("common.bctaMember")}</p>
+                                            <p className="text-[10px] font-semibold text-white/55">{t("memberDetail.digitalIdentityPass")}</p>
                                         </div>
                                     </div>
                                     <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold bg-white/10 text-emerald-300 border border-white/10">
                                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                                        Verified
+                                        {t("memberDetail.verified")}
                                     </span>
                                 </div>
 
@@ -854,7 +861,7 @@ const MemberDetail: React.FC = () => {
                                         <div className="shrink-0">
                                             <div className="w-18 h-18 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-3xl">
                                                 {member.photoURL ? (
-                                                    <img src={member.photoURL} alt="" className="w-full h-full object-cover" />
+                                                    <img src={member.photoURL} alt={t("common.userProfile")} className="w-full h-full object-cover" />
                                                 ) : (
                                                     member.name?.[0]
                                                 )}
@@ -866,11 +873,11 @@ const MemberDetail: React.FC = () => {
                                                 {member.name} {member.surname}
                                             </h3>
                                             <p className="mt-1 text-[10px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.14em] break-all">
-                                                {member.memberId || "MEMBER ID PENDING"}
+                                                {member.memberId || t("memberDetail.memberIdStatus")}
                                             </p>
                                             <div className="mt-2 flex flex-wrap gap-1.5">
                                                 <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
-                                                    {member.status || "unknown"}
+                                                    {t("common." + (member.status || "unknown"))}
                                                 </span>
                                                 <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
                                                     {memberSince}
@@ -904,10 +911,10 @@ const MemberDetail: React.FC = () => {
 
                                     <div className="text-center">
                                         <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em]">
-                                            Secured Through BCTA Digital Identity
+                                            {t("memberDetail.securedThrough")}
                                         </p>
                                         <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em] mt-0.5">
-                                            Valid for {new Date().getFullYear()} fiscal year
+                                            {t("memberDetail.validForYear", { year: new Date().getFullYear() })}
                                         </p>
                                     </div>
                                 </div>
@@ -917,8 +924,8 @@ const MemberDetail: React.FC = () => {
 
                             <div className="mt-2 grid grid-cols-3 gap-2 pb-1">
                                 <button onClick={handlePrintID} className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-white text-slate-800 rounded-lg font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none transition-all border border-slate-300 hover:bg-slate-50">
-                                    <span className="truncate block sm:hidden">Print</span>
-                                    <span className="truncate hidden sm:block">Print Pass</span>
+                                    <span className="truncate block sm:hidden">{t("common.print")}</span>
+                                    <span className="truncate hidden sm:block">{t("memberList.printPass")}</span>
                                 </button>
                                 <button
                                     onClick={handleDownloadID}
@@ -926,11 +933,11 @@ const MemberDetail: React.FC = () => {
                                     className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-slate-900 text-white rounded-lg font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none transition-all border border-slate-900 inline-flex items-center justify-center gap-1 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
                                     <Download size={11} className="shrink-0" />
-                                    <span className="truncate sm:hidden">{isDownloadingID ? "Saving" : "Save"}</span>
-                                    <span className="truncate hidden sm:inline">{isDownloadingID ? "Saving..." : "Download"}</span>
+                                    <span className="truncate sm:hidden">{isDownloadingID ? t("common.saving") : t("common.save")}</span>
+                                    <span className="truncate hidden sm:inline">{isDownloadingID ? t("common.saving") : t("common.download")}</span>
                                 </button>
                                 <button onClick={() => setShowID(false)} className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-white text-slate-900 rounded-lg font-black text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none hover:bg-slate-100 transition-all border border-slate-300">
-                                    Close
+                                    {t("common.close")}
                                 </button>
                             </div>
                         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import {
     ArrowLeft,
@@ -68,6 +69,7 @@ const Field: React.FC<{
     options?: { value: string; label: string }[];
     maxLength?: number;
 }> = ({ label, name, value, onChange, type = "text", placeholder, required = false, options, maxLength }) => {
+    const { t } = useTranslation();
     const isTextArea = type === "textarea";
     const isSelect = type === "select";
     const isPassword = type === "password";
@@ -87,9 +89,9 @@ const Field: React.FC<{
                         required={required}
                         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1 appearance-none cursor-pointer"
                     >
-                        <option value="">Select {label}</option>
+                        <option value="">{t("addEditMember.selectLabel", { label })}</option>
                         {options?.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            <option key={opt.value} value={opt.value}>{t(`genders.${opt.value}`, { defaultValue: opt.label })}</option>
                         ))}
                     </select>
                     <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none opacity-30 text-slate-400">
@@ -123,7 +125,7 @@ const Field: React.FC<{
                             type="button"
                             onClick={() => setShowSecret((prev) => !prev)}
                             className="absolute inset-y-0 right-2 inline-flex items-center text-slate-500 hover:text-slate-700"
-                            aria-label={showSecret ? "Hide password" : "Show password"}
+                            aria-label={showSecret ? t("common.hidePass") : t("common.showPass")}
                         >
                             {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -135,6 +137,7 @@ const Field: React.FC<{
 };
 
 const AddEditMember: React.FC = () => {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const isEdit = Boolean(id);
@@ -165,7 +168,7 @@ const AddEditMember: React.FC = () => {
         memberId: "",
     });
 
-    const profileTitle = isEdit ? "Update Member" : "Create Member";
+    const profileTitle = isEdit ? t("addEditMember.updateTitle") : t("addEditMember.createTitle");
 
     const assignNextMemberId = async (showToast = false) => {
         if (isEdit) return;
@@ -173,12 +176,12 @@ const AddEditMember: React.FC = () => {
         try {
             const nextId = await generateSequentialMemberId();
             setForm((prev) => ({ ...prev, memberId: nextId }));
-            if (showToast) toast.success(`Generated ID: ${nextId}`);
+            if (showToast) toast.success(t("addEditMember.success.idGenerated", { id: nextId }));
         } catch (error) {
             console.error("Member ID generation error:", error);
             const message = error instanceof Error
                 ? error.message
-                : "Unable to generate member ID. Please retry.";
+                : t("addEditMember.errors.idGenFailed");
             toast.error(message);
         } finally {
             setMemberIdLoading(false);
@@ -210,12 +213,12 @@ const AddEditMember: React.FC = () => {
                         });
                         if (d.photoURL) setPhotoPreview(d.photoURL);
                     } else {
-                        toast.error("Member not found");
+                        toast.error(t("addEditMember.errors.notFound"));
                         navigate("/admin/members");
                     }
                 } catch (err) {
                     console.error("Fetch member error:", err);
-                    toast.error("Failed to load member profile");
+                    toast.error(t("addEditMember.errors.fetchFailed"));
                 } finally {
                     setFetching(false);
                 }
@@ -246,35 +249,35 @@ const AddEditMember: React.FC = () => {
         e.preventDefault();
 
         if (!form.email.toLowerCase().endsWith("@gmail.com")) {
-            toast.error("Email must be a @gmail.com address.");
+            toast.error(t("addEditMember.errors.gmailOnly"));
             return;
         }
 
         const phoneDigits = form.phone.replace(/\D/g, "");
         if (phoneDigits.length !== 10) {
-            toast.error("Phone number must be exactly 10 digits.");
+            toast.error(t("addEditMember.errors.phoneLength"));
             return;
         }
 
         const nomineePhoneDigits = form.nomineePhone.replace(/\D/g, "");
         if (nomineePhoneDigits.length !== 10) {
-            toast.error("Nominee phone number must be exactly 10 digits.");
+            toast.error(t("addEditMember.errors.nomineePhoneLength"));
             return;
         }
 
         if (!isEdit && form.password && form.password.length < 8) {
-            toast.error("Password must be at least 8 characters long.");
+            toast.error(t("addEditMember.errors.passLength"));
             return;
         }
 
         const aadhaarDigits = form.aadhaarFull.replace(/\D/g, "");
         if (!isEdit && aadhaarDigits.length !== 12) {
-            toast.error("Please enter full 12-digit Aadhaar number.");
+            toast.error(t("addEditMember.errors.aadhaarLength"));
             return;
         }
 
         if (isEdit && aadhaarDigits.length > 0 && aadhaarDigits.length !== 12) {
-            toast.error("If updating Aadhaar, please enter all 12 digits.");
+            toast.error(t("addEditMember.errors.aadhaarUpdateLength"));
             return;
         }
 
@@ -286,7 +289,7 @@ const AddEditMember: React.FC = () => {
                 : form.aadhaarLast4.trim();
 
             if (!/^\d{4}$/.test(resolvedAadhaarLast4)) {
-                toast.error("Aadhaar last 4 digits are invalid.");
+                toast.error(t("addEditMember.errors.aadhaarInvalid"));
                 return;
             }
 
@@ -322,7 +325,7 @@ const AddEditMember: React.FC = () => {
                     await updateDoc(doc(db, "users", id), { photoURL });
                 }
                 
-                toast.success("Profile updated successfully!");
+                toast.success(t("addEditMember.success.updated"));
                 navigate(`/admin/members/${id}`);
             } else {
                 const response = await membersApi.create({
@@ -340,12 +343,12 @@ const AddEditMember: React.FC = () => {
                     await updateDoc(doc(db, "users", newUid), { photoURL });
                 }
                 
-                toast.success("Member successfully registered!");
+                toast.success(t("addEditMember.success.created"));
                 navigate("/admin/members");
             }
         } catch (err: any) {
             console.error("Submit error:", err);
-            toast.error(err.message || "Failed to process record");
+            toast.error(err.message || t("addEditMember.errors.fetchFailed"));
         } finally {
             setLoading(false);
         }
@@ -382,22 +385,22 @@ const AddEditMember: React.FC = () => {
                             <ArrowLeft size={18} />
                         </button>
                         <div className="min-w-0">
-                            <p className="text-xs uppercase tracking-[0.2em] text-white/75">Members</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-white/75">{t("addEditMember.membersBreadcrumb")}</p>
                             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{profileTitle}</h1>
                             <p className="mt-1 text-xs text-white/80">
-                                {isEdit ? "Update member details and nominee records" : "Create a member profile with an auto-generated ID"}
+                                {isEdit ? t("addEditMember.updateDesc") : t("addEditMember.createDesc")}
                             </p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur">
-                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">Member ID</p>
-                            <p className="mt-1 font-semibold text-white break-all">{form.memberId || (memberIdLoading ? "Generating..." : "Pending")}</p>
+                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">{t("addEditMember.generatedId")}</p>
+                            <p className="mt-1 font-semibold text-white break-all">{form.memberId || (memberIdLoading ? t("common.loading") : t("common.pending"))}</p>
                         </div>
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur">
-                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">Mode</p>
-                            <p className="mt-1 font-semibold text-white">{isEdit ? "Edit Existing Member" : "New Registration"}</p>
+                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">{t("addEditMember.modeLabel")}</p>
+                            <p className="mt-1 font-semibold text-white">{isEdit ? t("addEditMember.editMode") : t("addEditMember.newReg")}</p>
                         </div>
                     </div>
                 </div>
@@ -408,23 +411,23 @@ const AddEditMember: React.FC = () => {
                     <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
                         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Personal Details</h2>
-                                <p className="text-sm text-slate-500">Identity, contact and onboarding information.</p>
+                                <h2 className="text-lg font-bold text-slate-900">{t("addEditMember.personalDetails")}</h2>
+                                <p className="text-sm text-slate-500">{t("addEditMember.personalDesc")}</p>
                             </div>
                             <User className="text-[#000080]" size={20} />
                         </div>
 
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <Field label="First Name" name="name" value={form.name} onChange={handleChange} placeholder="First Name" required />
-                            <Field label="Surname" name="surname" value={form.surname} onChange={handleChange} placeholder="Surname" required />
-                            <Field label="Contact Number" name="phone" value={form.phone} onChange={handleChange} placeholder="+91 XXXXX XXXXX" required />
-                            <Field label="Email Address" name="email" value={form.email} onChange={handleChange} type="email" placeholder="example@bcta.in" required />
-                            <Field label="Age" name="age" value={form.age} onChange={handleChange} type="number" placeholder="28" required />
-                            <Field label="Gender" name="gender" value={form.gender} onChange={handleChange} type="select" required options={GENDERS} />
-                            <Field label="Blood Group" name="bloodGroup" value={form.bloodGroup} onChange={handleChange} type="select" required options={BLOOD_GROUPS} />
+                            <Field label={t("addEditMember.firstName")} name="name" value={form.name} onChange={handleChange} placeholder={t("addEditMember.firstName")} required />
+                            <Field label={t("addEditMember.surname")} name="surname" value={form.surname} onChange={handleChange} placeholder={t("addEditMember.surname")} required />
+                            <Field label={t("addEditMember.contactNumber")} name="phone" value={form.phone} onChange={handleChange} placeholder="+91 XXXXX XXXXX" required />
+                            <Field label={t("addEditMember.emailAddress")} name="email" value={form.email} onChange={handleChange} type="email" placeholder="example@bcta.in" required />
+                            <Field label={t("addEditMember.age")} name="age" value={form.age} onChange={handleChange} type="number" placeholder="28" required />
+                            <Field label={t("addEditMember.gender")} name="gender" value={form.gender} onChange={handleChange} type="select" required options={GENDERS} />
+                            <Field label={t("addEditMember.bloodGroup")} name="bloodGroup" value={form.bloodGroup} onChange={handleChange} type="select" required options={BLOOD_GROUPS} />
                             <div className="space-y-2 group">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
-                                    Aadhaar Number (12 Digits) <span className="text-rose-500">*</span>
+                                    {t("addEditMember.aadhaarLabel")} <span className="text-rose-500">*</span>
                                 </label>
                                 <div className="relative">
                                     <input
@@ -435,7 +438,7 @@ const AddEditMember: React.FC = () => {
                                             const digits = e.target.value.replace(/\D/g, "").slice(0, 12);
                                             setForm((prev) => ({ ...prev, aadhaarFull: digits }));
                                         }}
-                                        placeholder={isEdit ? "Enter 12 digits only to update" : "Enter 12-digit Aadhaar"}
+                                        placeholder={isEdit ? t("addEditMember.aadhaarPlaceholderEdit") : t("addEditMember.aadhaarPlaceholder")}
                                         required={!isEdit}
                                         maxLength={12}
                                         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-10 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1"
@@ -444,29 +447,29 @@ const AddEditMember: React.FC = () => {
                                         type="button"
                                         onClick={() => setShowAadhaar((prev) => !prev)}
                                         className="absolute inset-y-0 right-2 inline-flex items-center text-slate-500 hover:text-slate-700"
-                                        aria-label={showAadhaar ? "Hide Aadhaar number" : "Show Aadhaar number"}
+                                        aria-label={showAadhaar ? t("common.hidePass") : t("common.showPass")}
                                     >
                                         {showAadhaar ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
                                 </div>
                                 <p className="text-[11px] text-slate-500">
                                     {isEdit && !form.aadhaarFull && form.aadhaarLast4 
-                                        ? `Current: XXXXXXXX${form.aadhaarLast4} (Enter new 12 digits to update)` 
+                                        ? t("addEditMember.aadhaarCurrent", { last4: form.aadhaarLast4 }) 
                                         : form.aadhaarFull.length > 0
-                                        ? `Visible format: XXXXXXXX${form.aadhaarFull.slice(-4).padStart(4, "X")}`
-                                        : "Enter 12-digit Aadhaar number"}
+                                        ? t("addEditMember.aadhaarVisible", { last4: form.aadhaarFull.slice(-4) })
+                                        : t("addEditMember.aadhaarDefaultHint")}
                                 </p>
                             </div>
                         </div>
 
                         <div className="mt-4">
                             <Field
-                                label="Shop / Residential Address"
+                                label={t("addEditMember.shopAddress")}
                                 name="shopAddress"
                                 value={form.shopAddress}
                                 onChange={handleChange}
                                 type="textarea"
-                                placeholder="Complete address for official records..."
+                                placeholder={t("addEditMember.shopAddressPlaceholder")}
                                 required
                             />
                         </div>
@@ -476,8 +479,8 @@ const AddEditMember: React.FC = () => {
                         <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
                             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                                 <div>
-                                    <h2 className="text-lg font-bold text-slate-900">Account Setup</h2>
-                                    <p className="text-sm text-slate-500">Password and member ID are set during onboarding.</p>
+                                    <h2 className="text-lg font-bold text-slate-900">{t("addEditMember.accountSetup")}</h2>
+                                    <p className="text-sm text-slate-500">{t("addEditMember.accountDesc")}</p>
                                 </div>
                                 <button
                                     type="button"
@@ -486,17 +489,17 @@ const AddEditMember: React.FC = () => {
                                     className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {memberIdLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
-                                    Regenerate ID
+                                    {t("addEditMember.regenerateId")}
                                 </button>
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Generated Member ID</p>
-                                    <p className="mt-2 text-base font-semibold text-slate-900">{form.memberId || "Generating..."}</p>
+                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t("addEditMember.generatedId")}</p>
+                                    <p className="mt-2 text-base font-semibold text-slate-900">{form.memberId || t("common.loading")}</p>
                                 </div>
                                 <Field
-                                    label="Initial Password"
+                                    label={t("addEditMember.initialPassword")}
                                     name="password"
                                     value={form.password || ""}
                                     onChange={handleChange}
@@ -513,8 +516,8 @@ const AddEditMember: React.FC = () => {
                     <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm">
                         <div className="mb-5 flex items-center justify-between gap-3">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Photo & Nominee</h2>
-                                <p className="text-sm text-slate-500">Emergency contact and profile image.</p>
+                                <h2 className="text-lg font-bold text-slate-900">{t("addEditMember.photoNominee")}</h2>
+                                <p className="text-sm text-slate-500">{t("addEditMember.photoDesc")}</p>
                             </div>
                             <ShieldCheck className="text-[#000080]" size={20} />
                         </div>
@@ -530,20 +533,20 @@ const AddEditMember: React.FC = () => {
                                 )}
                             </div>
                             <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#000080] px-3 py-2 text-xs font-semibold text-white hover:bg-[#000066]">
-                                <Upload size={14} /> {photoPreview ? "Replace Photo" : "Upload Photo"}
+                                <Upload size={14} /> {photoPreview ? t("addEditMember.replacePhoto") : t("addEditMember.uploadPhoto")}
                                 <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
                             </label>
                         </div>
 
                         <div className="space-y-4">
-                            <Field label="Nominee Name" name="nomineeName" value={form.nomineeName} onChange={handleChange} placeholder="Full Name" required />
-                            <Field label="Relationship" name="nomineeRelation" value={form.nomineeRelation} onChange={handleChange} placeholder="e.g. Spouse" required />
-                            <Field label="Nominee Phone" name="nomineePhone" value={form.nomineePhone} onChange={handleChange} placeholder="Contact Details" required />
+                            <Field label={t("addEditMember.nomineeName")} name="nomineeName" value={form.nomineeName} onChange={handleChange} placeholder={t("addEditMember.nomineeName")} required />
+                            <Field label={t("addEditMember.relationship")} name="nomineeRelation" value={form.nomineeRelation} onChange={handleChange} placeholder={t("addEditMember.relationship")} required />
+                            <Field label={t("addEditMember.nomineePhone")} name="nomineePhone" value={form.nomineePhone} onChange={handleChange} placeholder={t("addEditMember.nomineePhone")} required />
                         </div>
 
                         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-start gap-2">
                             <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                            Nominee details are used for emergency and welfare support.
+                            {t("addEditMember.nomineeHint")}
                         </div>
                     </div>
 
@@ -555,7 +558,7 @@ const AddEditMember: React.FC = () => {
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#000080] px-4 py-3 text-sm font-semibold text-white hover:bg-[#000066] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {loading ? <Loader2 size={16} className="animate-spin" /> : (isEdit ? <Save size={16} /> : <UserPlus size={16} />)}
-                                {loading ? "Processing..." : (isEdit ? "Update Member" : "Create Member")}
+                                {loading ? t("memberList.processing") : profileTitle}
                             </button>
 
                             <button
@@ -564,16 +567,16 @@ const AddEditMember: React.FC = () => {
                                 disabled={loading}
                                 className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                Cancel
+                                {t("common.cancel")}
                             </button>
                         </div>
 
                         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                             <div className="flex items-center gap-2 font-semibold text-slate-700">
                                 <BadgeCheck size={14} className="text-[#000080]" />
-                                Auto Member ID
+                                {t("addEditMember.autoIdLabel")}
                             </div>
-                            <p className="mt-1 break-all">{form.memberId || "Will be generated before submit."}</p>
+                            <p className="mt-1 break-all">{form.memberId || t("addEditMember.autoIdPending")}</p>
                         </div>
                     </div>
                 </div>

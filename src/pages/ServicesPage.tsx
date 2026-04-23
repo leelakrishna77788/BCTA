@@ -3,43 +3,46 @@ import { Link } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
 import Navbar from "../components/shared/Navbar";
 import Footer from "../components/shared/Footer";
-
-const SERVICES = [
-  {
-    id: 1,
-    title: "Mobile Screen Replacement",
-    description: "Expert screen replacement services for all smartphone brands. We use high-quality original and compatible displays with warranty coverage.",
-    features: ["LCD/OLED Replacement", "Touch Digitizer Repair", "Gorilla Glass Installation", "Same Day Service"],
-    color: "from-indigo-500 to-indigo-700",
-    icon: "📱"
-  },
-  {
-    id: 2,
-    title: "Battery Replacement & Repair",
-    description: "Professional battery replacement for all mobile devices. Restore your phone's battery life with genuine and high-capacity batteries.",
-    features: ["Original Batteries", "Fast Charging Support", "Battery Health Check", "Instant Replacement"],
-    color: "from-emerald-500 to-teal-700",
-    icon: "🔋"
-  },
-  {
-    id: 3,
-    title: "Motherboard & IC Repair",
-    description: "Advanced motherboard-level repairs including IC replacement, reballing, and circuit repair. We fix charging issues, network problems, and boot failures.",
-    features: ["IC Replacement", "BGA Reballing", "Circuit Repair", "Water Damage Recovery"],
-    color: "from-violet-500 to-purple-700",
-    icon: "🔧"
-  },
-  {
-    id: 4,
-    title: "Software & Unlocking Services",
-    description: "Complete software solutions including OS installation, unlocking, data recovery, and virus removal. Keep your device running smoothly.",
-    features: ["OS Installation", "Pattern/FRP Unlock", "Data Recovery", "Software Updates"],
-    color: "from-amber-500 to-orange-700",
-    icon: "💻"
-  }
-];
+import { useTranslation } from "react-i18next";
 
 const ServicesPage: React.FC = () => {
+  const { t } = useTranslation();
+
+  const SERVICES = [
+    {
+      id: 1,
+      title: t("services.screenReplacement"),
+      description: t("services.screenDesc"),
+      features: [t("services.screenFeature1"), t("services.screenFeature2"), t("services.screenFeature3"), t("services.screenFeature4")],
+      color: "from-indigo-500 to-indigo-700",
+      icon: "📱"
+    },
+    {
+      id: 2,
+      title: t("services.batteryRepair"),
+      description: t("services.batteryDesc"),
+      features: [t("services.batteryFeature1"), t("services.batteryFeature2"), t("services.batteryFeature3"), t("services.batteryFeature4")],
+      color: "from-emerald-500 to-teal-700",
+      icon: "🔋"
+    },
+    {
+      id: 3,
+      title: t("services.motherboardRepair"),
+      description: t("services.motherboardDesc"),
+      features: [t("services.motherboardFeature1"), t("services.motherboardFeature2"), t("services.motherboardFeature3"), t("services.motherboardFeature4")],
+      color: "from-violet-500 to-purple-700",
+      icon: "🔧"
+    },
+    {
+      id: 4,
+      title: t("services.softwareServices"),
+      description: t("services.softwareDesc"),
+      features: [t("services.softwareFeature1"), t("services.softwareFeature2"), t("services.softwareFeature3"), t("services.softwareFeature4")],
+      color: "from-amber-500 to-orange-700",
+      icon: "💻"
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100 scrollbar-hide">
       <style>{`
@@ -62,10 +65,10 @@ const ServicesPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24 sm:py-28">
         <div className="text-center mb-12">
           <h2 className="text-4xl sm:text-5xl font-black text-slate-900 mb-4">
-            Professional <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Mobile Repair</span> Services
+            {t("services.title")} <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">{t("services.titleHighlight")}</span> {t("services.titleEnd")}
           </h2>
           <p className="text-slate-600/70 text-lg max-w-2xl mx-auto">
-            Expert technicians providing quality repair services for all mobile devices
+            {t("services.subtitle")}
           </p>
         </div>
 
@@ -122,16 +125,16 @@ const ServicesPage: React.FC = () => {
         {/* CTA Section */}
         <div className="mt-16 text-center bg-white/60 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border-2 border-indigo-200">
           <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4">
-            Need Professional Repair Service?
+            {t("services.needRepair")}
           </h3>
           <p className="text-slate-600/70 mb-6 max-w-xl mx-auto">
-            Contact BCTA members for reliable and expert mobile repair services
+            {t("services.needRepairDesc")}
           </p>
           <Link
             to="/contact"
             className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-lg"
           >
-            Contact Us
+            {t("services.contactUs")}
           </Link>
         </div>
       </div>

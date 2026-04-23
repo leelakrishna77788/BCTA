@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../firebase/firebaseConfig";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
@@ -7,6 +8,7 @@ import { Send, AlertCircle } from "lucide-react";
 
 const RaiseComplaint: React.FC = () => {
     const { currentUser, userProfile, loading } = useAuth();
+    const { t } = useTranslation();
     const [description, setDescription] = useState<string>("");
     const [title, setTitle] = useState<string>("");
     const [submitting, setSubmitting] = useState<boolean>(false);
@@ -16,12 +18,12 @@ const RaiseComplaint: React.FC = () => {
         e.preventDefault();
 
         if (!currentUser || !userProfile) {
-            toast.error("User profile not found. Please try again.");
+            toast.error(t("complaint.toastProfileNotFound"));
             return;
         }
 
         if (!description.trim()) {
-            toast.error("Please provide a description of your complaint.");
+            toast.error(t("complaint.toastProvideDescription"));
             return;
         }
 
@@ -44,10 +46,10 @@ const RaiseComplaint: React.FC = () => {
 
             console.log("Complaint submitted with ID:", docRef.id);
             setSubmitted(true);
-            toast.success("Complaint submitted successfully!");
+            toast.success(t("complaint.toastSuccess"));
         } catch (err: any) {
             console.error("Error submitting complaint:", err);
-            toast.error(err?.message || "Failed to submit complaint.");
+            toast.error(err?.message || t("complaint.toastFailed"));
         } finally {
             setSubmitting(false);
         }
@@ -57,7 +59,7 @@ const RaiseComplaint: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center p-12">
                 <div className="w-10 h-10 border-4 border-indigo-100 border-t-[#4f46e5] rounded-full animate-spin mb-4" />
-                <p className="text-slate-500 text-sm">Loading your profile...</p>
+                <p className="text-slate-500 text-sm">{t("complaint.loadingProfile")}</p>
             </div>
         );
     }
@@ -67,48 +69,48 @@ const RaiseComplaint: React.FC = () => {
             <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Send size={40} />
             </div>
-            <h2 className="text-2xl font-black text-slate-800 mb-2">Complaint Recorded</h2>
-            <p className="text-slate-500 text-sm mb-8 px-6">Your issue has been logged securely. Our administrative team will review this and provide a resolution shortly.</p>
+            <h2 className="text-2xl font-black text-slate-800 mb-2">{t("complaint.complaintRecorded")}</h2>
+            <p className="text-slate-500 text-sm mb-8 px-6">{t("complaint.issueLogged")}</p>
             <button onClick={() => { setSubmitted(false); setTitle(""); setDescription(""); }}
-                className="btn-primary w-full max-w-xs mx-auto">Raise Another Issue</button>
+                className="btn-primary w-full max-w-xs mx-auto">{t("complaint.raiseAnother")}</button>
         </div>
     );
 
     return (
         <div className="max-w-lg mx-auto space-y-6 animate-fade-in pb-12">
             <div className="text-center">
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Help & Support</h1>
-                <p className="text-slate-500 font-medium">Please provide specific details about your complaint</p>
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">{t("complaint.helpSupport")}</h1>
+                <p className="text-slate-500 font-medium">{t("complaint.provideDetails")}</p>
             </div>
 
             {!userProfile && (
                 <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex gap-3 text-amber-800 animate-pulse">
                     <AlertCircle className="shrink-0" />
-                    <p className="text-sm">We're having trouble retrieving your membership details. Submission might be restricted.</p>
+                    <p className="text-sm">{t("complaint.profileWarning")}</p>
                 </div>
             )}
 
             <div className="card shadow-2xl shadow-slate-200/50 border-none">
                 <form onSubmit={handleSubmit} className="space-y-3 md:space-y-12">
                     <div>
-                        <label className="label">Title (Optional)</label>
+                        <label className="label">{t("complaint.titleOptional")}</label>
                         <input
                             type="text"
                             value={title}
                             onChange={e => setTitle(e.target.value)}
-                            placeholder="Brief summary of your issue"
+                            placeholder={t("complaint.titlePlaceholder")}
                             className="input-field bg-slate-50 border-slate-100 focus:bg-white transition-all"
                             maxLength={100}
                         />
                     </div>
 
                     <div>
-                        <label className="label">Detailed Description*</label>
+                        <label className="label">{t("complaint.detailedDescription")}</label>
                         <textarea
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                             required rows={2}
-                            placeholder="Please describe exactly what happened..."
+                            placeholder={t("complaint.descPlaceholder")}
                             className="input-field resize-none bg-slate-50 border-slate-100 focus:bg-white transition-all p-4 text-base"
                         />
                     </div>
@@ -117,18 +119,18 @@ const RaiseComplaint: React.FC = () => {
                         {submitting ? (
                             <span className="flex items-center gap-3">
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Transmitting...
+                                {t("complaint.transmitting")}
                             </span>
                         ) : (
                             <span className="flex items-center gap-3 justify-center">
                                 <Send size={20} />
-                                File Complaint Securely
+                                {t("complaint.fileComplaint")}
                             </span>
                         )}
                     </button>
 
                     <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest">
-                        🛡️ Your identity is verified via BCTA secure gateway
+                        {t("complaint.secureGateway")}
                     </p>
                 </form>
             </div>

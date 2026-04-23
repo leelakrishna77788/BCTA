@@ -4,8 +4,11 @@ import { Users, Target, Award, Heart } from "lucide-react";
 import { assets } from "../assets/assets";
 import Navbar from "../components/shared/Navbar";
 import Footer from "../components/shared/Footer";
+import { useTranslation } from "react-i18next";
 
 const AboutPage: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-linear-to-br from-indigo-50 via-slate-50 to-indigo-100 scrollbar-hide">
       <Navbar />
@@ -22,15 +25,13 @@ const AboutPage: React.FC = () => {
             />
           </div>
           <h2 className="text-4xl sm:text-5xl font-black text-slate-900 mb-4">
-            Bhimavaram Cellphone Technician{" "}
+            {t("about.title")}{" "}
             <span className="bg-linear-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-              Association
+              {t("about.association")}
             </span>
           </h2>
           <p className="text-slate-600/70 text-lg max-w-3xl mx-auto leading-relaxed">
-            A unified platform bringing together mobile repair technicians in
-            Bhimavaram, fostering collaboration, skill development, and
-            professional growth since 2018.
+            {t("about.subtitle")}
           </p>
         </div>
 
@@ -41,12 +42,10 @@ const AboutPage: React.FC = () => {
               <Target size={28} className="text-white" />
             </div>
             <h3 className="text-2xl font-black text-slate-900 mb-3">
-              Our Mission
+              {t("about.ourMission")}
             </h3>
             <p className="text-slate-600/70 leading-relaxed">
-              To empower mobile technicians with modern tools, knowledge
-              sharing, and a collaborative platform that enhances service
-              quality and professional standards across Bhimavaram.
+              {t("about.missionDesc")}
             </p>
           </div>
 
@@ -55,12 +54,10 @@ const AboutPage: React.FC = () => {
               <Award size={28} className="text-white" />
             </div>
             <h3 className="text-2xl font-black text-slate-900 mb-3">
-              Our Vision
+              {t("about.ourVision")}
             </h3>
             <p className="text-slate-600/70 leading-relaxed">
-              To become the leading association for mobile repair professionals,
-              setting industry standards and creating opportunities for growth,
-              innovation, and excellence in mobile technology services.
+              {t("about.visionDesc")}
             </p>
           </div>
         </div>
@@ -69,29 +66,29 @@ const AboutPage: React.FC = () => {
         <div className="px-4 sm:px-6 py-10 sm:py-14 mb-16">
           {" "}
           <h3 className="text-3xl font-black text-slate-900 mb-8 text-center">
-            Our Core Values
+            {t("about.coreValues")}
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 icon: Users,
-                title: "Unity",
-                desc: "Stronger together as a community",
+                title: t("about.unity"),
+                desc: t("about.unityDesc"),
               },
               {
                 icon: Award,
-                title: "Excellence",
-                desc: "Commitment to quality service",
+                title: t("about.excellence"),
+                desc: t("about.excellenceDesc"),
               },
               {
                 icon: Heart,
-                title: "Integrity",
-                desc: "Honest and ethical practices",
+                title: t("about.integrity"),
+                desc: t("about.integrityDesc"),
               },
               {
                 icon: Target,
-                title: "Growth",
-                desc: "Continuous Improvement",
+                title: t("about.growth"),
+                desc: t("about.growthDesc"),
               },
             ].map((value, i) => (
               <div key={i} className="text-center">
@@ -112,8 +109,8 @@ const AboutPage: React.FC = () => {
             {/* Top 2 */}
             <div className="grid grid-cols-2 gap-4 w-full max-w-md">
               {[
-                { label: "Active Members", value: "260+" },
-                { label: "Years of Service", value: "6+" },
+                { label: t("about.activeMembers"), value: "260+" },
+                { label: t("about.yearsOfService"), value: "6+" },
               ].map((stat, i) => (
                 <div
                   key={i}
@@ -136,7 +133,7 @@ const AboutPage: React.FC = () => {
                   1000+
                 </div>
                 <p className="text-sm text-slate-600 font-medium">
-                  Services Provided
+                  {t("about.servicesProvided")}
                 </p>
               </div>
             </div>
@@ -145,9 +142,9 @@ const AboutPage: React.FC = () => {
           {/* ✅ DESKTOP LAYOUT */}
           <div className="hidden sm:grid grid-cols-3 gap-6">
             {[
-              { label: "Active Members", value: "260+" },
-              { label: "Years of Service", value: "6+" },
-              { label: "Services Provided", value: "1000+" },
+              { label: t("about.activeMembers"), value: "260+" },
+              { label: t("about.yearsOfService"), value: "6+" },
+              { label: t("about.servicesProvided"), value: "1000+" },
             ].map((stat, i) => (
               <div
                 key={i}
@@ -165,17 +162,16 @@ const AboutPage: React.FC = () => {
         {/* CTA */}
         <div className="text-center bg-white/60 backdrop-blur-sm rounded-2xl p-8 sm:p-12 border-2 border-indigo-200">
           <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-4">
-            Join Our Community
+            {t("about.joinCommunity")}
           </h3>
           <p className="text-slate-600/70 mb-6 max-w-xl mx-auto">
-            Become part of BCTA and connect with fellow mobile repair
-            professionals
+            {t("about.joinCommunityDesc")}
           </p>
           <Link
             to="/login"
             className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-lg"
           >
-            Login to Portal
+            {t("about.loginToPortal")}
           </Link>
         </div>
       </div>

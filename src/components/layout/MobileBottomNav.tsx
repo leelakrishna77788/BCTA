@@ -9,6 +9,7 @@ import {
   User,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 interface MobileBottomNavProps {
   onMenuClick: () => void;
@@ -16,19 +17,20 @@ interface MobileBottomNavProps {
 
 const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
   const { userRole } = useAuth();
+  const { t } = useTranslation();
   const normalizedRole = userRole?.toLowerCase().trim() || "";
   const isAdmin = normalizedRole === "admin" || normalizedRole === "superadmin";
 
   const adminNav = [
-    { to: "/admin/dashboard", icon: LayoutDashboard, label: "Home" },
-    { to: "/admin/members", icon: Users, label: "Members" },
-    { to: "/admin/payments", icon: CreditCard, label: "Payments" },
+    { to: "/admin/dashboard", icon: LayoutDashboard, label: t("bottomNav.home") },
+    { to: "/admin/members", icon: Users, label: t("bottomNav.members") },
+    { to: "/admin/payments", icon: CreditCard, label: t("bottomNav.payments") },
   ];
 
   const memberNav = [
-    { to: "/member/dashboard", icon: LayoutDashboard, label: "Home" },
-    { to: "/member/scan", icon: Smartphone, label: "Scan" },
-    { to: "/member/profile", icon: User, label: "Profile" },
+    { to: "/member/dashboard", icon: LayoutDashboard, label: t("bottomNav.home") },
+    { to: "/member/scan", icon: Smartphone, label: t("bottomNav.scan") },
+    { to: "/member/profile", icon: User, label: t("bottomNav.profile") },
   ];
 
   const links = isAdmin ? adminNav : memberNav;
@@ -79,7 +81,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
           <div className="p-2 rounded-xl transition-all duration-300">
             <Menu size={22} />
           </div>
-          <span className="text-[10px] tracking-wide">More</span>
+          <span className="text-[10px] tracking-wide">{t("bottomNav.more")}</span>
         </button>
       </div>
     </nav>

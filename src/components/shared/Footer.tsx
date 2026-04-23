@@ -10,8 +10,11 @@ import {
   Youtube,
   MessageCircle,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const Footer: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <footer
       id="footer"
@@ -43,16 +46,15 @@ const Footer: React.FC = () => {
                 <span className="text-white font-black text-sm">BCTA</span>
               </div>
               <div>
-                <span className="font-black text-lg">BCTA Portal</span>
-                <p className="text-[10px] text-slate-500 uppercase">
-                  Management System
-                </p>
+                <span className="font-black text-lg">{t("footer.bctaPortal")}</span>
+                    <p className="text-slate-600/70">
+                      {t("contact.bhimavaramAP")}
+                    </p>
               </div>
             </div>
 
             <p className="text-sm text-slate-400 max-w-xs">
-              Empowering Bhimavaram's technicians with digital unity and smart
-              tools.
+              {t("footer.tagline")}
             </p>
 
             {/* Social */}
@@ -74,16 +76,16 @@ const Footer: React.FC = () => {
             {" "}
             {/* Section 2 */}
             <div className="flex flex-col items-start text-left w-full">
-              <h4 className="text-xs font-black uppercase mb-3">Platform</h4>
+              <h4 className="text-xs font-black uppercase mb-3">{t("footer.platform")}</h4>
               <div className="space-y-2 w-full">
                 {[
-                  { to: "/", label: "Home" },
-                  { to: "/services", label: "Our Services" },
-                  { to: "/about", label: "About BCTA" },
-                  { to: "/presidents", label: "Leadership" },
+                  { to: "/", label: t("footer.home") },
+                  { to: "/services", label: t("footer.ourServices") },
+                  { to: "/about", label: t("footer.aboutBCTA") },
+                  { to: "/presidents", label: t("footer.leadership") },
                 ].map((link) => (
                   <Link
-                    key={link.label}
+                    key={link.to + link.label}
                     to={link.to}
                     className="block text-slate-400 hover:text-white text-sm"
                   >
@@ -95,14 +97,14 @@ const Footer: React.FC = () => {
             {/* Section 3 */}
             <div className="flex flex-col items-start text-left w-full">
               <h4 className="text-xs font-black uppercase mb-3">
-                System Access
+                {t("footer.systemAccess")}
               </h4>
               <div className="space-y-2 w-full">
                 {[
-                  { to: "/login", label: "Member Login" },
-                  { to: "/login", label: "Admin Console" },
-                  { to: "/register", label: "Register Member" },
-                  { to: "/contact", label: "Get Support" },
+                  { to: "/login", label: t("footer.memberLogin") },
+                  { to: "/login", label: t("footer.adminConsole") },
+                  { to: "/register", label: t("footer.registerMember") },
+                  { to: "/contact", label: t("footer.getSupport") },
                 ].map((link) => (
                   <Link
                     key={link.label}
@@ -118,7 +120,7 @@ const Footer: React.FC = () => {
 
           {/* Section 4 */}
           <div className="flex flex-col items-center text-center sm:items-start sm:text-left space-y-4">
-            <h4 className="text-xs font-black uppercase mb-6">Contact</h4>
+            <h4 className="text-xs font-black uppercase mb-6">{t("footer.contact")}</h4>
 
             <a href="#" className="text-slate-400 text-sm">
               support@bcta.in
@@ -127,14 +129,14 @@ const Footer: React.FC = () => {
               +91 98765 43210
             </a>
 
-            <p className="text-xs text-slate-500">Bhimavaram, AP</p>
+            <p className="text-xs text-slate-500">{t("footer.location")}</p>
           </div>
         </div>
 
         {/* Bottom Bar */}
         <div className="flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 pt-8 text-xs text-slate-500 text-center">
-          <p>© 2026 BCTA Portal</p>
-          <p>Professional Unity • Technical Excellence</p>
+          <p>{t("footer.copyright")}</p>
+          <p>{t("footer.motto")}</p>
         </div>
       </div>
     </footer>

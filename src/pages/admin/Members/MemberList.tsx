@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useTranslation, Trans } from "react-i18next";
 import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -24,6 +25,7 @@ interface MemberDoc extends DocumentData {
 }
 
 const MemberList: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const [members, setMembers] = useState<MemberDoc[]>([]);
     const [filtered, setFiltered] = useState<MemberDoc[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -108,7 +110,7 @@ const MemberList: React.FC = () => {
             },
             (err) => {
                 console.error("❌ Users listener error [MemberList]:", err);
-                toast.error("Failed to sync members list");
+                toast.error(t("memberList.updateFailed"));
                 setLoading(false);
             }
         );
@@ -130,7 +132,7 @@ const MemberList: React.FC = () => {
             },
             (err) => {
                 console.error("❌ Payments listener error [MemberList]:", err);
-                toast.error("Failed to sync payment status");
+                toast.error(t("memberList.updateFailed"));
                 setLoading(false);
             }
         );
@@ -180,7 +182,7 @@ const MemberList: React.FC = () => {
 
     const toggleBlock = async (member: MemberDoc) => {
         const docId = member.id || member.uid;
-        if (!docId) { toast.error("Member ID missing"); return; }
+        if (!docId) { toast.error(t("memberList.memberIdMissing")); return; }
 
         // Prevent double-clicks
         if (togglingId === docId) return;
@@ -201,7 +203,12 @@ const MemberList: React.FC = () => {
 
         // 1) Optimistic UI update — instant feedback
         updateMemberLocally(docId, updatePayload);
-        toast.success(`Member ${actionText} successfully`);
+        const statusMap: Record<string, string> = {
+            active: t("memberList.memberUnblocked"),
+            blocked: t("memberList.memberBlocked"),
+            approved: t("memberList.memberApproved")
+        };
+        toast.success(statusMap[actionText] || t("memberList.memberApproved"));
 
         // 2) Persist to Firestore in background
         try {
@@ -218,7 +225,7 @@ const MemberList: React.FC = () => {
             // Rollback on failure
             console.error("Block/Unblock failed:", err);
             updateMemberLocally(docId, { status: previousStatus });
-            toast.error("Failed to update status on server. Reverted.");
+            toast.error(t("memberList.updateFailed"));
         } finally {
             setTogglingId(null);
         }
@@ -226,11 +233,11 @@ const MemberList: React.FC = () => {
 
     const handleDelete = async (id: string | undefined, name: string | undefined) => {
         if (!id) return;
-        if (!window.confirm(`Are you absolutely sure you want to PERMANENTLY delete ${name}? This action cannot be undone.`)) return;
+        if (!window.confirm(t("memberList.removePermanently", { name }))) return;
         
         try {
             await membersApi.delete(id);
-            toast.success(`${name} has been removed permanently`);
+            toast.success(t("memberList.memberRemoved", { name }));
         } catch (err: any) {
             toast.error(err.message || "Failed to delete member");
         }
@@ -238,14 +245,14 @@ const MemberList: React.FC = () => {
 
     const handleBulkDelete = async () => {
         if (bulkConfirmText !== "DELETE ALL") {
-            toast.error("Please type 'DELETE ALL' exactly to confirm");
+            toast.error(t("memberList.dangerZone.typeExactly"));
             return;
         }
 
         try {
             setIsDeleting(true);
             await membersApi.deleteAll();
-            toast.success("Database cleanup complete. All members removed.");
+            toast.success(t("memberList.dangerZone.cleanupComplete"));
             setShowBulkConfirm(false);
             setBulkConfirmText("");
         } catch (err: any) {
@@ -261,13 +268,13 @@ const MemberList: React.FC = () => {
         <>
             {/* Bulk Deletion Modal */}
             {showBulkConfirm && (
-                <div className="fixed inset-0 z-[100] backdrop-blur-md animate-fade-in">
+                <div className="fixed inset-0 z-100 backdrop-blur-md animate-fade-in">
                     <div className="absolute inset-0 flex items-start justify-center p-4 pt-8 sm:pt-12">
-                        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
+                        <div className="bg-white rounded-4xl shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
                         <button 
                             onClick={() => setShowBulkConfirm(false)}
                             className="absolute top-4 sm:top-8 right-4 sm:right-8 text-slate-400 hover:text-slate-600 transition-colors z-50 p-2"
-                            title="Close"
+                            title={t("common.close")}
                         >
                             <X size={20} className="sm:w-6 sm:h-6" />
                         </button>
@@ -277,19 +284,21 @@ const MemberList: React.FC = () => {
                         <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mb-6 sm:mb-8 shadow-inner">
                             <AlertTriangle size={28} className="sm:w-9 sm:h-9" />
                         </div>
-                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 sm:mb-4 tracking-tight">Danger Zone</h2>
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-3 sm:mb-4 tracking-tight">{t("memberList.dangerZone.title")}</h2>
                         <p className="text-sm sm:text-base text-slate-500 font-bold leading-relaxed mb-6 sm:mb-8">
-                            You are about to permanently delete <span className="text-red-600">{members.length} members</span>. This will remove all their data and login access. This action <span className="underline decoration-red-200 decoration-4 underline-offset-4">cannot be undone</span>.
+                            <Trans i18nKey="memberList.dangerZone.bulkDesc" values={{ count: members.length }}>
+                                You are about to permanently delete <span className="text-red-600">{members.length} members</span>. This will remove all their data and login access. This action <span className="underline decoration-red-200 decoration-4 underline-offset-4">cannot be undone</span>.
+                            </Trans>
                         </p>
                         
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Type 'DELETE ALL' to verify</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("memberList.dangerZone.verifyLabel")}</label>
                                 <input 
                                     type="text" 
                                     value={bulkConfirmText}
                                     onChange={(e) => setBulkConfirmText(e.target.value)}
-                                    placeholder="Confirm here..."
+                                    placeholder={t("memberList.dangerZone.placeholder")}
                                     className="input-field w-full py-4 px-6 bg-slate-50 border-slate-200 focus:border-red-500 rounded-2xl font-black text-red-600 text-center tracking-widest uppercase transition-all"
                                 />
                             </div>
@@ -300,7 +309,7 @@ const MemberList: React.FC = () => {
                                     className="btn-secondary flex-1 py-4 font-bold rounded-2xl hover:bg-slate-50"
                                     disabled={isDeleting}
                                 >
-                                    Cancel
+                                    {t("common.cancel")}
                                 </button>
                                 <button 
                                     onClick={handleBulkDelete}
@@ -308,7 +317,7 @@ const MemberList: React.FC = () => {
                                     disabled={isDeleting || bulkConfirmText !== "DELETE ALL"}
                                 >
                                     {isDeleting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trash2 size={20} />}
-                                    {isDeleting ? "Processing..." : "Destroy Records"}
+                                    {isDeleting ? t("memberList.processing") : t("memberList.dangerZone.destroy")}
                                 </button>
                             </div>
                         </div>
@@ -322,7 +331,7 @@ const MemberList: React.FC = () => {
                 <div className="relative">
                     <div className="absolute -left-4 top-0 w-1 bg-indigo-600 h-full rounded-full opacity-0 md:opacity-100" />
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-2">
-                        Members <span className="text-indigo-600">Directory</span>
+                        {t("memberList.title")} <span className="text-indigo-600">{t("memberList.directory")}</span>
                     </h1>
                 </div>
                 <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:items-center">
@@ -331,11 +340,11 @@ const MemberList: React.FC = () => {
                         className="group h-12 w-full justify-center px-5 rounded-2xl glass-card border border-red-200/50 text-red-600 hover:bg-red-50 transition-all flex items-center gap-2 shadow-sm font-bold text-sm sm:w-auto"
                     >
                          <Trash2 size={18} className="transition-transform group-hover:scale-110" /> 
-                        <span>Bulk Cleanup</span>
+                        <span>{t("memberList.bulkCleanup")}</span>
                     </button>
                     <Link to="/admin/members/add" className="h-12 w-full justify-center px-6 rounded-2xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 sm:w-auto">
                         <Plus size={20} strokeWidth={2.5} /> 
-                        <span>Add Member</span>
+                        <span>{t("memberList.addMember")}</span>
                     </Link>
                 </div>
             </div>
@@ -346,7 +355,7 @@ const MemberList: React.FC = () => {
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex items-center gap-2 text-slate-400">
                         <Filter size={16} />
-                        <span className="text-[11px] font-black uppercase tracking-widest">Filter Results</span>
+                        <span className="text-[11px] font-black uppercase tracking-widest">{t("memberList.filterResults")}</span>
                     </div>
                     <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,11rem)_minmax(0,11rem)_auto] xl:items-center">
                         <div className="relative min-w-0">
@@ -355,7 +364,7 @@ const MemberList: React.FC = () => {
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search name, ID, email, blood group..."
+                                placeholder={t("memberList.searchPlaceholder")}
                                 className="w-full h-11 pl-10 pr-10 bg-white/40 border border-slate-200/60 rounded-2xl font-semibold text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                             />
                             {searchTerm ? (
@@ -363,8 +372,8 @@ const MemberList: React.FC = () => {
                                     type="button"
                                     onClick={() => setSearchTerm("")}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                                    aria-label="Clear search"
-                                    title="Clear search"
+                                    aria-label={t("common.clear")}
+                                    title={t("common.clear")}
                                 >
                                     <X size={14} />
                                 </button>
@@ -373,10 +382,10 @@ const MemberList: React.FC = () => {
                         <div className="relative min-w-0">
                             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
                                 className="w-full h-11 pl-4 pr-10 appearance-none bg-white/35 border border-slate-200/50 rounded-2xl font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
-                                <option value="all">All Status</option>
-                                <option value="active">Active Members</option>
-                                <option value="blocked">Blocked Members</option>
-                                <option value="pending">Pending Approval</option>
+                                <option value="all">{t("memberList.allStatus")}</option>
+                                <option value="active">{t("memberList.activeMembers")}</option>
+                                <option value="blocked">{t("memberList.blockedMembers")}</option>
+                                <option value="pending">{t("memberList.pendingApproval")}</option>
                             </select>
                             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none border-l pl-2 border-slate-200">
                                 <Filter size={14} />
@@ -385,10 +394,10 @@ const MemberList: React.FC = () => {
                         <div className="relative min-w-0">
                             <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}
                                 className="w-full h-11 pl-4 pr-10 appearance-none bg-white/35 border border-slate-200/50 rounded-2xl font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
-                                <option value="all">All Payments</option>
-                                <option value="paid">Fully Paid</option>
-                                <option value="unpaid">Unpaid</option>
-                                <option value="partial">Partial Payment</option>
+                                <option value="all">{t("memberList.allPayments")}</option>
+                                <option value="paid">{t("memberList.fullyPaid")}</option>
+                                <option value="unpaid">{t("memberList.unpaid")}</option>
+                                <option value="partial">{t("memberList.partialPayment")}</option>
                             </select>
                             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none border-l pl-2 border-slate-200">
                                 <Filter size={14} />
@@ -398,10 +407,10 @@ const MemberList: React.FC = () => {
                             type="button"
                             onClick={clearFilters}
                             className="h-11 inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/60 bg-white/40 px-4 text-sm font-bold text-slate-600 shadow-sm transition-all hover:bg-white hover:text-indigo-600 hover:shadow-md active:scale-[0.98] sm:col-span-2 xl:col-span-1"
-                            title="Reset all filters"
+                            title={t("memberList.reset")}
                         >
                             <RotateCcw size={14} />
-                            Reset
+                            {t("memberList.reset")}
                         </button>
                     </div>
                 </div>
@@ -417,8 +426,8 @@ const MemberList: React.FC = () => {
                 ) : filtered.length === 0 ? (
                     <div className="text-center py-20 px-4 rounded-3xl border border-dashed flex flex-col items-center justify-center gap-4">
                         <span className="text-6xl opacity-20">👥</span>
-                        <p className="font-bold text-slate-600 mb-1">No members found</p>
-                        <p className="text-sm font-medium text-slate-400">Try adjusting your filters.</p>
+                        <p className="font-bold text-slate-600 mb-1">{t("memberList.noMembersFound")}</p>
+                        <p className="text-sm font-medium text-slate-400">{t("memberList.adjustFilters")}</p>
                     </div>
                 ) : (
                     filtered.map(m => (
@@ -439,34 +448,34 @@ const MemberList: React.FC = () => {
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-black text-slate-900 text-lg tracking-tight truncate">{m.name} {m.surname}</h3>
                                         <p className="text-xs text-slate-400 font-semibold truncate">{m.email}</p>
-                                        <span className="inline-block mt-1 font-mono text-[9px] uppercase font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm">{m.memberId || "NEW REG"}</span>
+                                        <span className="inline-block mt-1 font-mono text-[9px] uppercase font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm">{m.memberId || t("memberList.newReg")}</span>
                                     </div>
                                 </div>
 
                                 {/* Info Badges */}
                                 <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-3 lg:gap-4">
                                     <div className="rounded-xl px-3 py-2 text-center sm:px-4">
-                                        <p className="text-[9px] font-black text-red-400 uppercase tracking-widest">Blood</p>
+                                        <p className="text-[9px] font-black text-red-400 uppercase tracking-widest">{t("memberList.blood")}</p>
                                         <p className="text-sm font-black text-red-600 flex items-center justify-center gap-1">
                                             <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                             {m.bloodGroup || "N/A"}
                                         </p>
                                     </div>
                                     <div className="rounded-xl px-3 py-2 text-center sm:px-4">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Meetings</p>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("memberList.meetings")}</p>
                                         <p className="text-sm font-black text-slate-900">{m.attendanceCount || 0}</p>
                                     </div>
                                     <div className="rounded-xl px-3 py-2 text-center sm:px-4">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Payment</p>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("memberList.payment")}</p>
                                         <p className={`text-sm font-black uppercase ${m.paymentStatus === "paid" ? "text-emerald-700" : m.paymentStatus === "partial" ? "text-amber-700" : "text-red-700"}`}>
-                                            {m.paymentStatus || 'none'}
+                                            {t(`common.${m.paymentStatus || 'pending'}`)}
                                         </p>
                                     </div>
                                     <div className="rounded-xl px-3 py-2 text-center sm:px-4">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</p>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("memberList.status")}</p>
                                         <p className={`text-sm font-black uppercase flex items-center justify-center gap-1.5 ${m.status === "active" ? "text-indigo-700" : m.status === "pending" ? "text-amber-700" : "text-slate-600"}`}>
                                             <div className={`w-1.5 h-1.5 rounded-full ${m.status === "active" ? "bg-indigo-500 animate-pulse" : m.status === "pending" ? "bg-amber-500" : "bg-slate-400"}`}></div>
-                                            {m.status || 'unknown'}
+                                            {t(`common.${m.status || 'pending'}`)}
                                         </p>
                                     </div>
                                 </div>
@@ -481,47 +490,47 @@ const MemberList: React.FC = () => {
                                         <Link
                                             to={`/admin/members/${memberId}`}
                                             className="h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 shadow-md shadow-slate-200/60 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-lg hover:shadow-indigo-100 active:translate-y-0.5 active:shadow-lg active:shadow-slate-300/80 font-bold text-[10px] sm:text-xs whitespace-nowrap"
-                                            title="View Profile"
+                                            title={t("memberList.view")}
                                         >
-                                            <Eye size={16} /> <span className="hidden sm:inline">View</span>
+                                            <Eye size={16} /> <span className="hidden sm:inline">{t("memberList.view")}</span>
                                         </Link>
                                         {m.status === "pending" ? (
                                             <button
                                                 onClick={() => toggleBlock(m)}
                                                 disabled={isToggling}
                                                 className={`h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-white shadow-md shadow-indigo-100 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-wider whitespace-nowrap ${isToggling ? "cursor-not-allowed opacity-70" : "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-lg hover:shadow-indigo-100 active:translate-y-0.5 active:shadow-lg active:shadow-indigo-200/70"}`}
-                                                title="Approve Member"
+                                                title={t("memberList.approve")}
                                             >
                                                 {isToggling ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
-                                                <span className="hidden sm:inline">{isToggling ? "Processing..." : "Approve"}</span>
+                                                <span className="hidden sm:inline">{isToggling ? t("memberList.processing") : t("memberList.approve")}</span>
                                             </button>
                                         ) : m.status === "active" ? (
                                             <button
                                                 onClick={() => toggleBlock(m)}
                                                 disabled={isToggling}
                                                 className={`h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white shadow-md shadow-red-100 transition-all font-bold text-[10px] sm:text-xs whitespace-nowrap ${isToggling ? "cursor-not-allowed opacity-70" : "text-slate-500 hover:bg-red-50 hover:text-red-600 hover:shadow-lg hover:shadow-red-100 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"}`}
-                                                title="Block Member"
+                                                title={t("memberList.block")}
                                             >
                                                 {isToggling ? <Loader2 size={16} className="animate-spin" /> : <UserX size={16} />}
-                                                <span className="hidden sm:inline">{isToggling ? "Blocking..." : "Block"}</span>
+                                                <span className="hidden sm:inline">{isToggling ? t("memberList.blocking") : t("memberList.block")}</span>
                                             </button>
                                         ) : (
                                             <button
                                                 onClick={() => toggleBlock(m)}
                                                 disabled={isToggling}
                                                 className={`h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-white shadow-md shadow-emerald-100 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-wider whitespace-nowrap ${isToggling ? "cursor-not-allowed opacity-70" : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:shadow-lg hover:shadow-emerald-100 active:translate-y-0.5 active:shadow-lg active:shadow-emerald-200/70"}`}
-                                                title="Unblock Member"
+                                                title={t("memberList.unblock")}
                                             >
                                                 {isToggling ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
-                                                <span className="hidden sm:inline">{isToggling ? "Unblocking..." : "Unblock"}</span>
+                                                <span className="hidden sm:inline">{isToggling ? t("memberList.unblocking") : t("memberList.unblock")}</span>
                                             </button>
                                         )}
                                         <button
                                             onClick={() => handleDelete(m.id || m.uid, m.name)}
                                             className="h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[10px] sm:text-xs whitespace-nowrap hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"
-                                            title="Delete Permanently"
+                                            title={t("memberList.delete")}
                                         >
-                                            <Trash2 size={16} /> <span className="hidden sm:inline">Delete</span>
+                                            <Trash2 size={16} /> <span className="hidden sm:inline">{t("memberList.delete")}</span>
                                         </button>
                                     </div>
                                 </div>

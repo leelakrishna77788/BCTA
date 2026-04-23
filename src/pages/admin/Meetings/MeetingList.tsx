@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../context/AuthContext";
 import { db } from "../../../firebase/firebaseConfig";
 import {
@@ -58,6 +59,7 @@ interface MeetingForm {
 }
 
 const MeetingList: React.FC = () => {
+  const { t } = useTranslation();
   const { userRole } = useAuth();
   const normalizedRole = userRole?.toLowerCase().trim() || "";
   const isAdmin = normalizedRole === "admin" || normalizedRole === "superadmin";
@@ -140,10 +142,10 @@ const MeetingList: React.FC = () => {
       },
       (err: any) => {
         console.error("[MeetingList] Firestore Subscription Error:", err);
-        setError(err.message || "Failed to load meetings");
+        setError(err.message || t("meetings.createFail"));
         setLoading(false);
         if (err.code === "permission-denied") {
-          toast.error("Access Denied: Check Firebase Permissions");
+          toast.error(t("meetings.accessDenied"));
         }
       },
     );
@@ -154,7 +156,7 @@ const MeetingList: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.topic || !form.date || !form.startTime) {
-      toast.error("Please fill all required fields");
+      toast.error(t("meetings.fillRequired"));
       return;
     }
 
@@ -169,7 +171,7 @@ const MeetingList: React.FC = () => {
         const [endH, endM] = form.endTime.split(":").map(Number);
         meetingEnd = new Date(year, month - 1, day, endH, endM);
         if (meetingEnd <= meetingStart) {
-          toast.error("End time must be after start time");
+          toast.error(t("meetings.timeError"));
           setSubmitting(false);
           return;
         }
@@ -195,7 +197,7 @@ const MeetingList: React.FC = () => {
       };
 
       await addDoc(collection(db, "meetings"), meetingData);
-      toast.success("Meeting created successfully!");
+      toast.success(t("meetings.createSuccess"));
       setShowForm(false);
       setForm({
         topic: "",
@@ -211,8 +213,8 @@ const MeetingList: React.FC = () => {
       console.error("[MeetingList] Create Error:", err);
       const errorMsg =
         err.code === "permission-denied"
-          ? "Permission denied. Check Firestore rules."
-          : "Failed to create meeting";
+          ? t("meetings.createPermError")
+          : t("meetings.createFail");
       toast.error(errorMsg);
     } finally {
       setSubmitting(false);
@@ -224,12 +226,12 @@ const MeetingList: React.FC = () => {
 
     try {
       await deleteDoc(doc(db, "meetings", deleteModal.id));
-      toast.success("Meeting deleted successfully");
+      toast.success(t("meetings.deleteSuccess"));
     } catch (err: any) {
       toast.error(
         err.code === "permission-denied"
-          ? "Permission denied to delete meeting."
-          : "Failed to delete meeting",
+          ? t("meetings.deletePermError")
+          : t("meetings.deleteFail"),
       );
     } finally {
       setDeleteModal({ open: false, id: null, topic: "" });
@@ -299,7 +301,7 @@ const MeetingList: React.FC = () => {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center gap-4 text-slate-500">
         <Loader2 className="w-8 h-8 animate-spin text-[#4f46e5]" />
-        <p className="font-medium animate-pulse">Loading meetings list...</p>
+        <p className="font-medium animate-pulse">{t("meetings.loading")}</p>
       </div>
     );
   }
@@ -309,12 +311,12 @@ const MeetingList: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Meetings & Sessions
+            {t("meetings.title")}
           </h1>
           <p className="text-slate-500 text-sm font-medium">
             {isAdmin
-              ? "Manage and create committee meetings"
-              : "View your upcoming BCTA meetings"}
+              ? t("meetings.adminSubtitle")
+              : t("meetings.memberSubtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -324,7 +326,7 @@ const MeetingList: React.FC = () => {
               className="btn-secondary flex items-center gap-2"
             >
               <Users size={18} />
-              <span className="hidden sm:inline">Global Attendance</span>
+              <span className="hidden sm:inline">{t("meetings.globalAttendance")}</span>
             </Link>
           )}
           {isAdmin && (
@@ -333,8 +335,8 @@ const MeetingList: React.FC = () => {
               className="btn-primary"
             >
               <Plus size={18} />
-              <span className="hidden sm:inline">Create Meeting</span>
-              <span className="sm:hidden">New</span>
+              <span className="hidden sm:inline">{t("meetings.createMeeting")}</span>
+              <span className="sm:hidden">{t("meetings.new")}</span>
             </button>
           )}
         </div>
@@ -345,14 +347,14 @@ const MeetingList: React.FC = () => {
             <AlertCircle className="text-rose-600 w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-rose-900 font-bold">Access Issue Detected</h3>
+            <h3 className="text-rose-900 font-bold">{t("meetings.accessIssue")}</h3>
             <p className="text-rose-600/80 text-sm mt-1 max-w-md">{error}</p>
           </div>
           <button
             onClick={() => window.location.reload()}
             className="btn-secondary text-rose-700 border-rose-200 hover:bg-rose-100/50"
           >
-            <RefreshCw size={16} /> Force Reload
+            <RefreshCw size={16} /> {t("meetings.forceReload")}
           </button>
         </div>
       )}
@@ -364,7 +366,7 @@ const MeetingList: React.FC = () => {
               <Plus size={18} />
             </div>
             <h2 className="text-lg font-bold text-slate-900">
-              Create New Meeting
+              {t("meetings.createNewMeeting")}
             </h2>
           </div>
           <form
@@ -372,7 +374,7 @@ const MeetingList: React.FC = () => {
             className="grid grid-cols-1 md:grid-cols-2 gap-6"
           >
             <div className="md:col-span-2">
-              <label className="label">Meeting Topic*</label>
+              <label className="label">{t("meetings.topic")}*</label>
               <input
                 value={form.topic}
                 onChange={(e) =>
@@ -384,7 +386,7 @@ const MeetingList: React.FC = () => {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="label">Agenda / Description</label>
+              <label className="label">{t("meetings.description")}</label>
               <textarea
                 value={form.description}
                 onChange={(e) =>
@@ -392,11 +394,11 @@ const MeetingList: React.FC = () => {
                 }
                 rows={3}
                 className="input-field resize-none"
-                placeholder="What will be discussed?"
+                placeholder={t("meetings.descriptionPlaceholder")}
               />
             </div>
             <div>
-              <label className="label">Meeting Date*</label>
+              <label className="label">{t("meetings.date")}*</label>
               <input
                 type="date"
                 value={form.date}
@@ -408,7 +410,7 @@ const MeetingList: React.FC = () => {
               />
             </div>
             <div>
-              <label className="label">QR Logic Mode</label>
+              <label className="label">{t("meetings.qrLogicMode")}</label>
               <select
                 value={form.qrDuration}
                 onChange={(e) =>
@@ -416,14 +418,14 @@ const MeetingList: React.FC = () => {
                 }
                 className="input-field"
               >
-                <option value="30">30 minutes auto-expire</option>
-                <option value="60">1 hour auto-expire</option>
-                <option value="120">2 hours auto-expire</option>
-                <option value="0">Manual End Only</option>
+                <option value="30">{t("meetings.autoExpire30")}</option>
+                <option value="60">{t("meetings.autoExpire60")}</option>
+                <option value="120">{t("meetings.autoExpire120")}</option>
+                <option value="0">{t("meetings.manualEnd")}</option>
               </select>
             </div>
             <div>
-              <label className="label">Start Time*</label>
+              <label className="label">{t("meetings.startTime")}*</label>
               <input
                 type="time"
                 value={form.startTime}
@@ -435,7 +437,7 @@ const MeetingList: React.FC = () => {
               />
             </div>
             <div>
-              <label className="label">End Time (Estimated)</label>
+              <label className="label">{t("meetings.endTime")}</label>
               <input
                 type="time"
                 value={form.endTime}
@@ -446,18 +448,18 @@ const MeetingList: React.FC = () => {
               />
             </div>
             <div>
-              <label className="label">Venue / Location</label>
+              <label className="label">{t("meetings.venue")}</label>
               <input
                 value={form.location}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, location: e.target.value }))
                 }
-                placeholder="Meeting hall name"
+                placeholder={t("meetings.venuePlaceholder")}
                 className="input-field"
               />
             </div>
             <div>
-              <label className="label">Google Maps Link</label>
+              <label className="label">{t("meetings.mapsLink")}</label>
               <input
                 value={form.gpsLink}
                 onChange={(e) =>
@@ -473,7 +475,7 @@ const MeetingList: React.FC = () => {
                 onClick={() => setShowForm(false)}
                 className="btn-secondary"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="submit"
@@ -483,7 +485,7 @@ const MeetingList: React.FC = () => {
                 {submitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  "Create Session"
+                  t("meetings.createSession")
                 )}
               </button>
             </div>
@@ -509,7 +511,7 @@ const MeetingList: React.FC = () => {
                 </div>
                 <div className="flex gap-2">
                   <span className={statusColor(getMeetingTimeStatus(m))}>
-                    {getMeetingTimeStatus(m)}
+                    {t(`meetings.status.${getMeetingTimeStatus(m)}`)}
                   </span>
                   {isAdmin && (
                     <button
@@ -571,14 +573,14 @@ const MeetingList: React.FC = () => {
                         to={`/admin/meetings/${m.id}`}
                         className="flex-1 btn-primary text-xs h-10 px-0 flex justify-center items-center"
                       >
-                        <QrCode size={14} className="mr-1" /> Manage QR
+                        <QrCode size={14} className="mr-1" /> {t("meetings.manageQr")}
                       </Link>
                     ) : (
                       <button
                         disabled
                         className="flex-1 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed text-xs h-10 px-0 flex justify-center items-center rounded-xl font-bold"
                       >
-                        <Clock size={14} className="mr-1" /> Session Locked
+                        <Clock size={14} className="mr-1" /> {t("meetings.sessionLocked")}
                       </button>
                     );
                   })()}
@@ -586,7 +588,7 @@ const MeetingList: React.FC = () => {
                     to={`/admin/meetings/${m.id}/attendance`}
                     className="flex-1 btn-secondary text-xs h-10 px-0 flex justify-center items-center transition-all"
                   >
-                    <Users size={14} className="mr-1" /> Stats
+                    <Users size={14} className="mr-1" /> {t("meetings.stats")}
                   </Link>
                 </div>
               ) : (
@@ -600,14 +602,14 @@ const MeetingList: React.FC = () => {
                         to="/member/scan"
                         className="btn-primary w-full h-11 text-sm font-bold shadow-lg shadow-slate-200 active:scale-95 transition-transform flex justify-center items-center px-4 py-2 rounded-xl"
                       >
-                        <QrCode size={18} className="mr-1" /> Mark Attendance
+                        <QrCode size={18} className="mr-1" /> {t("meetings.markAttendance")}
                       </Link>
                     ) : (
                       <button
                         disabled
                         className="w-full h-11 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed text-sm font-bold flex justify-center items-center rounded-xl opacity-75"
                       >
-                        <Clock size={18} className="mr-1" /> Session Ended
+                        <Clock size={18} className="mr-1" /> {t("meetings.sessionEnded")}
                       </button>
                     );
                   })()}
@@ -621,12 +623,12 @@ const MeetingList: React.FC = () => {
                 <CalendarDays className="text-slate-300 w-8 h-8" />
               </div>
               <h3 className="text-slate-900 font-bold text-lg">
-                No meetings scheduled
+                {t("meetings.noMeetings")}
               </h3>
               <p className="text-slate-500 text-sm mt-1 max-w-xs">
                 {isAdmin
-                  ? "Click 'Create Meeting' above to start your first session."
-                  : "There are currently no upcoming committee meetings."}
+                  ? t("meetings.noMeetingsAdminDesc")
+                  : t("meetings.noMeetingsMemberDesc")}
               </p>
             </div>
           )}
@@ -638,15 +640,11 @@ const MeetingList: React.FC = () => {
           {/* MODAL */}
           <div className="relative bg-white rounded-2xl shadow-xl w-[90%] max-w-sm p-5">
             <h2 className="text-lg font-bold text-slate-900 mb-2">
-              Delete Meeting
+              {t("meetings.deleteTitle")}
             </h2>
 
             <p className="text-sm text-slate-500 mb-6">
-              Are you sure you want to delete{" "}
-              <span className="font-semibold text-slate-700">
-                "{deleteModal.topic}"
-              </span>
-              ?
+              {t("meetings.deleteConfirmation", { topic: deleteModal.topic })}
             </p>
 
             <div className="flex gap-3">
@@ -656,14 +654,14 @@ const MeetingList: React.FC = () => {
                 }
                 className="flex-1 bg-slate-100 py-2.5 rounded-xl"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
 
               <button
                 onClick={handleDelete}
                 className="flex-1 bg-rose-600 text-white py-2.5 rounded-xl"
               >
-                Delete
+                {t("common.delete")}
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserCheck, UserX, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { db } from "../../../firebase/firebaseConfig";
 import { doc, getDoc, getDocs, collection, query, where, onSnapshot } from "firebase/firestore";
 
@@ -19,6 +20,7 @@ interface Meeting {
 }
 
 const AttendanceDashboard: React.FC = () => {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [meeting, setMeeting] = useState<Meeting | null>(null);
@@ -75,7 +77,7 @@ const AttendanceDashboard: React.FC = () => {
                     <ArrowLeft size={20} />
                 </button>
                 <div>
-                    <h1 className="page-title mb-0">Attendance Dashboard</h1>
+                    <h1 className="page-title mb-0">{t("meetings.statsDashboard.title")}</h1>
                     <p className="text-slate-500 text-sm">{meeting?.topic}</p>
                 </div>
             </div>
@@ -83,10 +85,10 @@ const AttendanceDashboard: React.FC = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: "Total Members", value: allMembers.length, color: "bg-[#4f46e5]", icon: Users },
-                    { label: "Attended", value: attended.length, color: "bg-emerald-500", icon: UserCheck },
-                    { label: "Not Attended", value: notAttended.length, color: "bg-red-500", icon: UserX },
-                    { label: "Attendance Rate", value: `${rate}%`, color: "bg-violet-500", icon: Users },
+                    { label: t("meetings.statsDashboard.totalMembers"), value: allMembers.length, color: "bg-[#4f46e5]", icon: Users },
+                    { label: t("meetings.statsDashboard.attended"), value: attended.length, color: "bg-emerald-500", icon: UserCheck },
+                    { label: t("meetings.statsDashboard.notAttended"), value: notAttended.length, color: "bg-red-500", icon: UserX },
+                    { label: t("meetings.statsDashboard.rate"), value: `${rate}%`, color: "bg-violet-500", icon: Users },
                 ].map(s => (
                     <div key={s.label} className="stat-card flex-col items-start gap-2 p-4">
                         <div className={`w-10 h-10 ${s.color} rounded-xl flex items-center justify-center`}>
@@ -103,7 +105,7 @@ const AttendanceDashboard: React.FC = () => {
             {/* Progress bar */}
             <div className="card">
                 <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold text-slate-700">Attendance Rate</p>
+                    <p className="text-sm font-semibold text-slate-700">{t("meetings.statsDashboard.rate")}</p>
                     <p className="text-sm text-[#4f46e5] font-bold">{rate}%</p>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-3">
@@ -115,7 +117,7 @@ const AttendanceDashboard: React.FC = () => {
                 {/* Attended */}
                 <div className="card">
                     <h3 className="text-sm font-semibold text-emerald-700 mb-3 flex items-center gap-2">
-                        <UserCheck size={16} /> Attended ({attended.length})
+                        <UserCheck size={16} /> {t("meetings.statsDashboard.attended")} ({attended.length})
                     </h3>
                     <div className="space-y-2 max-h-80 overflow-y-auto">
                         {attended.map(m => (
@@ -127,17 +129,17 @@ const AttendanceDashboard: React.FC = () => {
                                     <p className="text-sm font-medium text-slate-800">{m.name} {m.surname}</p>
                                     <p className="text-xs text-slate-400 font-mono">{m.memberId}</p>
                                 </div>
-                                <span className="ml-auto badge-active text-xs">✓ Present</span>
+                                <span className="ml-auto badge-active text-xs">✓ {t("meetings.statsDashboard.present")}</span>
                             </div>
                         ))}
-                        {attended.length === 0 && <p className="text-slate-400 text-sm text-center py-8">No one has scanned yet</p>}
+                        {attended.length === 0 && <p className="text-slate-400 text-sm text-center py-8">{t("meetings.statsDashboard.noScans")}</p>}
                     </div>
                 </div>
 
                 {/* Not Attended */}
                 <div className="card">
                     <h3 className="text-sm font-semibold text-red-600 mb-3 flex items-center gap-2">
-                        <UserX size={16} /> Not Attended ({notAttended.length})
+                        <UserX size={16} /> {t("meetings.statsDashboard.notAttended")} ({notAttended.length})
                     </h3>
                     <div className="space-y-2 max-h-80 overflow-y-auto">
                         {notAttended.map(m => (
@@ -149,7 +151,7 @@ const AttendanceDashboard: React.FC = () => {
                                     <p className="text-sm font-medium text-slate-800">{m.name} {m.surname}</p>
                                     <p className="text-xs text-slate-400 font-mono">{m.memberId}</p>
                                 </div>
-                                <span className="ml-auto badge-blocked text-xs">Absent</span>
+                                <span className="ml-auto badge-blocked text-xs">{t("meetings.statsDashboard.absent")}</span>
                             </div>
                         ))}
                     </div>

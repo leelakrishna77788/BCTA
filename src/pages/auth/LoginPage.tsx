@@ -7,8 +7,11 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../../components/shared/LanguageSwitcher";
 
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const { login, currentUser, userRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -43,7 +46,7 @@ const LoginPage: React.FC = () => {
       const role = (data?.role?.toLowerCase() || "member") as string;
       const isAdmin = role === "admin" || role === "superadmin";
 
-      toast.success("Login successful!");
+      toast.success(t("login.loginSuccess"));
       
       const destination = isAdmin ? "/admin/dashboard" : "/member/dashboard";
       navigate(destination, { replace: true });
@@ -51,8 +54,8 @@ const LoginPage: React.FC = () => {
       console.error("Login detail err:", err);
       const msg =
         err.code === "auth/invalid-login-credentials"
-          ? "Invalid email or password. Please try again."
-          : err.message || "Login failed";
+          ? t("login.invalidCredentials")
+          : err.message || t("login.loginFailed");
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -62,7 +65,7 @@ const LoginPage: React.FC = () => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetEmail) {
-      toast.error("Please enter your email address");
+      toast.error(t("login.enterEmail"));
       return;
     }
 
@@ -70,17 +73,17 @@ const LoginPage: React.FC = () => {
     try {
       const auth = getAuth();
       await sendPasswordResetEmail(auth, resetEmail);
-      toast.success("Password reset email sent! Check your inbox.");
+      toast.success(t("login.resetSent"));
       setShowForgotPassword(false);
       setResetEmail("");
     } catch (err: any) {
       console.error("Reset password error:", err);
       if (err.code === "auth/user-not-found") {
-        toast.error("No account found with this email address");
+        toast.error(t("login.noAccount"));
       } else if (err.code === "auth/invalid-email") {
-        toast.error("Invalid email address");
+        toast.error(t("login.invalidEmail"));
       } else {
-        toast.error("Failed to send reset email. Please try again.");
+        toast.error(t("login.resetFailed"));
       }
     } finally {
       setResetting(false);
@@ -94,7 +97,7 @@ const LoginPage: React.FC = () => {
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-50/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-slate-500 text-sm font-medium">Restoring session...</p>
+            <p className="text-slate-500 text-sm font-medium">{t("login.restoringSession")}</p>
           </div>
         </div>
       )}
@@ -135,14 +138,15 @@ const LoginPage: React.FC = () => {
               }}
             />
 
-            {/* Home Button Left */}
-            <div className="relative z-10 flex justify-start mb-4">
+            {/* Home Button + Language Switcher */}
+            <div className="relative z-10 flex justify-between items-center mb-4">
               <button
                 onClick={() => navigate("/")}
                 className="text-blue-900 font-medium hover:text-blue-700"
               >
-                🏠︎ Home
+                🏠︎ {t("login.home")}
               </button>
+              <LanguageSwitcher variant="light" />
             </div>
 
             {/* Center Logo + Title */}
@@ -156,7 +160,7 @@ const LoginPage: React.FC = () => {
               </div>
 
               <h1 className="text-xl sm:text-2xl font-bold text-blue-900 tracking-tight">
-                BCTA Management System
+                {t("login.bctaSystem")}
               </h1>
             </div>
 
@@ -166,10 +170,10 @@ const LoginPage: React.FC = () => {
           <div className="p-4 sm:p-8 pt-2 sm:pt-4">
             <div className="mb-4">
               <h2 className="text-xl sm:text-2xl text-center font-bold text-slate-900 tracking-tight">
-                Welcome Back
+                {t("login.welcomeBack")}
               </h2>
               <p className="text-slate-500 text-center mt-1 text-sm font-medium">
-                Sign in to access your account
+                {t("login.signInSubtitle")}
               </p>
             </div>
 
@@ -177,7 +181,7 @@ const LoginPage: React.FC = () => {
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Email Address
+                  {t("login.emailAddress")}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -188,7 +192,7 @@ const LoginPage: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    placeholder="Enter your email"
+                    placeholder={t("login.emailPlaceholder")}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all text-sm"
                   />
                 </div>
@@ -197,7 +201,7 @@ const LoginPage: React.FC = () => {
               {/* Password Field */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Password
+                  {t("login.password")}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -208,14 +212,14 @@ const LoginPage: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    placeholder="Enter your password"
+                    placeholder={t("login.passwordPlaceholder")}
                     className="w-full pl-11 pr-11 py-3 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? t("common.hidePass") : t("common.showPass")}
                   >
                     {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
@@ -229,7 +233,7 @@ const LoginPage: React.FC = () => {
                   onClick={() => setShowForgotPassword(true)}
                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
                 >
-                  Forgot password?
+                  {t("login.forgotPassword")}
                 </button>
               </div>
 
@@ -243,11 +247,11 @@ const LoginPage: React.FC = () => {
                 {loading ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Signing in...
+                    {t("login.signingIn")}
                   </>
                 ) : (
                   <>
-                    Sign In
+                    {t("login.signIn")}
                     <ArrowRight size={16} />
                   </>
                 )}
@@ -275,9 +279,9 @@ const LoginPage: React.FC = () => {
                 background: "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.4) 0%, transparent 70%)"
               }} />
               <div className="relative z-10">
-                <h3 className="text-xl font-bold text-white">Reset Password</h3>
+                <h3 className="text-xl font-bold text-white">{t("login.resetPassword")}</h3>
                 <p className="text-indigo-200/80 text-sm mt-1 font-medium">
-                  Enter your email to receive a reset link
+                  {t("login.resetSubtitle")}
                 </p>
               </div>
             </div>
@@ -286,7 +290,7 @@ const LoginPage: React.FC = () => {
             <form onSubmit={handleForgotPassword} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Email Address
+                  {t("login.emailAddress")}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -297,7 +301,7 @@ const LoginPage: React.FC = () => {
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     required
-                    placeholder="Enter your registered email"
+                    placeholder={t("login.registeredEmail")}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50/80 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all text-sm"
                   />
                 </div>
@@ -312,7 +316,7 @@ const LoginPage: React.FC = () => {
                   }}
                   className="w-full sm:flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
                 >
-                  Cancel
+                  {t("login.cancel")}
                 </button>
                 <button
                   type="submit"
@@ -323,10 +327,10 @@ const LoginPage: React.FC = () => {
                   {resetting ? (
                     <>
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Sending...
+                      {t("login.sending")}
                     </>
                   ) : (
-                    "Send Reset Link"
+                    t("login.sendResetLink")
                   )}
                 </button>
               </div>

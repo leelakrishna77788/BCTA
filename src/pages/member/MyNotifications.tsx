@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import {
   collection,
@@ -28,6 +29,7 @@ interface NotificationData {
 
 const MyNotifications: React.FC = () => {
   const { currentUser, userRole } = useAuth();
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -60,18 +62,18 @@ const MyNotifications: React.FC = () => {
       if (userRole === "admin" || userRole === "superadmin") {
         // ✅ ADMIN → delete for everyone
         await deleteDoc(doc(db, "notifications", id));
-        toast.success("Notification deleted for all users");
+        toast.success(t("myNotifications.toastDeletedSingle"));
       } else {
         // ✅ MEMBER → hide only for self
         await updateDoc(doc(db, "notifications", id), {
           dismissedBy: arrayUnion(currentUser.uid),
         });
-        toast.success("Notification removed from your view");
+        toast.success(t("myNotifications.toastRemovedSingle"));
       }
       setDeleteConfirm(null);
     } catch (err) {
       console.error("[deleteNotification] Error:", err);
-      toast.error("Failed to delete notification");
+      toast.error(t("myNotifications.toastDeleteFailed"));
     }
   };
   const deleteAllNotifications = async () => {
@@ -87,7 +89,7 @@ const MyNotifications: React.FC = () => {
         });
 
         await batch.commit();
-        toast.success("All notifications deleted for everyone");
+        toast.success(t("myNotifications.toastDeletedAll"));
       } else {
         // ✅ MEMBER → hide only for self
         const visibleNotifications = notifications.filter(
@@ -101,17 +103,17 @@ const MyNotifications: React.FC = () => {
         });
 
         await batch.commit();
-        toast.success("All notifications removed from your view");
+        toast.success(t("myNotifications.toastRemovedAll"));
       }
       setDeleteAllConfirm(false);
     } catch (err) {
       console.error("[deleteAllNotifications] Error:", err);
-      toast.error("Failed to clear notifications");
+      toast.error(t("myNotifications.toastClearFailed"));
     }
   };
 
   const formatDate = (date: any) => {
-    if (!date) return "Unknown date";
+    if (!date) return t("myNotifications.unknownDate");
     if (date.toDate) return date.toDate().toLocaleString("en-IN");
     if (date._seconds)
       return new Date(date._seconds * 1000).toLocaleString("en-IN");
@@ -186,9 +188,9 @@ const MyNotifications: React.FC = () => {
     <div className="space-y-5 animate-fade-in scrollbar-hide">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title mb-0">My Notifications</h1>
+          <h1 className="page-title mb-0">{t("myNotifications.title")}</h1>
           <p className="text-slate-500 text-sm">
-            {visibleNotifications.length} notifications
+            {visibleNotifications.length} {t("myNotifications.notifications")}
           </p>
         </div>
         {visibleNotifications.length > 0 && (
@@ -197,7 +199,7 @@ const MyNotifications: React.FC = () => {
             className="btn-danger flex items-center gap-2"
           >
             <Trash2 size={16} />
-            Clear All
+            {t("myNotifications.clearAll")}
           </button>
         )}
       </div>
@@ -208,10 +210,10 @@ const MyNotifications: React.FC = () => {
             <Bell size={32} className="text-slate-300" />
           </div>
           <h3 className="text-lg font-bold text-slate-700 mb-2">
-            No Notifications
+            {t("myNotifications.noNotifications")}
           </h3>
           <p className="text-slate-500 text-sm">
-            You're all caught up! Check back later for updates.
+            {t("myNotifications.allCaughtUp")}
           </p>
         </div>
       ) : (
@@ -259,29 +261,29 @@ const MyNotifications: React.FC = () => {
 
       {/* Delete Single Notification Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-100 p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
               <Trash2 size={24} className="text-red-600" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 text-center mb-2">
-              Delete Notification?
+              {t("myNotifications.deleteNotification")}
             </h3>
             <p className="text-sm text-slate-600 text-center mb-6">
-              Are you sure you want to delete this notification? This action cannot be undone.
+              {t("myNotifications.deleteConfirmMsg")}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}
                 className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => deleteNotification(deleteConfirm)}
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all"
               >
-                Delete
+                {t("common.delete")}
               </button>
             </div>
           </div>
@@ -290,29 +292,29 @@ const MyNotifications: React.FC = () => {
 
       {/* Delete All Notifications Confirmation Modal */}
       {deleteAllConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-100 p-4 animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
               <Trash2 size={24} className="text-red-600" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 text-center mb-2">
-              Clear All Notifications?
+              {t("myNotifications.clearAllNotifications")}
             </h3>
             <p className="text-sm text-slate-600 text-center mb-6">
-              Are you sure you want to clear all notifications? This will remove {visibleNotifications.length} notification{visibleNotifications.length !== 1 ? 's' : ''}.
+              {t("myNotifications.clearAllConfirmMsg", { count: visibleNotifications.length })}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteAllConfirm(false)}
                 className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={deleteAllNotifications}
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all"
               >
-                Clear All
+                {t("myNotifications.clearAll")}
               </button>
             </div>
           </div>

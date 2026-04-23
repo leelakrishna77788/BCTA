@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { assets } from "../../../assets/assets";
 import {
   collection,
@@ -31,6 +32,7 @@ interface ShopForm {
 }
 
 const ShopList: React.FC = () => {
+  const { t } = useTranslation();
   const [shops, setShops] = useState<Shop[]>([]);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -102,7 +104,7 @@ const ShopList: React.FC = () => {
       // 📝 Owner Name
       ctx.font = "14px Arial";
       ctx.fillStyle = "#94a3b8";
-      ctx.fillText(`Owner: ${shop.ownerName}`, canvas.width / 2, 95);
+      ctx.fillText(`${t("shopList.card.owner")}: ${shop.ownerName}`, canvas.width / 2, 95);
 
       // 👉 Get QR
       const svg = document.getElementById(`shop-qr-${shop.id}`);
@@ -179,11 +181,11 @@ const ShopList: React.FC = () => {
         ...form,
         createdAt: serverTimestamp(),
       });
-      toast.success("Shop created successfully!");
+      toast.success(t("shopList.toasts.success"));
       setShowForm(false);
       setForm({ shopName: "", ownerName: "", address: "", phone: "" });
     } catch (err: any) {
-      toast.error(err.message || "Failed to create shop");
+      toast.error(t("shopList.toasts.error", { error: err.message || "" }));
     } finally {
       setSubmitting(false);
     }
@@ -195,13 +197,12 @@ const ShopList: React.FC = () => {
         <div className="relative">
           <div className="absolute -left-4 top-0 w-1 bg-indigo-600 h-full rounded-full opacity-0 md:opacity-100" />
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-2">
-            Shops & <span className="text-indigo-600">Distribution</span>
+            {t("shopList.title").split("&")[0]} & <span className="text-indigo-600">{t("shopList.title").split("&")[1] || "?"}</span>
           </h1>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <p className="text-slate-500 font-semibold text-sm tracking-tight">
-              <span className="text-slate-900">{shops.length}</span> active
-              distribution points
+              {t("shopList.activePoints", { count: shops.length })}
             </p>
           </div>
         </div>
@@ -218,7 +219,7 @@ const ShopList: React.FC = () => {
           ) : (
             <Plus />
           )}
-          <span>{showForm ? "Cancel Registration" : "Register New Shop"}</span>
+          <span>{showForm ? t("shopList.cancelRegistration") : t("shopList.registerNew")}</span>
         </button>
       </div>
 
@@ -233,14 +234,14 @@ const ShopList: React.FC = () => {
           </div>
           <h2 className="text-[11px] font-black text-indigo-600 mb-8 tracking-[0.2em] uppercase flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            Registration Form
+            {t("shopList.form.title")}
           </h2>
 
           <form onSubmit={handleSubmit} className="relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                  Shop Name
+                  {t("shopList.form.shopName")}
                 </label>
                 <input
                   value={form.shopName}
@@ -248,13 +249,13 @@ const ShopList: React.FC = () => {
                     setForm((p) => ({ ...p, shopName: e.target.value }))
                   }
                   required
-                  placeholder="e.g. Sri Rama Mobile Store"
+                  placeholder={t("shopList.form.placeholders.shopName")}
                   className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                  Proprietor Name
+                  {t("shopList.form.proprietorName")}
                 </label>
                 <input
                   value={form.ownerName}
@@ -262,13 +263,13 @@ const ShopList: React.FC = () => {
                     setForm((p) => ({ ...p, ownerName: e.target.value }))
                   }
                   required
-                  placeholder="Owner's full name"
+                  placeholder={t("shopList.form.placeholders.owner")}
                   className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                  Primary Contact
+                  {t("shopList.form.contact")}
                 </label>
                 <input
                   type="tel"
@@ -276,20 +277,20 @@ const ShopList: React.FC = () => {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, phone: e.target.value }))
                   }
-                  placeholder="9876543210"
+                  placeholder={t("shopList.form.placeholders.phone")}
                   className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                  Full Address
+                  {t("shopList.form.address")}
                 </label>
                 <input
                   value={form.address}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, address: e.target.value }))
                   }
-                  placeholder="Detailed location"
+                  placeholder={t("shopList.form.placeholders.address")}
                   className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner"
                 />
               </div>
@@ -305,7 +306,7 @@ const ShopList: React.FC = () => {
                 ) : (
                   <QrCode size={18} />
                 )}
-                {submitting ? "Processing..." : "Register & Generate QR"}
+                {submitting ? t("shopList.form.processing") : t("shopList.form.submit")}
               </button>
             </div>
           </form>
@@ -335,7 +336,7 @@ const ShopList: React.FC = () => {
                 </div>
               </div>
               <span className="bg-indigo-50 text-indigo-700 text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border border-indigo-100/50">
-                Fixed Identifier
+                {t("shopList.card.identifier")}
               </span>
             </div>
 
@@ -359,7 +360,7 @@ const ShopList: React.FC = () => {
             <div className="flex items-center gap-2 justify-center mb-6 py-2 px-4 rounded-xl bg-slate-50/50 border border-slate-100">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                Verified Merchant Key
+                {t("shopList.card.verified")}
               </p>
             </div>
 
@@ -368,7 +369,7 @@ const ShopList: React.FC = () => {
                 onClick={() => downloadShopQR(shop)}
                 className="flex-1 h-11 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm font-bold text-xs"
               >
-                <Download size={18} /> Download QR
+                <Download size={18} /> {t("shopList.card.downloadQR")}
               </button>
             </div>
           </div>
@@ -379,10 +380,10 @@ const ShopList: React.FC = () => {
               <Store size={40} />
             </div>
             <p className="text-xl font-black text-slate-900 mb-2">
-              No Shops Registered
+              {t("shopList.empty.title")}
             </p>
             <p className="text-slate-400 font-medium uppercase tracking-[0.2em] text-xs">
-              Registry is currently empty
+              {t("shopList.empty.subtitle")}
             </p>
           </div>
         )}
