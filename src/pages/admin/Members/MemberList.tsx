@@ -631,13 +631,8 @@ const MemberList: React.FC = () => {
                                             </button>
                                         )}
                                         <button
-<<<<<<< Updated upstream
-                                            onClick={() => handleDelete(m.id || m.uid, m.name)}
-                                            className="h-12 sm:h-10 min-w-0 px-1.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[11px] sm:text-xs leading-tight text-center hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"
-=======
                                             onClick={(e) => handleDelete(m.id || m.uid, m.name, e)}
-                                            className="h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[10px] sm:text-xs whitespace-nowrap hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"
->>>>>>> Stashed changes
+                                            className="h-12 sm:h-10 min-w-0 px-1.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[11px] sm:text-xs leading-tight text-center hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"
                                             title={t("memberList.delete")}
                                         >
                                             <Trash2 size={16} /> <span className="inline">{t("memberList.delete")}</span>
