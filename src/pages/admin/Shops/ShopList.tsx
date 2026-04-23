@@ -32,16 +32,22 @@ interface ShopForm {
 }
 
 const ShopList: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [shops, setShops] = useState<Shop[]>([]);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [, forceUpdate] = useState({});
   const [form, setForm] = useState<ShopForm>({
     shopName: "",
     ownerName: "",
     address: "",
     phone: "",
   });
+
+  // Force re-render when language changes
+  useEffect(() => {
+    forceUpdate({});
+  }, [i18n.language]);
 
   useEffect(() => {
     const unsub = onSnapshot(

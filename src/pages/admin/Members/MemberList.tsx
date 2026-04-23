@@ -167,7 +167,7 @@ const MemberList: React.FC = () => {
         if (statusFilter !== "all") result = result.filter(m => m.status === statusFilter);
         if (paymentFilter !== "all") result = result.filter(m => m.paymentStatus === paymentFilter);
         setFiltered(result);
-    }, [searchTerm, statusFilter, paymentFilter, members]);
+    }, [searchTerm, statusFilter, paymentFilter, members, i18n.language]);
 
     const clearFilters = () => {
         setSearchTerm("");
@@ -204,7 +204,7 @@ const MemberList: React.FC = () => {
         // 1) Optimistic UI update — instant feedback
         updateMemberLocally(docId, updatePayload);
         const statusMap: Record<string, string> = {
-            active: t("memberList.memberUnblocked"),
+            unblocked: t("memberList.memberUnblocked"),
             blocked: t("memberList.memberBlocked"),
             approved: t("memberList.memberApproved")
         };

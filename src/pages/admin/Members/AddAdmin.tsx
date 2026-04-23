@@ -1,4 +1,5 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -16,6 +17,7 @@ import { db, auth } from "../../../firebase/firebaseConfig";
 import { adminApi } from "../../../services/adminService";
 
 const AddAdmin: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -37,7 +39,7 @@ const AddAdmin: React.FC = () => {
         if (snap.exists()) {
           const role = snap.data().role;
           if (role !== "admin" && role !== "superadmin") {
-            toast.error("Unauthorized access");
+            toast.error(t("addAdmin.unauthorized"));
             navigate("/dashboard");
             return;
           }
@@ -61,24 +63,24 @@ const AddAdmin: React.FC = () => {
     if (loading) return;
 
     if (!form.name.trim()) {
-      toast.error("Name is required");
+      toast.error(t("addAdmin.nameRequired"));
       return;
     }
     if (!form.email.trim()) {
-      toast.error("Email is required");
+      toast.error(t("addAdmin.emailRequired"));
       return;
     }
     if (form.password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+      toast.error(t("addAdmin.passwordMinLength"));
       return;
     }
     if (form.password !== form.confirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error(t("addAdmin.passwordMismatch"));
       return;
     }
 
     setLoading(true);
-    setProvisionStage("Authenticating session...");
+    setProvisionStage(t("addAdmin.creatingSession"));
 
     const originalUid = auth.currentUser?.uid;
 
@@ -86,8 +88,8 @@ const AddAdmin: React.FC = () => {
       try {
         setProvisionStage(
           retryCount > 0
-            ? `Retrying... (attempt ${retryCount + 1})`
-            : "Creating admin account...",
+            ? t("addAdmin.retrying", { count: retryCount + 1 })
+            : t("addAdmin.creating"),
         );
 
         await adminApi.createAdmin({
@@ -103,10 +105,10 @@ const AddAdmin: React.FC = () => {
           await auth.currentUser?.getIdToken(true);
         }
 
-        setProvisionStage("Account provisioned!");
+        setProvisionStage(t("addAdmin.provisioned"));
 
         toast.success(
-          `Administrator account for "${form.name}" has been provisioned successfully!`,
+          t("addAdmin.toastCreated"),
           { duration: 5000, icon: "🛡️" },
         );
 
@@ -132,9 +134,9 @@ const AddAdmin: React.FC = () => {
           err.code === "auth/email-already-in-use" ||
           err.message?.includes("EMAIL_EXISTS")
         ) {
-          toast.error("Email already in use by another account");
+          toast.error(t("addAdmin.emailInUse"));
         } else {
-          toast.error(err.message || "Failed to create admin");
+          toast.error(err.message || t("addAdmin.createFailed"));
         }
       }
     };
@@ -155,7 +157,7 @@ const AddAdmin: React.FC = () => {
           <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
         </div>
         <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] animate-pulse">
-          Verifying Security Credentials...
+          {t("addAdmin.checkingAuth")}
         </p>
       </div>
     );
@@ -177,7 +179,7 @@ const AddAdmin: React.FC = () => {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
-              Add Admin
+              {t("addAdmin.title")}
             </h1>
           </div>
           <div className="w-8 h-8 flex items-center justify-center rounded-xl">
@@ -200,7 +202,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
             {/* Full Name */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
-                Full Name <span className="text-rose-500">*</span>
+                {t("addAdmin.fullName")}
               </label>
               <div className="relative">
                 <input
@@ -208,7 +210,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                   name="name"
                   value={form.name}
                   onChange={handleChange}
-                  placeholder="e.g. Administrator"
+                  placeholder={t("addAdmin.namePlaceholder")}
                   required
                   className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                 />
@@ -221,7 +223,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
             {/* Email */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
-                Email Address <span className="text-rose-500">*</span>
+                {t("addAdmin.email")}
               </label>
               <div className="relative">
                 <input
@@ -229,7 +231,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="admin@bcta.in"
+                  placeholder={t("addAdmin.emailPlaceholder")}
                   required
                   className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                 />
@@ -243,7 +245,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
             <div className="grid grid-cols-1 gap-3">
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
-                  Enter Password <span className="text-rose-500">*</span>
+                  {t("addAdmin.password")}
                 </label>
                 <div className="relative">
                   <input
@@ -251,7 +253,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                     name="password"
                     value={form.password}
                     onChange={handleChange}
-                    placeholder="••••••••"
+                    placeholder={t("addAdmin.passwordPlaceholder")}
                     required
                     minLength={6}
                     className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
@@ -264,7 +266,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
-                  Confirm Password<span className="text-rose-500">*</span>
+                  {t("addAdmin.confirmPassword")}
                 </label>
                 <div className="relative">
                   <input
@@ -272,7 +274,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                     name="confirmPassword"
                     value={form.confirmPassword}
                     onChange={handleChange}
-                    placeholder="••••••••"
+                    placeholder={t("addAdmin.passwordPlaceholder")}
                     required
                     minLength={6}
                     className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
@@ -294,7 +296,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
               disabled={loading}
               className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.12em] text-[10px] py-3.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              Abort Process
+              {t("addAdmin.abort")}
             </button>
             <button
               type="submit"
@@ -306,7 +308,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
               ) : (
                 <UserPlus size={14} />
               )}
-              {loading ? provisionStage || "Processing..." : "Confirm"}
+              {loading ? provisionStage || t("common.processing") : t("addAdmin.createAdmin")}
             </button>
           </div>
         </form>
@@ -325,10 +327,10 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
           </button>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
-              ADD ADMIN
+              {t("addAdmin.title")}
             </h1>
             <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2 leading-none">
-              Security Privilege Configuration
+              {t("addAdmin.sectionSubtitleDesktop")}
             </p>
           </div>
         </div>
@@ -340,13 +342,13 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
           <div className="glass-card bg-white border border-slate-200/60 shadow-xl rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden">
             <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-indigo-600"></div>
-              Administrator Credentials
+              {t("addAdmin.sectionTitleDesktop")}
             </h2>
 
             <div className="space-y-8">
               <div className="space-y-2 group">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
-                  Full Name <span className="text-rose-500">*</span>
+                  {t("addAdmin.fullName")}
                 </label>
                 <div className="relative">
                   <input
@@ -354,7 +356,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                     name="name"
                     value={form.name}
                     onChange={handleChange}
-                    placeholder="e.g. Administrator"
+                    placeholder={t("addAdmin.namePlaceholder")}
                     required
                     className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                   />
@@ -367,7 +369,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
 
               <div className="space-y-2 group">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
-                  Email Address <span className="text-rose-500">*</span>
+                  {t("addAdmin.email")}
                 </label>
                 <div className="relative">
                   <input
@@ -375,7 +377,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    placeholder="admin@bcta.in"
+                    placeholder={t("addAdmin.emailPlaceholder")}
                     required
                     className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                   />
@@ -389,7 +391,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-2 group">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
-                    Type Password <span className="text-rose-500">*</span>
+                    {t("addAdmin.password")}
                   </label>
                   <div className="relative">
                     <input
@@ -397,7 +399,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                       name="password"
                       value={form.password}
                       onChange={handleChange}
-                      placeholder="••••••••"
+                      placeholder={t("addAdmin.passwordPlaceholder")}
                       required
                       minLength={6}
                       className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
@@ -410,7 +412,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                 </div>
                 <div className="space-y-2 group">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
-                    Confirm Password <span className="text-rose-500">*</span>
+                    {t("addAdmin.confirmPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -418,7 +420,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                       name="confirmPassword"
                       value={form.confirmPassword}
                       onChange={handleChange}
-                      placeholder="••••••••"
+                      placeholder={t("addAdmin.passwordPlaceholder")}
                       required
                       minLength={6}
                       className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
@@ -444,8 +446,8 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                   <UserPlus size={20} />
                 )}
                 {loading
-                  ? provisionStage || "Processing..."
-                  : "Confirm Provisioning"}
+                  ? provisionStage || t("common.processing")
+                  : t("addAdmin.confirmProvisioning")}
               </button>
               <button
                 type="button"
@@ -453,7 +455,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                 disabled={loading}
                 className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Abort Process
+                {t("addAdmin.abort")}
               </button>
             </div>
           </div>

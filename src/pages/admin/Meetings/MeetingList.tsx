@@ -381,7 +381,7 @@ const MeetingList: React.FC = () => {
                   setForm((p) => ({ ...p, topic: e.target.value }))
                 }
                 required
-                placeholder="e.g., Monthly General Body Meeting"
+                placeholder={t("meetings.topicPlaceholder")}
                 className="input-field"
               />
             </div>
@@ -465,7 +465,7 @@ const MeetingList: React.FC = () => {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, gpsLink: e.target.value }))
                 }
-                placeholder="https://maps.google.com/..."
+                placeholder={t("meetings.mapsLinkPlaceholder")}
                 className="input-field"
               />
             </div>

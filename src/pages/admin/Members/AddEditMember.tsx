@@ -420,9 +420,9 @@ const AddEditMember: React.FC = () => {
                         <div className="grid gap-4 sm:grid-cols-2">
                             <Field label={t("addEditMember.firstName")} name="name" value={form.name} onChange={handleChange} placeholder={t("addEditMember.firstName")} required />
                             <Field label={t("addEditMember.surname")} name="surname" value={form.surname} onChange={handleChange} placeholder={t("addEditMember.surname")} required />
-                            <Field label={t("addEditMember.contactNumber")} name="phone" value={form.phone} onChange={handleChange} placeholder="+91 XXXXX XXXXX" required />
-                            <Field label={t("addEditMember.emailAddress")} name="email" value={form.email} onChange={handleChange} type="email" placeholder="example@bcta.in" required />
-                            <Field label={t("addEditMember.age")} name="age" value={form.age} onChange={handleChange} type="number" placeholder="28" required />
+                            <Field label={t("addEditMember.contactNumber")} name="phone" value={form.phone} onChange={handleChange} placeholder={t("addEditMember.contactPlaceholder")} required />
+                            <Field label={t("addEditMember.emailAddress")} name="email" value={form.email} onChange={handleChange} type="email" placeholder={t("addEditMember.emailPlaceholder")} required />
+                            <Field label={t("addEditMember.age")} name="age" value={form.age} onChange={handleChange} type="number" placeholder={t("addEditMember.agePlaceholder")} required />
                             <Field label={t("addEditMember.gender")} name="gender" value={form.gender} onChange={handleChange} type="select" required options={GENDERS} />
                             <Field label={t("addEditMember.bloodGroup")} name="bloodGroup" value={form.bloodGroup} onChange={handleChange} type="select" required options={BLOOD_GROUPS} />
                             <div className="space-y-2 group">
@@ -504,7 +504,7 @@ const AddEditMember: React.FC = () => {
                                     value={form.password || ""}
                                     onChange={handleChange}
                                     type="password"
-                                    placeholder="••••••••"
+                                    placeholder={t("addEditMember.passwordPlaceholder")}
                                     required
                                 />
                             </div>

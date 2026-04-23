@@ -536,6 +536,7 @@ const MemberDetail: React.FC = () => {
         ? member.createdAt.toDate().getFullYear()
         : new Date().getFullYear();
     const derivedPaymentStatus = member.paymentStatus || (totalDue <= 0 ? "paid" : "unpaid");
+    const paymentStatusLabel = t(`payments.filter${derivedPaymentStatus.charAt(0).toUpperCase() + derivedPaymentStatus.slice(1)}`);
     const statusTone = member.status === "active"
         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
         : "bg-red-50 text-red-700 border-red-200";
@@ -639,7 +640,7 @@ const MemberDetail: React.FC = () => {
                                     {memberIdVerified ? t("memberDetail.verified") : t("memberDetail.needsCheck")}
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-white/80">
-                                    {t("memberList.joinedOn")} {memberSince}
+                                    {t("memberDetail.joinedOn")} {memberSince}
                                 </span>
                             </div>
                         </div>
@@ -655,7 +656,7 @@ const MemberDetail: React.FC = () => {
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
                             <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">{t("memberList.payment")}</p>
                             <p className={`mt-1 text-lg font-bold capitalize sm:text-2xl ${derivedPaymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}>
-                                {t(`paymentsDash.filter${derivedPaymentStatus.charAt(0).toUpperCase() + derivedPaymentStatus.slice(1)}`)}
+                                {paymentStatusLabel}
                             </p>
                             <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">{t("memberDetail.accountStatus")}</p>
                         </div>
@@ -766,7 +767,7 @@ const MemberDetail: React.FC = () => {
 
                         <div className="space-y-2.5">
                             <div className={`rounded-xl border p-3 ${memberIdVerified ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{t("memberDetail.memberIdCheck")}</p>
+                                <p className="break-words text-[10px] font-semibold uppercase tracking-[0.18em] leading-tight text-slate-500">{t("memberDetail.memberIdCheck")}</p>
                                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                                     <p className="font-mono text-xs font-semibold text-slate-900 break-all">{hasMemberId ? memberId : t("common.pending")}</p>
                                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${memberIdVerified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
@@ -775,18 +776,18 @@ const MemberDetail: React.FC = () => {
                                     </span>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2.5">
+                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                                 <div className={`rounded-xl border p-3 ${statusTone}`}>
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em]">{t("memberDetail.accountStatus")}</p>
-                                    <p className="mt-1 text-base font-bold capitalize">{member.status || "unknown"}</p>
+                                    <p className="break-words text-[10px] font-semibold uppercase tracking-[0.18em] leading-tight">{t("memberDetail.accountStatus")}</p>
+                                    <p className="mt-1 break-words text-base font-bold capitalize">{member.status || "unknown"}</p>
                                 </div>
                                 <div className={`rounded-xl border p-3 ${paymentTone}`}>
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em]">{t("memberDetail.paymentStatus")}</p>
-                                    <p className="mt-1 text-base font-bold capitalize">{t(`paymentsDash.filter${derivedPaymentStatus.charAt(0).toUpperCase() + derivedPaymentStatus.slice(1)}`)}</p>
+                                    <p className="break-words text-[10px] font-semibold uppercase tracking-[0.18em] leading-tight">{t("memberDetail.paymentStatusLabel")}</p>
+                                    <p className="mt-1 break-words text-base font-bold capitalize">{paymentStatusLabel}</p>
                                 </div>
                             </div>
                             <div className="rounded-xl border border-slate-200 bg-white p-3">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{t("memberDetail.joinedYear")}</p>
+                                <p className="break-words text-[10px] font-semibold uppercase tracking-[0.18em] leading-tight text-slate-500">{t("memberDetail.joinedYear")}</p>
                                 <p className="mt-1 text-sm font-semibold text-slate-900">{memberSince}</p>
                             </div>
                         </div>

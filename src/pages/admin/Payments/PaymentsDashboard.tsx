@@ -28,7 +28,7 @@ interface PaymentDoc {
 }
 
 const PaymentsDashboard: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { currentUser } = useAuth();
     
     const monthsList = useMemo(() => [
@@ -36,7 +36,7 @@ const PaymentsDashboard: React.FC = () => {
         { value: 4, label: t("payments.months.4") }, { value: 5, label: t("payments.months.5") }, { value: 6, label: t("payments.months.6") },
         { value: 7, label: t("payments.months.7") }, { value: 8, label: t("payments.months.8") }, { value: 9, label: t("payments.months.9") },
         { value: 10, label: t("payments.months.10") }, { value: 11, label: t("payments.months.11") }, { value: 12, label: t("payments.months.12") }
-    ], [t]);
+    ], [t, i18n.language]);
 
     const yearsList = useMemo(() => {
         const currentYearNumeric = new Date().getFullYear();

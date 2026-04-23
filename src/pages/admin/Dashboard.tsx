@@ -245,7 +245,7 @@ const AdminDashboard: React.FC = () => {
       { name: t("common.active"), value: stats.activeMembers, color: "#10b981" },
       { name: t("common.blocked"), value: stats.blockedMembers, color: "#f43f5e" },
     ],
-    [stats.activeMembers, stats.blockedMembers],
+    [stats.activeMembers, stats.blockedMembers, t, i18n.language],
   );
 
   const statCards = useMemo(
@@ -299,7 +299,7 @@ const AdminDashboard: React.FC = () => {
         iconBg: "bg-pink-50",
       },
     ],
-    [stats, t],
+    [stats, t, i18n.language],
   );
 
   return (

@@ -38,14 +38,14 @@ const currentYear = new Date().getFullYear();
 const historyStartYear = 2025;
  
 const PaymentsHistory: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   const monthsList = useMemo(() => [
     { value: 1, label: t("payments.months.1") }, { value: 2, label: t("payments.months.2") }, { value: 3, label: t("payments.months.3") },
     { value: 4, label: t("payments.months.4") }, { value: 5, label: t("payments.months.5") }, { value: 6, label: t("payments.months.6") },
     { value: 7, label: t("payments.months.7") }, { value: 8, label: t("payments.months.8") }, { value: 9, label: t("payments.months.9") },
     { value: 10, label: t("payments.months.10") }, { value: 11, label: t("payments.months.11") }, { value: 12, label: t("payments.months.12") }
-  ], [t]);
+  ], [t, i18n.language]);
 
   const monthLabel = (month?: number) => {
     if (!month || month < 1 || month > 12) return "-";
@@ -160,7 +160,7 @@ const PaymentsHistory: React.FC = () => {
             className="absolute top-4 left-4 sm:static h-10 px-4 rounded-xl border border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 font-semibold text-sm inline-flex items-center justify-center gap-2"
           >
             <ArrowLeft size={16} />
-            {t("payments.history.backToPayments")}
+            {t("payments.history.backToPayments", { defaultValue: "Back" })}
           </Link>
         </div>
       </div>
