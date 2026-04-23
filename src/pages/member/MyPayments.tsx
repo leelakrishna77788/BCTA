@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { useAuth } from "../../context/AuthContext";
 import { CreditCard, AlertCircle, Calendar } from "lucide-react";
@@ -15,19 +15,24 @@ const MyPayments: React.FC = () => {
 
     useEffect(() => {
         if (!currentUser) return;
-        getDocs(query(
-            collection(db, "payments"), 
-            where("memberUID", "==", currentUser.uid),
-            orderBy("createdAt", "desc")
-        ))
-            .then(snap => { 
+        
+        const unsubscribe = onSnapshot(
+            query(
+                collection(db, "payments"), 
+                where("memberUID", "==", currentUser.uid),
+                orderBy("createdAt", "desc")
+            ),
+            (snap) => { 
                 setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment))); 
                 setLoading(false); 
-            })
-            .catch(err => {
+            },
+            (err) => {
                 console.error(err);
                 setLoading(false);
-            });
+            }
+        );
+        
+        return () => unsubscribe();
     }, [currentUser]);
 
     const totalPaid = payments.reduce((s, p) => s + (p.amount || 0), 0);

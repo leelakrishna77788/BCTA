@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { CheckCircle, Trash2, MessageSquareWarning, Image } from "lucide-react";
+import { CheckCircle, Trash2, MessageSquareWarning, Image, AlertTriangle, X } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { useTranslation } from "react-i18next";
@@ -24,6 +24,12 @@ const ComplaintsList: React.FC = () => {
     const [complaints, setComplaints] = useState<Complaint[]>([]);
     const [filter, setFilter] = useState<string>("all");
     const [loading, setLoading] = useState<boolean>(true);
+    const [showResolveConfirm, setShowResolveConfirm] = useState<boolean>(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+    const [selectedComplaintId, setSelectedComplaintId] = useState<string | null>(null);
+    const [resolveButtonPosition, setResolveButtonPosition] = useState<{ top: number; left: number } | null>(null);
+    const [deleteButtonPosition, setDeleteButtonPosition] = useState<{ top: number; left: number } | null>(null);
+    const [resolutionText, setResolutionText] = useState<string>("");
 
     useEffect(() => {
         const q = query(collection(db, "complaints"), orderBy("createdAt", "desc"));
@@ -37,33 +43,114 @@ const ComplaintsList: React.FC = () => {
         return unsub;
     }, []);
 
+    useEffect(() => {
+        if (!showResolveConfirm && !showDeleteConfirm) return;
+
+        const scrollY = window.scrollY;
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousBodyPosition = document.body.style.position;
+        const previousBodyTop = document.body.style.top;
+        const previousBodyLeft = document.body.style.left;
+        const previousBodyRight = document.body.style.right;
+        const previousBodyWidth = document.body.style.width;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+
+        document.body.style.overflow = "hidden";
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.left = "0";
+        document.body.style.right = "0";
+        document.body.style.width = "100%";
+        document.documentElement.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = previousBodyOverflow;
+            document.body.style.position = previousBodyPosition;
+            document.body.style.top = previousBodyTop;
+            document.body.style.left = previousBodyLeft;
+            document.body.style.right = previousBodyRight;
+            document.body.style.width = previousBodyWidth;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            window.scrollTo(0, scrollY);
+        };
+    }, [showResolveConfirm, showDeleteConfirm]);
+
     const filtered = complaints.filter(c => filter === "all" ? true : c.status === filter);
 
-    const resolve = async (id: string) => {
-        const resolution = window.prompt(t("complaints.prompts.resolution"), t("complaints.prompts.resolutionDefault"));
-        if (resolution === null) return; // cancelled
+    const handleResolve = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
+        const buttonRect = event.currentTarget.getBoundingClientRect();
+        const buttonTop = buttonRect.top + window.scrollY;
+        
+        // Calculate which group of 3 rows this button belongs to
+        const rowHeight = 150;
+        const groupSize = 3;
+        const groupIndex = Math.floor(buttonTop / (rowHeight * groupSize));
+        
+        // Position card at the center of this group
+        const groupCenterY = (groupIndex * rowHeight * groupSize) + (rowHeight * groupSize / 2);
+        
+        setResolveButtonPosition({
+            top: groupCenterY,
+            left: 0
+        });
+        setSelectedComplaintId(id);
+        setResolutionText(t("complaints.prompts.resolutionDefault"));
+        setShowResolveConfirm(true);
+    };
+
+    const confirmResolve = async () => {
+        if (!selectedComplaintId) return;
+        setShowResolveConfirm(false);
+        setResolveButtonPosition(null);
 
         try {
-            const docRef = doc(db, "complaints", id);
+            const docRef = doc(db, "complaints", selectedComplaintId);
             await updateDoc(docRef, { 
                 status: "resolved",
-                resolution: resolution,
+                resolution: resolutionText,
                 resolvedAt: new Date()
             });
             toast.success(t("complaints.toasts.resolveSuccess"));
         } catch (err: any) {
             toast.error(t("complaints.toasts.resolveError", { error: err.message || "" }));
+        } finally {
+            setSelectedComplaintId(null);
+            setResolutionText("");
         }
     };
 
-    const remove = async (id: string) => {
-        if (!window.confirm(t("complaints.prompts.confirmDelete"))) return;
+    const handleDelete = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
+        const buttonRect = event.currentTarget.getBoundingClientRect();
+        const buttonTop = buttonRect.top + window.scrollY;
+        
+        // Calculate which group of 3 rows this button belongs to
+        const rowHeight = 150;
+        const groupSize = 3;
+        const groupIndex = Math.floor(buttonTop / (rowHeight * groupSize));
+        
+        // Position card at the center of this group
+        const groupCenterY = (groupIndex * rowHeight * groupSize) + (rowHeight * groupSize / 2);
+        
+        setDeleteButtonPosition({
+            top: groupCenterY,
+            left: 0
+        });
+        setSelectedComplaintId(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!selectedComplaintId) return;
+        setShowDeleteConfirm(false);
+        setDeleteButtonPosition(null);
 
         try {
-            await deleteDoc(doc(db, "complaints", id));
+            await deleteDoc(doc(db, "complaints", selectedComplaintId));
             toast.success(t("complaints.toasts.deleteSuccess"));
         } catch (err: any) {
             toast.error(t("complaints.toasts.deleteError", { error: err.message || "" }));
+        } finally {
+            setSelectedComplaintId(null);
         }
     };
 
@@ -136,7 +223,7 @@ const ComplaintsList: React.FC = () => {
 
                                     <div className="flex items-center gap-1.5">
                                         {c.status === "open" && (
-                                            <button onClick={() => resolve(c.id)}
+                                            <button onClick={(e) => handleResolve(e, c.id)}
                                                 className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-emerald-600 text-white text-[8px] font-black uppercase hover:bg-emerald-700 transition-all" title={t("complaints.actions.resolve")}>
                                                 <CheckCircle size={10} /> {t("complaints.actions.resolve")}
                                             </button>
@@ -146,7 +233,7 @@ const ComplaintsList: React.FC = () => {
                                             <span className="text-[7px] font-black text-emerald-700 uppercase px-1">✓</span>
                                         )}
 
-                                        <button onClick={() => remove(c.id)}
+                                        <button onClick={(e) => handleDelete(e, c.id)}
                                             className="p-1 rounded bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all" title={t("complaints.actions.delete")}>
                                             <Trash2 size={11} />
                                         </button>
@@ -163,6 +250,89 @@ const ComplaintsList: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {showResolveConfirm && resolveButtonPosition && (
+                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in" onClick={() => { setShowResolveConfirm(false); setResolveButtonPosition(null); setSelectedComplaintId(null); }}>
+                    <div 
+                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
+                        style={{
+                            top: `${resolveButtonPosition.top}px`,
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100">
+                            <CheckCircle className="text-emerald-600" size={32} />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
+                            {t("complaints.actions.resolve")} {t("complaints.title").slice(0, -1)}
+                        </h2>
+                        <p className="text-sm text-slate-600 text-center mb-4">
+                            {t("complaints.prompts.resolution")}
+                        </p>
+                        <textarea
+                            value={resolutionText}
+                            onChange={(e) => setResolutionText(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all mb-6 text-sm"
+                            rows={3}
+                            placeholder={t("complaints.prompts.resolutionDefault")}
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowResolveConfirm(false); setResolveButtonPosition(null); setSelectedComplaintId(null); }}
+                                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                            >
+                                {t("common.cancel") || "Cancel"}
+                            </button>
+                            <button
+                                onClick={confirmResolve}
+                                className="flex-1 px-4 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors"
+                            >
+                                {t("complaints.actions.resolve")}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeleteConfirm && deleteButtonPosition && (
+                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in" onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); setSelectedComplaintId(null); }}>
+                    <div 
+                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
+                        style={{
+                            top: `${deleteButtonPosition.top}px`,
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
+                            <AlertTriangle className="text-red-600" size={32} />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
+                            {t("complaints.prompts.confirmDelete")}
+                        </h2>
+                        <p className="text-sm text-slate-600 text-center mb-6">
+                            {t("memberDetail.deleteWarning") || "This action cannot be undone. The complaint will be permanently removed."}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); setSelectedComplaintId(null); }}
+                                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                            >
+                                {t("common.cancel") || "Cancel"}
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                            >
+                                {t("common.delete") || "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

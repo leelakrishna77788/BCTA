@@ -278,7 +278,7 @@ const LandingPage: React.FC = () => {
         <Navbar />
 
         {/* ================= HERO ================= */}
-        <section className="relative min-h-[49vh] flex items-center justify-center px-4 sm:px-6 pt-16 sm:pt-24 pb-6 sm:pb-10 overflow-hidden mesh-gradient">
+        <section className="relative min-h-[49vh] flex items-center justify-center px-4 sm:px-6 pt-32 sm:pt-30 pb-6 sm:pb-10 overflow-hidden mesh-gradient">
           {/* Decorative elements */}
           <div className="absolute top-1/4 -left-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
           <div
