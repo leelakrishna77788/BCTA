@@ -185,8 +185,8 @@ const MyNotifications: React.FC = () => {
     );
 
   return (
-    <div className="space-y-5 animate-fade-in scrollbar-hide">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col animate-fade-in" style={{ height: "calc(100vh - 120px)" }}>
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <div>
           <h1 className="page-title mb-0">{t("myNotifications.title")}</h1>
           <p className="text-slate-500 text-sm">
@@ -204,60 +204,62 @@ const MyNotifications: React.FC = () => {
         )}
       </div>
 
-      {visibleNotifications.length === 0 ? (
-        <div className="card text-center py-16">
-          <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Bell size={32} className="text-slate-300" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-700 mb-2">
-            {t("myNotifications.noNotifications")}
-          </h3>
-          <p className="text-slate-500 text-sm">
-            {t("myNotifications.allCaughtUp")}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {visibleNotifications.map((n) => (
-            <div
-              key={n.id}
-              className={`card p-5 flex gap-4 group relative border-l-4 ${getTypeColor(n.type)}`}
-            >
-              <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shrink-0 shadow-sm">
-                {getTypeIcon(n.type)}
-              </div>
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="min-w-0 overflow-hidden">
-                  <p className="font-bold text-slate-900 text-sm mb-1 break-all">
-                    {n.title}
-                  </p>
-                  <p className="text-slate-600 text-sm leading-relaxed break-all whitespace-pre-wrap">
-                    {n.body}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <p className="text-xs text-slate-400 font-medium">
-                    {formatDate(n.sentAt)}
-                  </p>
-                  <button
-                    onClick={() => setDeleteConfirm(n.id)}
-                    className="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-              <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
-                <span
-                  className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${getTypeColor(n.type)}`}
-                >
-                  {n.type}
-                </span>
-              </div>
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 scroll-smooth scrollbar-hide">
+        {visibleNotifications.length === 0 ? (
+          <div className="card text-center py-16">
+            <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Bell size={32} className="text-slate-300" />
             </div>
-          ))}
-        </div>
-      )}
+            <h3 className="text-lg font-bold text-slate-700 mb-2">
+              {t("myNotifications.noNotifications")}
+            </h3>
+            <p className="text-slate-500 text-sm">
+              {t("myNotifications.allCaughtUp")}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3 pb-8">
+            {visibleNotifications.map((n) => (
+              <div
+                key={n.id}
+                className={`card p-5 flex gap-4 group relative border-l-4 ${getTypeColor(n.type)}`}
+              >
+                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shrink-0 shadow-sm">
+                  {getTypeIcon(n.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="min-w-0 overflow-hidden">
+                    <p className="font-bold text-slate-900 text-sm mb-1 break-all">
+                      {n.title}
+                    </p>
+                    <p className="text-slate-600 text-sm leading-relaxed break-all whitespace-pre-wrap">
+                      {n.body}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="text-xs text-slate-400 font-medium">
+                      {formatDate(n.sentAt)}
+                    </p>
+                    <button
+                      onClick={() => setDeleteConfirm(n.id)}
+                      className="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+                <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span
+                    className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${getTypeColor(n.type)}`}
+                  >
+                    {n.type}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Delete Single Notification Confirmation Modal */}
       {deleteConfirm && (
