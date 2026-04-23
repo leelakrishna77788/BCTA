@@ -168,7 +168,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
   border border-slate-100/80 py-1 animate-scale-in 
   z-50 overflow-hidden gpu-accelerated"
             >
-              {" "}
+              
               {/* Gradient header strip */}
               <div
                 className="h-[3px]"
@@ -211,8 +211,7 @@ const TopBar: React.FC<TopBarProps> = React.memo(({ onMenuClick }) => {
                         setDeleteConfirm(n.id);
                       }}
                       aria-label={t("common.delete")}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-50 text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-500 transition-all"
-                      title={t("common.delete")}
+className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-50 text-red-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-red-100 hover:text-red-500 transition-all"                      title={t("common.delete")}
                     >
                       <Trash2 size={13} />
                     </button>

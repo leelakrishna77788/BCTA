@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Phone, MapPin, Siren, Heart, ShieldCheck } from "lucide-react";
+import { Phone, MapPin, Siren, Heart, ShieldCheck, Building2, Pill } from "lucide-react";
 
 interface LocationData {
     lat: number;
@@ -13,11 +13,16 @@ const Emergency: React.FC = () => {
     const [locationError, setLocationError] = useState<string | null>(null);
 
     const EMERGENCY_CONTACTS = [
-        { label: t("emergency.police"), number: "100", gradient: "linear-gradient(135deg, #1e1b4b, #4338ca)", icon: ShieldCheck, emoji: "🚓" },
-        { label: t("emergency.ambulance"), number: "108", gradient: "linear-gradient(135deg, #dc2626, #ef4444)", icon: Heart, emoji: "🚑" },
-        { label: t("emergency.fire"), number: "101", gradient: "linear-gradient(135deg, #ea580c, #f97316)", icon: Siren, emoji: "🚒" },
-        { label: t("emergency.womenHelpline"), number: "1091", gradient: "linear-gradient(135deg, #db2777, #f472b6)", icon: Phone, emoji: "👩" },
-        { label: t("emergency.disaster"), number: "1078", gradient: "linear-gradient(135deg, #d97706, #fbbf24)", icon: Siren, emoji: "⚠️" },
+        { label: t("emergency.police"), number: "100", gradient: "linear-gradient(135deg, #1e1b4b, #4338ca)", icon: ShieldCheck },
+        { label: t("emergency.ambulance"), number: "108", gradient: "linear-gradient(135deg, #dc2626, #ef4444)", icon: Heart },
+        { label: t("emergency.fire"), number: "101", gradient: "linear-gradient(135deg, #ea580c, #f97316)", icon: Siren },
+        { label: t("emergency.womenHelpline"), number: "1091", gradient: "linear-gradient(135deg, #db2777, #f472b6)", icon: Phone },
+        { label: t("emergency.disaster"), number: "1078", gradient: "linear-gradient(135deg, #d97706, #fbbf24)", icon: Siren },
+    ];
+
+    const NEARBY_ITEMS = [
+        { label: t("emergency.hospitals"), query: "hospitals+near+me", gradient: "linear-gradient(135deg, #0f766e, #14b8a6)", icon: Building2 },
+        { label: t("emergency.pharmacy"), query: "pharmacy+medical+store", gradient: "linear-gradient(135deg, #7c3aed, #a78bfa)", icon: Pill },
     ];
 
     const HOSPITAL_DATA = [
@@ -68,75 +73,119 @@ const Emergency: React.FC = () => {
                 </div>
             )}
 
-            {/* Emergency Quick Dial */}
-            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
-              style={{ boxShadow: "var(--shadow-sm)" }}
+            {/* Emergency Quick Dial + Find Nearby — Single Merged Dock */}
+            <div
+                className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
+                style={{ boxShadow: "var(--shadow-sm)" }}
             >
-                <h2 className="text-sm font-bold text-slate-800 mb-4">{t("emergency.quickDial")}</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                    {EMERGENCY_CONTACTS.map(c => (
-                        <a key={c.label} href={`tel:${c.number}`}
-                            className="rounded-2xl p-3 text-white text-center active:scale-95 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
-                            style={{ background: c.gradient }}
-                        >
-                            <div className="text-2xl mb-1">{c.emoji}</div>
-                            <p className="font-bold text-sm">{c.number}</p>
-                            <p className="text-xs opacity-80 mt-0.5">{c.label}</p>
+                <h2 className="text-sm font-bold text-slate-800 mb-5">{t("emergency.quickDial")}</h2>
+                {/* Desktop: single row with divider */}
+                <div className="hidden sm:flex justify-center flex-wrap gap-6">
+                    {EMERGENCY_CONTACTS.map((c) => (
+                        <a key={c.label} href={`tel:${c.number}`} className="flex flex-col items-center gap-2 group" style={{ textDecoration: "none" }}>
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-150 active:scale-95 group-hover:-translate-y-1" style={{ background: c.gradient }}>
+                                <c.icon size={28} color="white" strokeWidth={1.8} />
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                                <span className="text-xs font-semibold text-slate-700 text-center leading-tight">{c.label}</span>
+                                <span className="text-xs font-medium text-slate-400">{c.number}</span>
+                            </div>
                         </a>
                     ))}
+                    <div className="w-px bg-slate-200 self-stretch mx-1" />
+                    {NEARBY_ITEMS.map((item) => (
+                        <button key={item.label} onClick={() => openMaps(item.query)} className="flex flex-col items-center gap-2 group bg-transparent border-0 p-0 cursor-pointer">
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-150 active:scale-95 group-hover:-translate-y-1" style={{ background: item.gradient }}>
+                                <item.icon size={28} color="white" strokeWidth={1.8} />
+                            </div>
+                            <div className="flex flex-col items-center gap-0.5">
+                                <span className="text-xs font-semibold text-slate-700 text-center leading-tight">{item.label}</span>
+                                <span className="text-xs font-medium text-slate-400">Maps ↗</span>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Mobile: row 1 = 4 contacts, row 2 = 1 contact + 2 nearby (centered) */}
+                <div className="sm:hidden flex flex-col gap-5">
+                    <div className="flex justify-center gap-5">
+                        {EMERGENCY_CONTACTS.slice(0, 4).map((c) => (
+                            <a key={c.label} href={`tel:${c.number}`} className="flex flex-col items-center gap-2" style={{ textDecoration: "none" }}>
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center active:scale-95 transition-transform duration-150" style={{ background: c.gradient }}>
+                                    <c.icon size={24} color="white" strokeWidth={1.8} />
+                                </div>
+                                <div className="flex flex-col items-center gap-0.5">
+                                    <span className="text-xs font-semibold text-slate-700 text-center leading-tight">{c.label}</span>
+                                    <span className="text-xs font-medium text-slate-400">{c.number}</span>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+                    <div className="flex justify-center gap-5">
+                        {EMERGENCY_CONTACTS.slice(4).map((c) => (
+                            <a key={c.label} href={`tel:${c.number}`} className="flex flex-col items-center gap-2" style={{ textDecoration: "none" }}>
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center active:scale-95 transition-transform duration-150" style={{ background: c.gradient }}>
+                                    <c.icon size={24} color="white" strokeWidth={1.8} />
+                                </div>
+                                <div className="flex flex-col items-center gap-0.5">
+                                    <span className="text-xs font-semibold text-slate-700 text-center leading-tight">{c.label}</span>
+                                    <span className="text-xs font-medium text-slate-400">{c.number}</span>
+                                </div>
+                            </a>
+                        ))}
+                        {NEARBY_ITEMS.map((item) => (
+                            <button key={item.label} onClick={() => openMaps(item.query)} className="flex flex-col items-center gap-2 bg-transparent border-0 p-0 cursor-pointer">
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center active:scale-95 transition-transform duration-150" style={{ background: item.gradient }}>
+                                    <item.icon size={24} color="white" strokeWidth={1.8} />
+                                </div>
+                                <div className="flex flex-col items-center gap-0.5">
+                                    <span className="text-xs font-semibold text-slate-700 text-center leading-tight">{item.label}</span>
+                                    <span className="text-xs font-medium text-slate-400">Maps ↗</span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
             {/* Nearby Hospitals */}
-            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
-              style={{ boxShadow: "var(--shadow-sm)" }}
+            <div
+                className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
+                style={{ boxShadow: "var(--shadow-sm)" }}
             >
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-bold text-slate-800">{t("emergency.nearbyHospitals")}</h2>
-                    <button onClick={() => openMaps("hospitals+near+me")}
-                        className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5 font-semibold">
+                    <h2 className="text-sm font-bold text-slate-800">
+                        {t("emergency.nearbyHospitals")}
+                    </h2>
+                    <button
+                        onClick={() => openMaps("hospitals+near+me")}
+                        className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5 font-semibold"
+                    >
                         {t("emergency.openInMaps")} <MapPin size={11} />
                     </button>
                 </div>
-                <div className="space-y-2 stagger-children">
-                    {HOSPITAL_DATA.map(h => (
-                        <div key={h.name} className="flex items-center gap-3 p-3 bg-slate-50/80 rounded-xl hover:bg-indigo-50/50 transition-all duration-200 border border-transparent hover:border-indigo-100 group">
-                            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition-transform">🏥</div>
-                            <div className="flex-1">
-                                <p className="font-semibold text-slate-800 text-sm">{h.name}</p>
-                                <p className="text-xs text-slate-500 font-medium">{h.type} • {h.distance}</p>
+
+                <div className="space-y-2">
+                    {HOSPITAL_DATA.map((h) => (
+                        <div key={h.name} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-lg">
+                                🏥
                             </div>
-                            <a href={`tel:${h.phone}`} className="p-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl transition-all duration-200 hover:shadow-sm">
-                                <Phone size={16} />
+                            <div className="flex-1">
+                                <p className="font-semibold text-sm text-slate-800">{h.name}</p>
+                                <p className="text-xs text-slate-500">{h.type} • {h.distance}</p>
+                            </div>
+                            <a
+                                href={`tel:${h.phone}`}
+                                className="p-2 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors"
+                            >
+                                <Phone size={16} className="text-indigo-600" />
                             </a>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Google Maps Nearby Buttons */}
-            <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-100"
-              style={{ boxShadow: "var(--shadow-sm)" }}
-            >
-                <h2 className="text-sm font-bold text-slate-800 mb-4">{t("emergency.findNearby")}</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 stagger-children">
-                    {[
-                        { label: t("emergency.hospitals"), query: "hospitals", emoji: "🏥" },
-                        { label: t("emergency.ambulance"), query: "ambulance+service", emoji: "🚑" },
-                        { label: t("emergency.policeStation"), query: "police+station", emoji: "🚓" },
-                        { label: t("emergency.pharmacy"), query: "pharmacy+medical+store", emoji: "💊" },
-                        { label: t("emergency.bloodBank"), query: "blood+bank", emoji: "🩸" },
-                        { label: t("emergency.fireStation"), query: "fire+station", emoji: "🚒" },
-                    ].map(item => (
-                        <button key={item.label}
-                            onClick={() => openMaps(item.query)}
-                            className="flex items-center gap-2 p-3 bg-slate-50/80 hover:bg-indigo-50/50 border border-slate-100 hover:border-indigo-100 rounded-xl text-left transition-all duration-200 text-sm font-semibold text-slate-700 hover:text-indigo-700 hover:-translate-y-0.5">
-                            <span className="text-xl">{item.emoji}</span>
-                            <span>{item.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 };
