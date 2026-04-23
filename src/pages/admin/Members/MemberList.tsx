@@ -79,9 +79,14 @@ const MemberList: React.FC = () => {
         let paidMemberIds = new Set<string>();
         let hasUsersSnapshot = false;
         let hasPaymentsSnapshot = false;
+        let hydrateTimer: ReturnType<typeof setTimeout> | null = null;
 
         const hydrateMembers = () => {
             if (!hasUsersSnapshot || !hasPaymentsSnapshot) return;
+
+            // Debounce: if both snapshots arrive nearly simultaneously, only run once
+            if (hydrateTimer) clearTimeout(hydrateTimer);
+            hydrateTimer = setTimeout(() => {
 
             const merged = userDocs.map((member) => {
                 const docId = member.id || member.uid;
@@ -99,6 +104,7 @@ const MemberList: React.FC = () => {
 
             setMembers(merged);
             setLoading(false);
+        }, 50); // 50ms debounce
         };
 
         const usersUnsub = onSnapshot(
@@ -138,6 +144,7 @@ const MemberList: React.FC = () => {
         );
 
         return () => {
+            if (hydrateTimer) clearTimeout(hydrateTimer);
             usersUnsub();
             paymentsUnsub();
         };
@@ -431,49 +438,49 @@ const MemberList: React.FC = () => {
                     </div>
                 ) : (
                     filtered.map(m => (
-                        <div key={m.id || m.uid} className="glass-card bg-white/10 hover:bg-white/15 rounded-2xl p-4 sm:p-5 lg:p-6 transition-all duration-300 border border-white/15 group">
+                        <div key={m.id || m.uid} className="glass-card bg-white/35 hover:bg-white/45 rounded-2xl p-4 sm:p-5 lg:p-6 transition-all duration-300 border border-white/30 shadow-md hover:shadow-lg group">
                             <div className="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-center lg:gap-6">
                                 {/* Avatar and Basic Info */}
-                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                                     <div className="relative shrink-0">
                                         {m.photoURL ? (
-                                            <img src={m.photoURL} alt="" className="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-white" />
+                                            <img src={m.photoURL} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl object-cover shadow-md border-2 border-white" />
                                         ) : (
-                                            <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 font-black border-2 border-indigo-100 shadow-inner text-2xl">
+                                            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-indigo-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-indigo-600 font-black border-2 border-indigo-100 shadow-inner text-xl sm:text-2xl">
                                                 {m.name?.[0]}
                                             </div>
                                         )}
                                         <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white shadow-sm ${m.status === "active" ? "bg-emerald-500" : m.status === "pending" ? "bg-amber-500" : "bg-slate-400"}`} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-black text-slate-900 text-lg tracking-tight truncate">{m.name} {m.surname}</h3>
-                                        <p className="text-xs text-slate-400 font-semibold truncate">{m.email}</p>
-                                        <span className="inline-block mt-1 font-mono text-[9px] uppercase font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm">{m.memberId || t("memberList.newReg")}</span>
+                                        <h3 className="font-black text-slate-900 text-base sm:text-lg tracking-tight truncate">{m.name} {m.surname}</h3>
+                                        <p className="text-xs text-slate-500 font-semibold truncate">{m.email}</p>
+                                        <span className="inline-block mt-1 font-mono text-[10px] uppercase font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm">{m.memberId || t("memberList.newReg")}</span>
                                     </div>
                                 </div>
 
                                 {/* Info Badges */}
-                                <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-3 lg:gap-4">
-                                    <div className="rounded-xl px-3 py-2 text-center sm:px-4">
-                                        <p className="text-[9px] font-black text-red-400 uppercase tracking-widest">{t("memberList.blood")}</p>
-                                        <p className="text-sm font-black text-red-600 flex items-center justify-center gap-1">
+                                <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:gap-3 lg:gap-4 w-full lg:w-auto">
+                                    <div className="rounded-xl px-3 py-2.5 text-center sm:px-4 bg-white/80 border border-white/80 min-h-[64px] flex flex-col justify-center">
+                                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{t("memberList.blood")}</p>
+                                        <p className="text-base sm:text-sm font-black text-slate-800 flex items-center justify-center gap-1">
                                             <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                             {m.bloodGroup || "N/A"}
                                         </p>
                                     </div>
-                                    <div className="rounded-xl px-3 py-2 text-center sm:px-4">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("memberList.meetings")}</p>
-                                        <p className="text-sm font-black text-slate-900">{m.attendanceCount || 0}</p>
+                                    <div className="rounded-xl px-3 py-2.5 text-center sm:px-4 bg-white/80 border border-white/80 min-h-[64px] flex flex-col justify-center">
+                                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{t("memberList.meetings")}</p>
+                                        <p className="text-base sm:text-sm font-black text-slate-900">{m.attendanceCount || 0}</p>
                                     </div>
-                                    <div className="rounded-xl px-3 py-2 text-center sm:px-4">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("memberList.payment")}</p>
-                                        <p className={`text-sm font-black uppercase ${m.paymentStatus === "paid" ? "text-emerald-700" : m.paymentStatus === "partial" ? "text-amber-700" : "text-red-700"}`}>
+                                    <div className="rounded-xl px-3 py-2.5 text-center sm:px-4 bg-white/80 border border-white/80 min-h-[64px] flex flex-col justify-center">
+                                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{t("memberList.payment")}</p>
+                                        <p className={`text-base sm:text-sm font-black uppercase ${m.paymentStatus === "paid" ? "text-emerald-700" : m.paymentStatus === "partial" ? "text-amber-700" : "text-red-700"}`}>
                                             {t(`common.${m.paymentStatus || 'pending'}`)}
                                         </p>
                                     </div>
-                                    <div className="rounded-xl px-3 py-2 text-center sm:px-4">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t("memberList.status")}</p>
-                                        <p className={`text-sm font-black uppercase flex items-center justify-center gap-1.5 ${m.status === "active" ? "text-indigo-700" : m.status === "pending" ? "text-amber-700" : "text-slate-600"}`}>
+                                    <div className="rounded-xl px-3 py-2.5 text-center sm:px-4 bg-white/80 border border-white/80 min-h-[64px] flex flex-col justify-center">
+                                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{t("memberList.status")}</p>
+                                        <p className={`text-base sm:text-sm font-black uppercase flex items-center justify-center gap-1.5 ${m.status === "active" ? "text-indigo-700" : m.status === "pending" ? "text-amber-700" : "text-slate-600"}`}>
                                             <div className={`w-1.5 h-1.5 rounded-full ${m.status === "active" ? "bg-indigo-500 animate-pulse" : m.status === "pending" ? "bg-amber-500" : "bg-slate-400"}`}></div>
                                             {t(`common.${m.status || 'pending'}`)}
                                         </p>
@@ -485,52 +492,52 @@ const MemberList: React.FC = () => {
                                     const memberId = m.id || m.uid;
                                     const isToggling = togglingId === memberId;
                                     return (
-                                <div className="md:shrink-0 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg shadow-slate-200/60 transition-shadow hover:shadow-xl hover:shadow-slate-200/80">
-                                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                                <div className="w-full md:w-auto md:shrink-0 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-lg shadow-slate-200/60 transition-shadow hover:shadow-xl hover:shadow-slate-200/80">
+                                    <div className="grid grid-cols-3 gap-2">
                                         <Link
                                             to={`/admin/members/${memberId}`}
-                                            className="h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 shadow-md shadow-slate-200/60 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-lg hover:shadow-indigo-100 active:translate-y-0.5 active:shadow-lg active:shadow-slate-300/80 font-bold text-[10px] sm:text-xs whitespace-nowrap"
+                                            className="h-12 sm:h-10 min-w-0 px-1.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 shadow-md shadow-slate-200/60 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-lg hover:shadow-indigo-100 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-lg active:shadow-slate-300/80 font-bold text-[11px] sm:text-xs leading-tight text-center"
                                             title={t("memberList.view")}
                                         >
-                                            <Eye size={16} /> <span className="hidden sm:inline">{t("memberList.view")}</span>
+                                            <Eye size={16} /> <span className="inline">{t("memberList.view")}</span>
                                         </Link>
                                         {m.status === "pending" ? (
                                             <button
                                                 onClick={() => toggleBlock(m)}
                                                 disabled={isToggling}
-                                                className={`h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-white shadow-md shadow-indigo-100 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-wider whitespace-nowrap ${isToggling ? "cursor-not-allowed opacity-70" : "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-lg hover:shadow-indigo-100 active:translate-y-0.5 active:shadow-lg active:shadow-indigo-200/70"}`}
+                                                className={`h-12 sm:h-10 min-w-0 px-1.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-xl border border-indigo-200 bg-white shadow-md shadow-indigo-100 transition-all font-bold text-[11px] sm:text-xs uppercase tracking-wider leading-tight text-center ${isToggling ? "cursor-not-allowed opacity-70" : "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 hover:shadow-lg hover:shadow-indigo-100 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-lg active:shadow-indigo-200/70"}`}
                                                 title={t("memberList.approve")}
                                             >
                                                 {isToggling ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
-                                                <span className="hidden sm:inline">{isToggling ? t("memberList.processing") : t("memberList.approve")}</span>
+                                                <span className="inline">{isToggling ? t("memberList.processing") : t("memberList.approve")}</span>
                                             </button>
                                         ) : m.status === "active" ? (
                                             <button
                                                 onClick={() => toggleBlock(m)}
                                                 disabled={isToggling}
-                                                className={`h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white shadow-md shadow-red-100 transition-all font-bold text-[10px] sm:text-xs whitespace-nowrap ${isToggling ? "cursor-not-allowed opacity-70" : "text-slate-500 hover:bg-red-50 hover:text-red-600 hover:shadow-lg hover:shadow-red-100 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"}`}
+                                                className={`h-12 sm:h-10 min-w-0 px-1.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-xl border border-red-200 bg-white shadow-md shadow-red-100 transition-all font-bold text-[11px] sm:text-xs leading-tight text-center ${isToggling ? "cursor-not-allowed opacity-70" : "text-slate-500 hover:bg-red-50 hover:text-red-600 hover:shadow-lg hover:shadow-red-100 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"}`}
                                                 title={t("memberList.block")}
                                             >
                                                 {isToggling ? <Loader2 size={16} className="animate-spin" /> : <UserX size={16} />}
-                                                <span className="hidden sm:inline">{isToggling ? t("memberList.blocking") : t("memberList.block")}</span>
+                                                <span className="inline">{isToggling ? t("memberList.blocking") : t("memberList.block")}</span>
                                             </button>
                                         ) : (
                                             <button
                                                 onClick={() => toggleBlock(m)}
                                                 disabled={isToggling}
-                                                className={`h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-white shadow-md shadow-emerald-100 transition-all font-bold text-[10px] sm:text-xs uppercase tracking-wider whitespace-nowrap ${isToggling ? "cursor-not-allowed opacity-70" : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:shadow-lg hover:shadow-emerald-100 active:translate-y-0.5 active:shadow-lg active:shadow-emerald-200/70"}`}
+                                                className={`h-12 sm:h-10 min-w-0 px-1.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-white shadow-md shadow-emerald-100 transition-all font-bold text-[11px] sm:text-xs uppercase tracking-wider leading-tight text-center ${isToggling ? "cursor-not-allowed opacity-70" : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:shadow-lg hover:shadow-emerald-100 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-lg active:shadow-emerald-200/70"}`}
                                                 title={t("memberList.unblock")}
                                             >
                                                 {isToggling ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
-                                                <span className="hidden sm:inline">{isToggling ? t("memberList.unblocking") : t("memberList.unblock")}</span>
+                                                <span className="inline">{isToggling ? t("memberList.unblocking") : t("memberList.unblock")}</span>
                                             </button>
                                         )}
                                         <button
                                             onClick={() => handleDelete(m.id || m.uid, m.name)}
-                                            className="h-10 min-w-0 px-2 flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[10px] sm:text-xs whitespace-nowrap hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"
+                                            className="h-12 sm:h-10 min-w-0 px-1.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[11px] sm:text-xs leading-tight text-center hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"
                                             title={t("memberList.delete")}
                                         >
-                                            <Trash2 size={16} /> <span className="hidden sm:inline">{t("memberList.delete")}</span>
+                                            <Trash2 size={16} /> <span className="inline">{t("memberList.delete")}</span>
                                         </button>
                                     </div>
                                 </div>

@@ -166,39 +166,27 @@ const AddAdmin: React.FC = () => {
   return (
     <>
       {/* ══════════════════════════════════════
-          MOBILE — fixed full screen, no scroll
+          MOBILE — scrollable, fits any screen
           ══════════════════════════════════════ */}
-      <div className="sm:hidden fixed inset-0 flex flex-col">
+      <div className="sm:hidden space-y-5 pb-8 animate-fade-in">
         {/* Top bar */}
-        <div className="flex items-center gap-4 px-4 pt-5 pb-3">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl  border border-slate-200 text-slate-500  transition-all shadow-sm"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all shadow-sm"
           >
             <ArrowLeft size={18} />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
               {t("addAdmin.title")}
             </h1>
           </div>
-          <div className="w-8 h-8 flex items-center justify-center rounded-xl">
-            <Shield size={16} />
-          </div>
+          <Shield size={18} className="text-slate-400" />
         </div>
 
-        {/* Form — flex-1 so it fills remaining height, buttons pushed to bottom */}
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col flex-1 px-4 pb-6 justify-between"
-        >
-          {/* Fields */}
-          <div
-            className="bg-white rounded-2xl shadow-md border border-slate-200 
-p-5 min-h-[320px] 
-flex flex-col gap-4 w-full max-w-md mx-auto"
-          >
-            {" "}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-5 flex flex-col gap-4">
             {/* Full Name */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
@@ -214,10 +202,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                   required
                   className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                 />
-                <UserPlus
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  size={15}
-                />
+                <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
               </div>
             </div>
             {/* Email */}
@@ -235,61 +220,50 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                   required
                   className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                 />
-                <Mail
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  size={15}
-                />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
               </div>
             </div>
-            {/* Password + Confirm — side by side */}
-            <div className="grid grid-cols-1 gap-3">
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
-                  {t("addAdmin.password")}
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    name="password"
-                    value={form.password}
-                    onChange={handleChange}
-                    placeholder={t("addAdmin.passwordPlaceholder")}
-                    required
-                    minLength={6}
-                    className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
-                  />
-                  <Lock
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    size={15}
-                  />
-                </div>
+            {/* Password */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
+                {t("addAdmin.password")}
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder={t("addAdmin.passwordPlaceholder")}
+                  required
+                  minLength={6}
+                  className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
+                />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
               </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
-                  {t("addAdmin.confirmPassword")}
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={form.confirmPassword}
-                    onChange={handleChange}
-                    placeholder={t("addAdmin.passwordPlaceholder")}
-                    required
-                    minLength={6}
-                    className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
-                  />
-                  <ShieldCheck
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    size={15}
-                  />
-                </div>
+            </div>
+            {/* Confirm Password */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
+                {t("addAdmin.confirmPassword")}
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  placeholder={t("addAdmin.passwordPlaceholder")}
+                  required
+                  minLength={6}
+                  className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
+                />
+                <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
               </div>
             </div>
           </div>
 
-          {/* Buttons — pinned to bottom via justify-between on parent */}
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-200">
+          <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => navigate(-1)}
@@ -303,11 +277,7 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
               disabled={loading}
               className="bg-indigo-600 text-white font-black uppercase tracking-[0.12em] text-[10px] py-3.5 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
             >
-              {loading ? (
-                <Loader2 className="animate-spin" size={14} />
-              ) : (
-                <UserPlus size={14} />
-              )}
+              {loading ? <Loader2 className="animate-spin" size={14} /> : <UserPlus size={14} />}
               {loading ? provisionStage || t("common.processing") : t("addAdmin.createAdmin")}
             </button>
           </div>
@@ -317,36 +287,34 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
       {/* ══════════════════════════════════════
           DESKTOP — completely unchanged
           ══════════════════════════════════════ */}
-      <div className="hidden sm:block space-y-10 animate-fade-in pb-20 max-w-4xl mx-auto">
-        <div className="flex items-center gap-5">
+      <div className="hidden sm:flex items-center justify-center h-full animate-fade-in">
+        <div className="w-full max-w-2xl">
+        <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => navigate(-1)}
-            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-slate-300 transition-all shadow-sm"
+            className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-slate-300 transition-all shadow-sm"
           >
-            <ArrowLeft size={22} />
+            <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
               {t("addAdmin.title")}
             </h1>
-            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2 leading-none">
+            <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-1 leading-none">
               {t("addAdmin.sectionSubtitleDesktop")}
             </p>
           </div>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 lg:grid-cols-1 gap-10"
-        >
-          <div className="glass-card bg-white border border-slate-200/60 shadow-xl rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden">
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
+        <form onSubmit={handleSubmit}>
+          <div className="glass-card bg-white border border-slate-200/60 shadow-xl rounded-3xl p-8 relative overflow-hidden">
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-indigo-600"></div>
               {t("addAdmin.sectionTitleDesktop")}
             </h2>
 
-            <div className="space-y-8">
-              <div className="space-y-2 group">
+            <div className="space-y-5">
+              <div className="space-y-1.5 group">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
                   {t("addAdmin.fullName")}
                 </label>
@@ -358,16 +326,13 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                     onChange={handleChange}
                     placeholder={t("addAdmin.namePlaceholder")}
                     required
-                    className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                    className="w-full py-3 px-5 pl-12 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                   />
-                  <UserPlus
-                    className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
-                    size={20}
-                  />
+                  <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
                 </div>
               </div>
 
-              <div className="space-y-2 group">
+              <div className="space-y-1.5 group">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
                   {t("addAdmin.email")}
                 </label>
@@ -379,17 +344,14 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                     onChange={handleChange}
                     placeholder={t("addAdmin.emailPlaceholder")}
                     required
-                    className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                    className="w-full py-3 px-5 pl-12 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                   />
-                  <Mail
-                    className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
-                    size={20}
-                  />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                <div className="space-y-2 group">
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-1.5 group">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
                     {t("addAdmin.password")}
                   </label>
@@ -402,15 +364,12 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                       placeholder={t("addAdmin.passwordPlaceholder")}
                       required
                       minLength={6}
-                      className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                      className="w-full py-3 px-5 pl-12 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                     />
-                    <Lock
-                      className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
-                      size={20}
-                    />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
                   </div>
                 </div>
-                <div className="space-y-2 group">
+                <div className="space-y-1.5 group">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
                     {t("addAdmin.confirmPassword")}
                   </label>
@@ -423,43 +382,35 @@ flex flex-col gap-4 w-full max-w-md mx-auto"
                       placeholder={t("addAdmin.passwordPlaceholder")}
                       required
                       minLength={6}
-                      className="w-full py-4 px-6 pl-14 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                      className="w-full py-3 px-5 pl-12 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                     />
-                    <ShieldCheck
-                      className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors"
-                      size={20}
-                    />
+                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-7 flex flex-col sm:flex-row gap-2">
+            <div className="mt-6 flex gap-3">
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-blue-600 text-white font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl shadow-2xl shadow-indigo-200 hover:shadow-indigo-400 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex-1 flex items-center justify-center gap-3"
+                className="bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-xs py-4 px-8 rounded-2xl shadow-lg shadow-indigo-200 hover:shadow-indigo-400 hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex-1 flex items-center justify-center gap-2"
               >
-                {loading ? (
-                  <Loader2 className="animate-spin" size={20} />
-                ) : (
-                  <UserPlus size={20} />
-                )}
-                {loading
-                  ? provisionStage || t("common.processing")
-                  : t("addAdmin.confirmProvisioning")}
+                {loading ? <Loader2 className="animate-spin" size={18} /> : <UserPlus size={18} />}
+                {loading ? provisionStage || t("common.processing") : t("addAdmin.confirmProvisioning")}
               </button>
               <button
                 type="button"
                 onClick={() => navigate(-1)}
                 disabled={loading}
-                className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.2em] text-xs py-5 px-10 rounded-4xl hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.2em] text-xs py-4 px-8 rounded-2xl hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t("addAdmin.abort")}
               </button>
             </div>
           </div>
         </form>
+        </div>
       </div>
     </>
   );
