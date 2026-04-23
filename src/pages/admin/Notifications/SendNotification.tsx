@@ -244,12 +244,12 @@ const SendNotification: React.FC = () => {
                                         {t("notifications.form.preview")}
                                     </p>
                                     <div
-                                        className={`p-4 rounded-xl shadow-sm border ${selectedType?.color || "bg-slate-100"} border-white/40`}
+                                        className={`p-4 rounded-xl shadow-sm border overflow-hidden ${selectedType?.color || "bg-slate-100"} border-white/40`}
                                     >
-                                        <p className="font-black text-sm tracking-tight">
+                                        <p className="font-black text-sm tracking-tight break-words">
                                             {form.title}
                                         </p>
-                                        <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed">
+                                        <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed break-words whitespace-pre-wrap">
                                             {form.body || t("notifications.form.previewPlaceholder")}
                                         </p>
                                     </div>
@@ -306,10 +306,10 @@ const SendNotification: React.FC = () => {
                                     style={{ animationDelay: `${i * 0.05}s` }}
                                 >
                                     <div
-                                        className={`p-5 rounded-2xl border transition-all duration-300 hover:bg-white/80 ${typeInfo.color.split(" ")[1]} ${typeInfo.color.split(" ")[0]} border-white/60 relative premium-shadow`}
+                                        className={`p-5 rounded-2xl border transition-all duration-300 hover:bg-white/80 ${typeInfo.color.split(" ")[1]} ${typeInfo.color.split(" ")[0]} border-white/60 relative premium-shadow overflow-hidden`}
                                     >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <p className="font-black text-[15px] pr-8 tracking-tight leading-tight">
+                                        <div className="flex justify-between items-start mb-2 min-w-0">
+                                            <p className="font-black text-[15px] pr-8 tracking-tight leading-tight break-words min-w-0 overflow-hidden">
                                                 {n.title}
                                             </p>
                                             <button
@@ -320,7 +320,7 @@ const SendNotification: React.FC = () => {
                                                 <Trash2 size={13} />
                                             </button>
                                         </div>
-                                        <p className="text-[13px] font-medium opacity-80 leading-relaxed mb-4">
+                                        <p className="text-[13px] font-medium opacity-80 leading-relaxed mb-4 break-words whitespace-pre-wrap">
                                             {n.body}
                                         </p>
                                         <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-auto pt-3 border-t border-white/20">

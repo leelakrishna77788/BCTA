@@ -226,26 +226,26 @@ const MyNotifications: React.FC = () => {
               <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shrink-0 shadow-sm">
                 {getTypeIcon(n.type)}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-bold text-slate-900 text-sm mb-1">
-                      {n.title}
-                    </p>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      {n.body}
-                    </p>
-                  </div>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="min-w-0 overflow-hidden">
+                  <p className="font-bold text-slate-900 text-sm mb-1 break-all">
+                    {n.title}
+                  </p>
+                  <p className="text-slate-600 text-sm leading-relaxed break-all whitespace-pre-wrap">
+                    {n.body}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-xs text-slate-400 font-medium">
+                    {formatDate(n.sentAt)}
+                  </p>
                   <button
                     onClick={() => setDeleteConfirm(n.id)}
-                    className="absolute top-3 right-3 z-10 p-2 rounded-lg bg-white text-red-500 hover:bg-red-50 hover:text-red-600 transition-all shadow-sm"
+                    className="p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
-                <p className="text-xs text-slate-400 mt-3 font-medium">
-                  {formatDate(n.sentAt)}
-                </p>
               </div>
               <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
                 <span

@@ -77,21 +77,21 @@ const RaiseComplaint: React.FC = () => {
     );
 
     return (
-        <div className="max-w-lg mx-auto space-y-6 animate-fade-in pb-12">
-            <div className="text-center">
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">{t("complaint.helpSupport")}</h1>
-                <p className="text-slate-500 font-medium">{t("complaint.provideDetails")}</p>
+        <div className="w-full max-w-lg mx-auto px-4 sm:px-0 flex flex-col animate-fade-in md:pt-8" style={{ minHeight: "calc(100vh - 10rem)" }}>
+            <div className="text-center mb-4">
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-1">{t("complaint.helpSupport")}</h1>
+                <p className="text-slate-500 text-sm sm:text-base font-medium">{t("complaint.provideDetails")}</p>
             </div>
 
             {!userProfile && (
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex gap-3 text-amber-800 animate-pulse">
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex gap-3 text-amber-800 animate-pulse mb-4">
                     <AlertCircle className="shrink-0" />
                     <p className="text-sm">{t("complaint.profileWarning")}</p>
                 </div>
             )}
 
-            <div className="card shadow-2xl shadow-slate-200/50 border-none">
-                <form onSubmit={handleSubmit} className="space-y-3 md:space-y-12">
+            <div className="card shadow-xl shadow-slate-200/50 border-none flex-1 flex flex-col">
+                <form onSubmit={handleSubmit} className="flex flex-col flex-1 gap-4">
                     <div>
                         <label className="label">{t("complaint.titleOptional")}</label>
                         <input
@@ -104,18 +104,18 @@ const RaiseComplaint: React.FC = () => {
                         />
                     </div>
 
-                    <div>
+                    <div className="flex flex-col flex-1">
                         <label className="label">{t("complaint.detailedDescription")}</label>
                         <textarea
                             value={description}
                             onChange={e => setDescription(e.target.value)}
-                            required rows={2}
+                            required
                             placeholder={t("complaint.descPlaceholder")}
-                            className="input-field resize-none bg-slate-50 border-slate-100 focus:bg-white transition-all p-4 text-base"
+                            className="input-field resize-none bg-slate-50 border-slate-100 focus:bg-white transition-all p-4 text-base flex-1 h-0"
                         />
                     </div>
 
-                    <button type="submit" disabled={submitting || !userProfile} className="btn-primary w-full py-4 rounded-2xl text-lg shadow-xl shadow-indigo-900/10 transition-all hover:scale-[1.01] active:scale-[0.98]">
+                    <button type="submit" disabled={submitting || !userProfile} className="btn-primary w-full py-3 sm:py-4 rounded-2xl text-base sm:text-lg shadow-xl shadow-indigo-900/10 transition-all hover:scale-[1.01] active:scale-[0.98]">
                         {submitting ? (
                             <span className="flex items-center gap-3">
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
