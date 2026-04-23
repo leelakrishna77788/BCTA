@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db, storage } from "../../firebase/firebaseConfig";
@@ -100,6 +101,7 @@ const optimizeImageForUpload = async (file: File): Promise<File> => {
 };
 
 const MyProfile: React.FC = () => {
+  const { t } = useTranslation();
   const { userProfile, currentUser, refreshProfile } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -206,12 +208,12 @@ const MyProfile: React.FC = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select a valid image file.");
+      toast.error(t("profile.toast.invalidImage"));
       return;
     }
 
     if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-      toast.error("Image is too large. Please choose an image under 8MB.");
+      toast.error(t("profile.toast.imageTooLarge"));
       return;
     }
 
@@ -223,7 +225,7 @@ const MyProfile: React.FC = () => {
     setPhotoPreview(URL.createObjectURL(file));
 
     if (!currentUser) {
-      toast.error("Please login again and retry.");
+      toast.error(t("profile.toast.loginRetry"));
       return;
     }
 
@@ -260,12 +262,12 @@ const MyProfile: React.FC = () => {
       await updateMember(currentUser.uid, { photoURL: url });
       setUploadedPhotoURL(url);
       await refreshProfile();
-      toast.success("Image uploaded and saved.");
+      toast.success(t("profile.toast.imageSaved"));
     } catch (error: any) {
       console.error("Photo upload failed:", error);
       setUploadedPhotoURL("");
       toast.error(
-        error?.message || "Image upload failed. Please try another image.",
+        error?.message || t("profile.toast.imageFailed"),
       );
     } finally {
       setIsPhotoUploading(false);
@@ -294,7 +296,7 @@ const MyProfile: React.FC = () => {
 
   const onSaveProfile = async () => {
     if (!currentUser) {
-      toast.error("Please login again and retry.");
+      toast.error(t("profile.toast.loginRetry"));
       return;
     }
 
@@ -303,7 +305,7 @@ const MyProfile: React.FC = () => {
       parsedAge !== null &&
       (Number.isNaN(parsedAge) || parsedAge < 0 || parsedAge > 120)
     ) {
-      toast.error("Please enter a valid age.");
+      toast.error(t("profile.toast.invalidAge"));
       return;
     }
 
@@ -311,14 +313,14 @@ const MyProfile: React.FC = () => {
       editForm.aadhaarLast4 &&
       !/^\d{4}$/.test(editForm.aadhaarLast4.trim())
     ) {
-      toast.error("Aadhaar last 4 must be exactly 4 digits.");
+      toast.error(t("profile.toast.invalidAadhaar"));
       return;
     }
 
     setIsSaving(true);
     try {
       if (photoFile && isPhotoUploading) {
-        toast("Image upload is still in progress. Saving other details now.");
+        toast(t("profile.toast.uploadInProgress"));
       }
 
       const nextPhotoURL = uploadedPhotoURL || userProfile?.photoURL || "";
@@ -345,15 +347,15 @@ const MyProfile: React.FC = () => {
       setPhotoFile(null);
       setUploadedPhotoURL("");
       setUploadProgress(null);
-      toast.success("Profile updated from backend.");
+      toast.success(t("profile.toast.profileUpdated"));
     } catch (error: any) {
       console.error("Profile update failed:", error);
       if (error?.code === "permission-denied") {
         toast.error(
-          "Profile update blocked by backend rules. Please refresh and retry.",
+          t("profile.toast.updateBlocked"),
         );
       } else {
-        toast.error(error?.message || "Failed to update profile. Try again.");
+        toast.error(error?.message || t("profile.toast.updateFailed"));
       }
     } finally {
       setIsSaving(false);
@@ -421,13 +423,13 @@ const MyProfile: React.FC = () => {
                 {/* Blood */}
                 <span className="flex items-center justify-center gap-1 rounded-md bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold sm:inline-flex sm:rounded-full sm:border sm:px-3 sm:py-1.5 sm:text-xs">
                   <Droplet size={10} />
-                  {userProfile.bloodGroup || "Blood"}
+                  {userProfile.bloodGroup || t("profile.blood")}
                 </span>
 
                 {/* BCTA ID */}
                 <span className="col-span-2 flex items-center justify-center gap-1 rounded-md bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold sm:inline-flex sm:rounded-full sm:border sm:px-3 sm:py-1.5 sm:text-xs">
                   <BadgeCheck size={10} />
-                  {hasMemberId ? memberId : "ID"}
+                  {hasMemberId ? memberId : t("profile.id")}
                 </span>
 
                 {/* Year */}
@@ -448,11 +450,11 @@ const MyProfile: React.FC = () => {
                     <AlertCircle size={12} />
                   )}
                   {memberIdVerified
-                    ? "Member ID verified"
-                    : "Member ID pending check"}
+                    ? t("profile.memberIdVerified")
+                    : t("profile.memberIdPendingCheck")}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 font-semibold text-white/80">
-                  Joined {memberSince}
+                  {t("profile.joined")} {memberSince}
                 </span>
               </div>
             </div>
@@ -462,36 +464,36 @@ const MyProfile: React.FC = () => {
           <div className="grid gap-2 grid-cols-3 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
             <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
               <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">
-                Meetings
+                {t("profile.meetings")}
               </p>
               <p className="mt-1 text-xl font-bold sm:text-3xl">
                 {attendance.length}
               </p>
               <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">
-                attended
+                {t("profile.attended")}
               </p>
             </div>
             <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
               <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">
-                Payment
+                {t("profile.payment")}
               </p>
               <p
                 className={`mt-1 text-lg font-bold capitalize sm:text-2xl ${userProfile.paymentStatus === "paid" ? "text-emerald-300" : "text-amber-300"}`}
               >
-                {userProfile.paymentStatus}
+                {t(`common.${userProfile.paymentStatus}`) || userProfile.paymentStatus}
               </p>
               <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">
-                status
+                {t("profile.status")}
               </p>
             </div>
             <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4 sm:col-span-2 xl:col-span-1">
               <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">
-                Member since
+                {t("profile.memberSince")}
               </p>
               <p className="mt-1 text-xl font-bold sm:text-3xl">
                 {memberSince}
               </p>
-              <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">year</p>
+              <p className="mt-0.5 text-[9px] text-white/65 sm:text-xs">{t("profile.year")}</p>
             </div>
           </div>
         </div>
@@ -503,10 +505,10 @@ const MyProfile: React.FC = () => {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  Personal Details
+                  {t("profile.personalDetails")}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Key identity, member ID, and contact information.
+                  {t("profile.personalDetailsDesc")}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -517,7 +519,7 @@ const MyProfile: React.FC = () => {
                   }
                   className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                 >
-                  <Edit3 size={13} /> {isEditing ? "Cancel" : "Edit details"}
+                  <Edit3 size={13} /> {isEditing ? t("profile.cancel") : t("profile.editDetails")}
                 </button>
                 <User className="text-[#000080]" size={20} />
               </div>
@@ -526,16 +528,16 @@ const MyProfile: React.FC = () => {
             {isEditing && (
               <div className="mb-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 sm:p-6">
                 <h3 className="text-base font-bold text-slate-900">
-                  Edit Profile Details
+                  {t("profile.editProfileDetails")}
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-600">
-                  Make changes below and save to update your profile.
+                  {t("profile.editProfileDesc")}
                 </p>
 
                 {/* Profile Photo Section */}
                 <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-700">
-                    Profile Photo
+                    {t("profile.profilePhoto")}
                   </p>
                   <div className="mt-4 flex flex-col items-center gap-3">
                     <div className="flex-shrink-0">
@@ -547,13 +549,13 @@ const MyProfile: React.FC = () => {
                         />
                       ) : (
                         <div className="h-20 w-20 rounded-xl border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center text-xs text-slate-400 font-semibold">
-                          No Photo
+                          {t("profile.noPhoto")}
                         </div>
                       )}
                     </div>
                     <div className="flex-1 w-full">
                       <label className="flex items-center justify-center w-auto cursor-pointer rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 transition">
-                        + Choose Photo
+                        + {t("profile.choosePhoto")}
                         <input
                           type="file"
                           accept="image/*"
@@ -563,12 +565,12 @@ const MyProfile: React.FC = () => {
                       </label>
                       {photoFile && (
                         <p className="mt-2 text-xs text-indigo-600 font-semibold">
-                          ✓ Selected: {photoFile.name}
+                          ✓ {t("profile.selected")}: {photoFile.name}
                         </p>
                       )}
                       {photoFile && uploadedPhotoURL && (
                         <p className="text-xs text-emerald-600 font-semibold">
-                          ✓ Ready to save
+                          ✓ {t("profile.readyToSave")}
                         </p>
                       )}
                     </div>
@@ -583,8 +585,8 @@ const MyProfile: React.FC = () => {
                       </div>
                       <p className="mt-2 text-xs font-semibold text-slate-600">
                         {isPhotoUploading
-                          ? `Uploading: ${uploadProgress}%`
-                          : `Complete: ${uploadProgress}%`}
+                          ? `${t("profile.uploading")}: ${uploadProgress}%`
+                          : `${t("profile.complete")}: ${uploadProgress}%`}
                       </p>
                     </div>
                   )}
@@ -595,8 +597,8 @@ const MyProfile: React.FC = () => {
                   <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5">
                     <p className="text-xs font-bold text-blue-800">
                       {changedFields.length === 1
-                        ? "1 field changed"
-                        : `${changedFields.length} fields changed`}
+                        ? `1 ${t("profile.fieldChanged")}`
+                        : `${changedFields.length} ${t("profile.fieldsChanged")}`}
                       : {changedFields.join(", ")}
                     </p>
                   </div>
@@ -608,25 +610,25 @@ const MyProfile: React.FC = () => {
                   <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        First Name
+                        {t("profile.firstName")}
                       </label>
                       <input
                         value={editForm.name}
                         onChange={(e) => onFormChange("name", e.target.value)}
-                        placeholder="First name"
+                        placeholder={t("profile.firstName")}
                         className={`w-full ${changedInputClass("name")}`}
                       />
                     </div>
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Surname
+                        {t("profile.surname")}
                       </label>
                       <input
                         value={editForm.surname}
                         onChange={(e) =>
                           onFormChange("surname", e.target.value)
                         }
-                        placeholder="Surname"
+                        placeholder={t("profile.surname")}
                         className={`w-full ${changedInputClass("surname")}`}
                       />
                     </div>
@@ -636,23 +638,23 @@ const MyProfile: React.FC = () => {
                   <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Phone
+                        {t("profile.phone")}
                       </label>
                       <input
                         value={editForm.phone}
                         onChange={(e) => onFormChange("phone", e.target.value)}
-                        placeholder="Phone"
+                        placeholder={t("profile.phone")}
                         className={`w-full ${changedInputClass("phone")}`}
                       />
                     </div>
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Age
+                        {t("profile.age")}
                       </label>
                       <input
                         value={editForm.age}
                         onChange={(e) => onFormChange("age", e.target.value)}
-                        placeholder="Age"
+                        placeholder={t("profile.age")}
                         inputMode="numeric"
                         className={`w-full ${changedInputClass("age")}`}
                       />
@@ -663,22 +665,22 @@ const MyProfile: React.FC = () => {
                   <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Gender
+                        {t("profile.gender")}
                       </label>
                       <select
                         value={editForm.gender}
                         onChange={(e) => onFormChange("gender", e.target.value)}
                         className={`w-full ${changedInputClass("gender")}`}
                       >
-                        <option value="">Select Gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
+                        <option value="">{t("profile.selectGender")}</option>
+                        <option value="male">{t("profile.male")}</option>
+                        <option value="female">{t("profile.female")}</option>
+                        <option value="other">{t("profile.other")}</option>
                       </select>
                     </div>
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Blood Group
+                        {t("profile.bloodGroup")}
                       </label>
                       <select
                         value={editForm.bloodGroup}
@@ -687,7 +689,7 @@ const MyProfile: React.FC = () => {
                         }
                         className={`w-full ${changedInputClass("bloodGroup")}`}
                       >
-                        <option value="">Select Blood Group</option>
+                        <option value="">{t("profile.selectBloodGroup")}</option>
                         <option value="A+">A+</option>
                         <option value="A-">A-</option>
                         <option value="B+">B+</option>
@@ -704,7 +706,7 @@ const MyProfile: React.FC = () => {
                   <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Aadhaar Last 4
+                        {t("profile.aadhaarLast4")}
                       </label>
                       <input
                         value={editForm.aadhaarLast4}
@@ -714,21 +716,21 @@ const MyProfile: React.FC = () => {
                             e.target.value.replace(/\D/g, "").slice(0, 4),
                           )
                         }
-                        placeholder="Aadhaar last 4"
+                        placeholder={t("profile.aadhaarLast4")}
                         inputMode="numeric"
                         className={`w-full ${changedInputClass("aadhaarLast4")}`}
                       />
                     </div>
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Shop Address
+                        {t("profile.shopAddress")}
                       </label>
                       <input
                         value={editForm.shopAddress}
                         onChange={(e) =>
                           onFormChange("shopAddress", e.target.value)
                         }
-                        placeholder="Shop address"
+                        placeholder={t("profile.shopAddress")}
                         className={`w-full ${changedInputClass("shopAddress")}`}
                       />
                     </div>
@@ -738,27 +740,27 @@ const MyProfile: React.FC = () => {
                   <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Nominee Name
+                        {t("profile.nomineeName")}
                       </label>
                       <input
                         value={editForm.nomineeName}
                         onChange={(e) =>
                           onFormChange("nomineeName", e.target.value)
                         }
-                        placeholder="Nominee name"
+                        placeholder={t("profile.nomineeName")}
                         className={`w-full ${changedInputClass("nomineeName")}`}
                       />
                     </div>
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Nominee Relation
+                        {t("profile.nomineeRelation")}
                       </label>
                       <input
                         value={editForm.nomineeRelation}
                         onChange={(e) =>
                           onFormChange("nomineeRelation", e.target.value)
                         }
-                        placeholder="Nominee relation"
+                        placeholder={t("profile.nomineeRelation")}
                         className={`w-full ${changedInputClass("nomineeRelation")}`}
                       />
                     </div>
@@ -767,14 +769,14 @@ const MyProfile: React.FC = () => {
                   {/* Full Width: Nominee Phone */}
                   <div>
                     <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                      Nominee Phone
+                      {t("profile.nomineePhone")}
                     </label>
                     <input
                       value={editForm.nomineePhone}
                       onChange={(e) =>
                         onFormChange("nomineePhone", e.target.value)
                       }
-                      placeholder="Nominee phone"
+                      placeholder={t("profile.nomineePhone")}
                       className={`w-full ${changedInputClass("nomineePhone")}`}
                     />
                   </div>
@@ -788,14 +790,14 @@ const MyProfile: React.FC = () => {
                     onClick={onSaveProfile}
                     className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#000080] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#000066] disabled:cursor-not-allowed disabled:opacity-60 transition shadow-md hover:shadow-lg"
                   >
-                    <Save size={14} /> {isSaving ? "Saving..." : "Save Changes"}
+                    <Save size={14} /> {isSaving ? t("profile.saving") : t("profile.saveChanges")}
                   </button>
                   <button
                     type="button"
                     onClick={onCancelEdit}
                     className="rounded-lg border-2 border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
                   >
-                    Cancel
+                    {t("profile.cancel")}
                   </button>
                 </div>
               </div>
@@ -804,24 +806,24 @@ const MyProfile: React.FC = () => {
             <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {[
                 {
-                  label: "Member ID",
-                  value: hasMemberId ? memberId : "Pending assignment",
+                  label: t("profile.memberId"),
+                  value: hasMemberId ? memberId : t("profile.pendingAssignment"),
                   icon: BadgeCheck,
                 },
-                { label: "Full Name", value: fullName || "—" },
+                { label: t("profile.fullName"), value: fullName || "—" },
                 {
-                  label: "Age",
-                  value: userProfile.age ? `${userProfile.age} years` : "—",
+                  label: t("profile.age"),
+                  value: userProfile.age ? `${userProfile.age} ${t("profile.years")}` : "—",
                 },
-                { label: "Gender", value: userProfile.gender || "—" },
-                { label: "Blood Group", value: userProfile.bloodGroup || "—" },
+                { label: t("profile.gender"), value: userProfile.gender ? t(`profile.${userProfile.gender}`) : "—" },
+                { label: t("profile.bloodGroup"), value: userProfile.bloodGroup || "—" },
                 {
-                  label: "Email",
+                  label: t("profile.email"),
                   value: userProfile.email || currentUser?.email || "—",
                   icon: Mail,
                 },
                 {
-                  label: "Aadhaar",
+                  label: t("profile.aadhaar"),
                   value: userProfile.aadhaarLast4
                     ? `XXXX-XXXX-XXXX-${userProfile.aadhaarLast4}`
                     : "—",
@@ -853,10 +855,10 @@ const MyProfile: React.FC = () => {
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  Shop & Nominee
+                  {t("profile.shopAndNominee")}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Residence, shop address, and emergency contact.
+                  {t("profile.shopAndNomineeDesc")}
                 </p>
               </div>
               <MapPin className="text-[#000080]" size={20} />
@@ -870,10 +872,10 @@ const MyProfile: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Shop address
+                      {t("profile.shopAddress")}
                     </p>
                     <p className="mt-1 text-sm font-medium text-slate-800 leading-6">
-                      {userProfile.shopAddress || "No address on file"}
+                      {userProfile.shopAddress || t("profile.noAddress")}
                     </p>
                   </div>
                 </div>
@@ -882,7 +884,7 @@ const MyProfile: React.FC = () => {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Phone
+                    {t("profile.phone")}
                   </p>
                   <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-900 break-words">
                     <Phone size={14} className="text-[#000080]" />
@@ -891,12 +893,12 @@ const MyProfile: React.FC = () => {
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Payment status
+                    {t("profile.paymentStatus")}
                   </p>
                   <p
                     className={`mt-2 inline-flex rounded-full border px-3 py-1.5 text-sm font-semibold capitalize ${paymentTone}`}
                   >
-                    {userProfile.paymentStatus}
+                    {t(`common.${userProfile.paymentStatus}`) || userProfile.paymentStatus}
                   </p>
                 </div>
               </div>
@@ -904,7 +906,7 @@ const MyProfile: React.FC = () => {
               {userProfile.nomineeDetails?.name ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Nominee
+                    {t("profile.nominee")}
                   </p>
                   <div className="mt-3 space-y-1">
                     <p className="text-sm font-semibold text-slate-900">
@@ -912,16 +914,16 @@ const MyProfile: React.FC = () => {
                     </p>
                     <p className="text-sm text-slate-600">
                       {userProfile.nomineeDetails.relation ||
-                        "Relation not set"}
+                        t("profile.relationNotSet")}
                     </p>
                     <p className="text-sm text-slate-600">
-                      {userProfile.nomineeDetails.phone || "Phone not set"}
+                      {userProfile.nomineeDetails.phone || t("profile.phoneNotSet")}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-4 text-sm text-slate-500">
-                  No nominee details have been added yet.
+                  {t("profile.noNominee")}
                 </div>
               )}
             </div>
@@ -933,10 +935,10 @@ const MyProfile: React.FC = () => {
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
-                  Membership Snapshot
+                  {t("profile.membershipSnapshot")}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  A quick view of your account status and ID check.
+                  {t("profile.snapshotDesc")}
                 </p>
               </div>
               <CalendarDays className="text-[#000080]" size={20} />
@@ -945,21 +947,21 @@ const MyProfile: React.FC = () => {
             <div className="space-y-3">
               <div className={`rounded-2xl border p-4 ${statusTone}`}>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em]">
-                  Account status
+                  {t("profile.accountStatus")}
                 </p>
                 <p className="mt-1 text-lg font-bold capitalize">
-                  {userProfile.status}
+                  {t(`common.${userProfile.status}`) || userProfile.status}
                 </p>
               </div>
               <div
                 className={`rounded-2xl border p-4 ${memberIdVerified ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Member ID check
+                  {t("profile.memberIdCheck")}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <p className="font-mono text-sm font-semibold text-slate-900 break-all">
-                    {hasMemberId ? memberId : "Member ID pending"}
+                    {hasMemberId ? memberId : t("profile.memberIdPending")}
                   </p>
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${memberIdVerified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}
@@ -969,13 +971,13 @@ const MyProfile: React.FC = () => {
                     ) : (
                       <AlertCircle size={11} />
                     )}
-                    {memberIdVerified ? "Verified" : "Needs check"}
+                    {memberIdVerified ? t("profile.verified") : t("profile.needsCheck")}
                   </span>
                 </div>
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Joined year
+                  {t("profile.joinedYear")}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-slate-900">
                   {memberSince}
@@ -987,31 +989,31 @@ const MyProfile: React.FC = () => {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Meetings attended
+                {t("profile.meetingsAttended")}
               </p>
               <p className="mt-2 text-3xl font-bold text-[#000080]">
                 {attendance.length}
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Attendance summary pulled from meeting records.
+                {t("profile.meetingsSummary")}
               </p>
             </div>
             <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Payment
+                {t("profile.payment")}
               </p>
               <p
                 className={`mt-2 text-3xl font-bold capitalize ${userProfile.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-500"}`}
               >
-                {userProfile.paymentStatus}
+                {t(`common.${userProfile.paymentStatus}`) || userProfile.paymentStatus}
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                Keep this updated with the admin office.
+                {t("profile.paymentDesc")}
               </p>
             </div>
             <div className="card rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Quick contact
+                {t("profile.quickContact")}
               </p>
               <div className="mt-3 space-y-2 text-sm text-slate-700">
                 <p className="flex items-center gap-2 break-words">
