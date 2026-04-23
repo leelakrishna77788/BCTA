@@ -35,10 +35,10 @@ const Footer: React.FC = () => {
 
       <div className="max-w-7xl mx-auto relative z-10">
         {/* MAIN GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-12 border-b border-white/5">
-          {/* Section 1 */}
-          <div className="flex flex-col items-center sm:items-start text-center sm:text-left space-y-4 sm:space-y-6">
-            <div className="flex items-center gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 pb-12 border-b border-white/5">
+          {/* Section 1 - Logo and Social */}
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left space-y-4 sm:space-y-6 md:col-span-1">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
               <div
                 className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/20"
                 style={{ background: "var(--gradient-accent)" }}
@@ -46,8 +46,8 @@ const Footer: React.FC = () => {
                 <span className="text-white font-black text-sm">BCTA</span>
               </div>
               <div>
-                <span className="font-black text-lg">{t("footer.bctaPortal")}</span>
-                    <p className="text-slate-600/70">
+                <span className="font-black text-lg block">{t("footer.bctaPortal")}</span>
+                    <p className="text-slate-400 text-sm">
                       {t("contact.bhimavaramAP")}
                     </p>
               </div>
@@ -71,13 +71,12 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Section 2 + 3 Wrapper (Mobile Side-by-Side) */}
-          <div className="grid grid-cols-2 gap-6 items-start md:contents">
-            {" "}
-            {/* Section 2 */}
+          {/* Sections 2, 3, 4 - Three columns on mobile */}
+          <div className="grid grid-cols-3 gap-4 md:col-span-3 md:grid-cols-3 md:gap-8">
+            {/* Section 2 - Platform */}
             <div className="flex flex-col items-start text-left w-full">
-              <h4 className="text-xs font-black uppercase mb-3">{t("footer.platform")}</h4>
-              <div className="space-y-2 w-full">
+              <h4 className="text-[10px] sm:text-xs font-black uppercase mb-2 sm:mb-3">{t("footer.platform")}</h4>
+              <div className="space-y-1 sm:space-y-2 w-full">
                 {[
                   { to: "/", label: t("footer.home") },
                   { to: "/services", label: t("footer.ourServices") },
@@ -87,49 +86,48 @@ const Footer: React.FC = () => {
                   <Link
                     key={link.to + link.label}
                     to={link.to}
-                    className="block text-slate-400 hover:text-white text-sm"
+                    className="block text-slate-400 hover:text-white text-xs sm:text-sm"
                   >
                     {link.label}
                   </Link>
                 ))}
               </div>
             </div>
-            {/* Section 3 */}
+            {/* Section 3 - System Access */}
             <div className="flex flex-col items-start text-left w-full">
-              <h4 className="text-xs font-black uppercase mb-3">
+              <h4 className="text-[10px] sm:text-xs font-black uppercase mb-2 sm:mb-3">
                 {t("footer.systemAccess")}
               </h4>
-              <div className="space-y-2 w-full">
+              <div className="space-y-1 sm:space-y-2 w-full">
                 {[
                   { to: "/login", label: t("footer.memberLogin") },
                   { to: "/login", label: t("footer.adminConsole") },
-                  { to: "/register", label: t("footer.registerMember") },
                   { to: "/contact", label: t("footer.getSupport") },
                 ].map((link) => (
                   <Link
                     key={link.label}
                     to={link.to}
-                    className="block text-slate-400 hover:text-white text-sm"
+                    className="block text-slate-400 hover:text-white text-xs sm:text-sm"
                   >
                     {link.label}
                   </Link>
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Section 4 */}
-          <div className="flex flex-col items-center text-center sm:items-start sm:text-left space-y-4">
-            <h4 className="text-xs font-black uppercase mb-6">{t("footer.contact")}</h4>
-
-            <a href="#" className="text-slate-400 text-sm">
-              support@bcta.in
-            </a>
-            <a href="#" className="text-slate-400 text-sm">
-              +91 98765 43210
-            </a>
-
-            <p className="text-xs text-slate-500">{t("footer.location")}</p>
+            {/* Section 4 - Contact */}
+            <div className="flex flex-col items-start text-left w-full">
+              <h4 className="text-[10px] sm:text-xs font-black uppercase mb-2 sm:mb-3">{t("footer.contact")}</h4>
+              <div className="space-y-1 sm:space-y-2">
+                <a href="#" className="block text-slate-400 hover:text-white text-xs sm:text-sm">
+                  support@bcta.in
+                </a>
+                <a href="#" className="block text-slate-400 hover:text-white text-xs sm:text-sm">
+                  +91 98765 43210
+                </a>
+                <p className="text-[10px] sm:text-xs text-slate-500">{t("footer.location")}</p>
+              </div>
+            </div>
           </div>
         </div>
 

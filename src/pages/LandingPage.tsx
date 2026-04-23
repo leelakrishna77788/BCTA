@@ -278,7 +278,7 @@ const LandingPage: React.FC = () => {
         <Navbar />
 
         {/* ================= HERO ================= */}
-        <section className="relative min-h-[80vh] flex items-center justify-center px-4 sm:px-6 pt-3 sm:pt-32 pb-2 sm:pb-12 overflow-hidden mesh-gradient">
+        <section className="relative min-h-[49vh] flex items-center justify-center px-4 sm:px-6 pt-16 sm:pt-24 pb-6 sm:pb-10 overflow-hidden mesh-gradient">
           {/* Decorative elements */}
           <div className="absolute top-1/4 -left-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
           <div
@@ -296,13 +296,17 @@ const LandingPage: React.FC = () => {
             className="text-center max-w-5xl relative z-10"
           >
             <Reveal dy={20} delay={0.2}>
-              <h1 className="text-4xl sm:text-6xl md:text-8xl font-black mb-6 sm:mb-8 leading-[1.05] px-2 tracking-tighter">
+              <h1 className="text-3xl sm:text-5xl md:text-7xl font-black mb-6 sm:mb-8 leading-tight px-2 tracking-tight">
                 <span className="text-slate-900 drop-shadow-sm">
                   {t("landing.heroTitle1")}
                 </span>
                 <br />
-                <span className="gradient-text bg-linear-to-r from-indigo-700 via-violet-700 to-indigo-800 bg-clip-text text-transparent lucida">
+                <span className="gradient-text bg-linear-to-r from-indigo-700 via-violet-700 to-indigo-800 bg-clip-text text-transparent lucida whitespace-nowrap">
                   {t("landing.heroTitle2")}
+                </span>
+                <br />
+                <span className="gradient-text bg-linear-to-r from-indigo-700 via-violet-700 to-indigo-800 bg-clip-text text-transparent lucida">
+                  {t("landing.heroTitle3")}
                 </span>
               </h1>
             </Reveal>

@@ -104,7 +104,6 @@
     "systemAccess": "System Access",
     "memberLogin": "Member Login",
     "adminConsole": "Admin Console",
-    "registerMember": "Register Member",
     "getSupport": "Get Support",
     "contact": "Contact",
     "copyright": "© 2026 BCTA Portal",
@@ -113,7 +112,8 @@
   },
   "landing": {
     "heroTitle1": "The digital platform for",
-    "heroTitle2": "Bhimavaram Cellphones Technicians",
+    "heroTitle2": "Bhimavaram Cellphones",
+    "heroTitle3": "Technicians",
     "heroSubtitle": "A unified association portal designed for professional unity, instant communication, and association management.",
     "portal": "Portal",
     "services": "Services",

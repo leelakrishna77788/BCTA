@@ -103,14 +103,14 @@ const PresidentsPage: React.FC = () => {
       <Navbar />
 
       {/* ── HERO ── */}
-      <section className="relative pt-28 pb-8 sm:pt-36 sm:pb-12 px-4 overflow-hidden font-body">
+      <section className="relative pt-16 pb-6 sm:pt-20 sm:pb-10 px-4 overflow-hidden font-body">
         <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-amber-300/20 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 right-10 w-96 h-96 rounded-full bg-violet-300/20 blur-3xl pointer-events-none" />
 
         <div className="max-w-6xl mx-auto relative">
           <div className="flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-16">
             <div className="flex-1">
-              <h1 className="font-display text-[clamp(3rem,8vw,7rem)] font-black leading-[0.92] text-slate-900 mb-8">
+              <h1 className="font-display text-[clamp(2rem,6vw,4.5rem)] font-black leading-[0.92] text-slate-900 mb-4">
                 <div className="hero-line"><span>{t("presidents.the")}</span></div>
                 <div className="hero-line"><span className="text-blue-900">{t("presidents.presidentsTitle")}</span></div>
                 <div className="hero-line"><span>{t("presidents.ofBCTA")}</span></div>
