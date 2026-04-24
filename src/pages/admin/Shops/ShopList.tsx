@@ -6,12 +6,16 @@ import {
   onSnapshot,
   query,
   orderBy,
+  doc,
+  deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { QRCodeSVG } from "qrcode.react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Plus, Store, QrCode, Download } from "lucide-react";
+import { Plus, Store, Download, Pencil, Trash2, X, Check, MapPin, Phone, User, Sparkles, AlertTriangle } from "lucide-react";
+
 interface Shop {
   id: string;
   shopName: string;
@@ -26,8 +30,10 @@ const ShopList: React.FC = () => {
   const navigate = useNavigate();
   const [shops, setShops] = useState<Shop[]>([]);
   const [, forceUpdate] = useState({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Shop>>({});
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Force re-render when language changes
   useEffect(() => {
     forceUpdate({});
   }, [i18n.language]);
@@ -36,120 +42,179 @@ const ShopList: React.FC = () => {
     const unsub = onSnapshot(
       query(collection(db, "shops"), orderBy("createdAt", "desc")),
       (snap) =>
-        setShops(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Shop)),
+        setShops(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Shop))
     );
     return unsub;
   }, []);
 
+  // ── Edit ────────────────────────────────────────────────
+  const startEdit = (shop: Shop) => {
+    setEditingId(shop.id);
+    setEditForm({
+      shopName: shop.shopName,
+      ownerName: shop.ownerName,
+      address: shop.address ?? "",
+      phone: shop.phone ?? "",
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm({});
+  };
+
+  const saveEdit = async (shopId: string) => {
+    if (!editForm.shopName?.trim() || !editForm.ownerName?.trim()) {
+      toast.error("Shop name and owner name are required.");
+      return;
+    }
+    try {
+      await updateDoc(doc(db, "shops", shopId), {
+        shopName: editForm.shopName.trim(),
+        ownerName: editForm.ownerName.trim(),
+        address: editForm.address?.trim() ?? "",
+        phone: editForm.phone?.trim() ?? "",
+      });
+      toast.success("Shop updated successfully!");
+      setEditingId(null);
+      setEditForm({});
+    } catch (err) {
+      toast.error("Failed to update shop.");
+    }
+  };
+
+  // ── Delete ───────────────────────────────────────────────
+  const confirmDelete = (shopId: string) => {
+    setDeletingId(shopId);
+  };
+
+  const cancelDelete = () => {
+    setDeletingId(null);
+  };
+
+  const handleDelete = async (shopId: string) => {
+    try {
+      await deleteDoc(doc(db, "shops", shopId));
+      toast.success("Shop deleted.");
+      setDeletingId(null);
+    } catch (err) {
+      toast.error("Failed to delete shop.");
+    }
+  };
+
+  // ── Download QR ─────────────────────────────────────────
   const downloadShopQR = (shop: Shop) => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    canvas.width = 350;
-    canvas.height = 400;
+    canvas.width = 420;
+    canvas.height = 480;
 
     if (!ctx) return;
 
     const radius = 25;
-
-    // ✅ Make outside transparent first
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ✅ Draw rounded background ONLY
     ctx.beginPath();
     ctx.moveTo(radius, 0);
     ctx.lineTo(canvas.width - radius, 0);
     ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
     ctx.lineTo(canvas.width, canvas.height - radius);
-    ctx.quadraticCurveTo(
-      canvas.width,
-      canvas.height,
-      canvas.width - radius,
-      canvas.height,
-    );
+    ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
     ctx.lineTo(radius, canvas.height);
     ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
     ctx.lineTo(0, radius);
     ctx.quadraticCurveTo(0, 0, radius, 0);
     ctx.closePath();
-
-    // ✅ Fill only inside (outside stays transparent)
     ctx.fillStyle = "#020f2c";
     ctx.fill();
 
-    // 🏢 LOGO
+    const wrapText = (text: string, maxWidth: number, font: string): string[] => {
+      ctx.font = font;
+      const words = text.split(" ");
+      const lines: string[] = [];
+      let current = "";
+      for (const word of words) {
+        const test = current ? `${current} ${word}` : word;
+        if (ctx.measureText(test).width > maxWidth && current) {
+          lines.push(current);
+          current = word;
+        } else {
+          current = test;
+        }
+      }
+      if (current) lines.push(current);
+      return lines;
+    };
+
+    const fitFontSize = (text: string, maxWidth: number, maxSize: number, minSize: number): number => {
+      for (let size = maxSize; size >= minSize; size -= 1) {
+        ctx.font = `bold ${size}px Arial`;
+        if (ctx.measureText(text).width <= maxWidth) return size;
+      }
+      return minSize;
+    };
+
     const logo = new Image();
     logo.src = assets.herologo;
 
     logo.onload = () => {
-      ctx.drawImage(logo, 30, 30, 50, 50);
+      const maxTextWidth = canvas.width - 60;
 
-      // 📝 Shop Name
+      ctx.drawImage(logo, 24, 20, 48, 48);
+
+      const nameFontSize = fitFontSize(shop.shopName, maxTextWidth, 20, 12);
+      const nameFont = `bold ${nameFontSize}px Arial`;
+      const nameLines = wrapText(shop.shopName, maxTextWidth, nameFont);
+
       ctx.fillStyle = "#5d7dc9";
-      ctx.font = "bold 18px Arial";
+      ctx.font = nameFont;
       ctx.textAlign = "center";
-      ctx.fillText(shop.shopName, canvas.width / 2, 70);
 
-      // 📝 Owner Name
-      ctx.font = "14px Arial";
+      const lineHeight = nameFontSize + 6;
+      const nameY = 85;
+
+      nameLines.forEach((line, i) => {
+        ctx.fillText(line, canvas.width / 2, nameY + i * lineHeight);
+      });
+
+      const ownerY = nameY + nameLines.length * lineHeight + 6;
+      ctx.font = "13px Arial";
       ctx.fillStyle = "#94a3b8";
-      ctx.fillText(`${t("shopList.card.owner")}: ${shop.ownerName}`, canvas.width / 2, 95);
+      ctx.textAlign = "center";
+      ctx.fillText(`${t("shopList.card.owner")}: ${shop.ownerName}`, canvas.width / 2, ownerY);
 
-      // 👉 Get QR
       const svg = document.getElementById(`shop-qr-${shop.id}`);
       if (!svg) return;
 
       const serializer = new XMLSerializer();
       const svgStr = serializer.serializeToString(svg);
-
-      const img = new Image();
-      const blob = new Blob([svgStr], {
-        type: "image/svg+xml;charset=utf-8",
-      });
+      const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
+      const img = new Image();
 
       img.onload = () => {
-        const qrSize = 200;
+        const qrSize = 220;
         const qrX = (canvas.width - qrSize) / 2;
-        const qrY = 130;
-
+        const qrY = ownerY + 20;
         const r = 15;
 
-        // ⚪ Rounded white QR background
         ctx.beginPath();
         ctx.moveTo(qrX - 10 + r, qrY);
         ctx.lineTo(qrX + qrSize + 10 - r, qrY);
-        ctx.quadraticCurveTo(
-          qrX + qrSize + 10,
-          qrY,
-          qrX + qrSize + 10,
-          qrY + r,
-        );
+        ctx.quadraticCurveTo(qrX + qrSize + 10, qrY, qrX + qrSize + 10, qrY + r);
         ctx.lineTo(qrX + qrSize + 10, qrY + qrSize + 20 - r);
-        ctx.quadraticCurveTo(
-          qrX + qrSize + 10,
-          qrY + qrSize + 20,
-          qrX + qrSize + 10 - r,
-          qrY + qrSize + 20,
-        );
+        ctx.quadraticCurveTo(qrX + qrSize + 10, qrY + qrSize + 20, qrX + qrSize + 10 - r, qrY + qrSize + 20);
         ctx.lineTo(qrX - 10 + r, qrY + qrSize + 20);
-        ctx.quadraticCurveTo(
-          qrX - 10,
-          qrY + qrSize + 20,
-          qrX - 10,
-          qrY + qrSize + 20 - r,
-        );
+        ctx.quadraticCurveTo(qrX - 10, qrY + qrSize + 20, qrX - 10, qrY + qrSize + 20 - r);
         ctx.lineTo(qrX - 10, qrY + r);
         ctx.quadraticCurveTo(qrX - 10, qrY, qrX - 10 + r, qrY);
         ctx.closePath();
-
         ctx.fillStyle = "#ffffff";
         ctx.fill();
 
-        // QR
         ctx.drawImage(img, qrX, qrY + 10, qrSize, qrSize);
 
-        // Download
         const link = document.createElement("a");
         link.download = `${shop.shopName}-QR.png`;
         link.href = canvas.toDataURL("image/png");
@@ -164,11 +229,15 @@ const ShopList: React.FC = () => {
 
   return (
     <div className="space-y-5 animate-fade-in">
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-2">
         <div className="relative">
           <div className="absolute -left-4 top-0 w-1 bg-indigo-600 h-full rounded-full opacity-0 md:opacity-100" />
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-2">
-            {t("shopList.title").split("&")[0]} & <span className="text-indigo-600">{t("shopList.title").split("&")[1] || "?"}</span>
+            {t("shopList.title").split("&")[0]} &{" "}
+            <span className="text-indigo-600">
+              {t("shopList.title").split("&")[1] || "?"}
+            </span>
           </h1>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -191,14 +260,17 @@ const ShopList: React.FC = () => {
         {shops.map((shop) => (
           <div
             key={shop.id}
-            id={`shop-card-${shop.id}`} // 👈 ADD THIS LINE
+            id={`shop-card-${shop.id}`}
             className="glass-card rounded-3xl border border-white/40 p-6 premium-shadow hover:bg-white/90 transition-all duration-500 group"
           >
-            <div className="flex items-start justify-between mb-6">
+            {/* ── Card Header ── */}
+            <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500">
                   <Store size={26} className="text-indigo-600" />
                 </div>
+
+                {/* ── View mode ── */}
                 <div>
                   <h3 className="font-black text-slate-900 tracking-tight text-base leading-tight">
                     {shop.shopName}
@@ -206,13 +278,37 @@ const ShopList: React.FC = () => {
                   <p className="text-xs font-semibold text-slate-400 mt-0.5">
                     {shop.ownerName}
                   </p>
+                  {shop.phone && (
+                    <p className="text-xs text-slate-400">{shop.phone}</p>
+                  )}
+                  {shop.address && (
+                    <p className="text-xs text-slate-400">{shop.address}</p>
+                  )}
                 </div>
               </div>
-              <span className="bg-indigo-50 text-indigo-700 text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border border-indigo-100/50">
-                {t("shopList.card.identifier")}
-              </span>
+
+              {/* ── Action buttons ── */}
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => startEdit(shop)}
+                  className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center transition-all"
+                  title="Edit"
+                >
+                  <Pencil size={15} />
+                </button>
+                <button
+                  onClick={() => confirmDelete(shop.id)}
+                  className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 text-red-400 hover:bg-red-100 flex items-center justify-center transition-all"
+                  title="Delete"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
 
+
+
+            {/* ── QR Code ── */}
             <div className="flex justify-center p-8 bg-white border border-slate-100 rounded-3xl mb-6 shadow-inner relative group/qr overflow-hidden">
               <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover/qr:opacity-100 transition-opacity" />
               <QRCodeSVG
@@ -230,6 +326,7 @@ const ShopList: React.FC = () => {
               />
             </div>
 
+            {/* ── Verified badge ── */}
             <div className="flex items-center gap-2 justify-center mb-6 py-2 px-4 rounded-xl bg-slate-50/50 border border-slate-100">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
@@ -237,6 +334,7 @@ const ShopList: React.FC = () => {
               </p>
             </div>
 
+            {/* ── Download button ── */}
             <div className="flex gap-3">
               <button
                 onClick={() => downloadShopQR(shop)}
@@ -247,6 +345,8 @@ const ShopList: React.FC = () => {
             </div>
           </div>
         ))}
+
+        {/* ── Empty state ── */}
         {shops.length === 0 && (
           <div className="glass-card rounded-3xl border border-white/40 p-6 premium-shadow hover:bg-white/90 transition-all duration-500 group">
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200 border border-slate-100">
@@ -261,6 +361,124 @@ const ShopList: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* ── Edit Shop Modal ── */}
+      {editingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-lg bg-white rounded-3xl premium-shadow border border-slate-200 overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50 to-transparent rounded-full blur-3xl opacity-50 pointer-events-none" />
+            <div className="p-6 sm:p-8 relative z-10">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                    <Pencil size={24} className="text-indigo-600" />
+                    Edit Shop
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">Update the shop's details below.</p>
+                </div>
+                <button
+                  onClick={cancelEdit}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                    <Store size={12} className="text-indigo-600" /> Shop Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={editForm.shopName ?? ""}
+                    onChange={(e) => setEditForm((p) => ({ ...p, shopName: e.target.value }))}
+                    className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                    <User size={12} className="text-indigo-600" /> Owner Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={editForm.ownerName ?? ""}
+                    onChange={(e) => setEditForm((p) => ({ ...p, ownerName: e.target.value }))}
+                    className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                      <Phone size={12} className="text-indigo-600" /> Phone
+                    </label>
+                    <input
+                      value={editForm.phone ?? ""}
+                      onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                      className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                      <MapPin size={12} className="text-indigo-600" /> Address
+                    </label>
+                    <input
+                      value={editForm.address ?? ""}
+                      onChange={(e) => setEditForm((p) => ({ ...p, address: e.target.value }))}
+                      className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={cancelEdit}
+                    className="flex-1 h-11 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => editingId && saveEdit(editingId)}
+                    className="flex-1 h-11 rounded-xl bg-indigo-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ── */}
+      {deletingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-sm bg-white rounded-3xl premium-shadow border border-slate-200 p-6 sm:p-8 text-center relative overflow-hidden">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={32} />
+            </div>
+            <h2 className="text-xl font-black text-slate-900 mb-2">Delete Shop</h2>
+            <p className="text-sm text-slate-500 mb-6">
+              Are you sure you want to delete this shop? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={cancelDelete}
+                className="flex-1 h-11 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deletingId)}
+                className="flex-1 h-11 rounded-xl bg-red-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-md shadow-red-200"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
