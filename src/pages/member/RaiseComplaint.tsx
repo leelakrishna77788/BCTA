@@ -77,7 +77,7 @@ const RaiseComplaint: React.FC = () => {
     );
 
     return (
-        <div className="w-full max-w-lg mx-auto flex flex-col animate-fade-in" style={{ height: "calc(100vh - 180px)" }}>
+        <div className="w-full max-w-lg mx-auto flex flex-col animate-fade-in md:h-[calc(100vh-180px)]">
             <div className="text-center mb-4 shrink-0">
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-1">{t("complaint.helpSupport")}</h1>
                 <p className="text-slate-500 text-sm sm:text-base font-medium">{t("complaint.provideDetails")}</p>

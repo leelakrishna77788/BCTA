@@ -161,36 +161,36 @@ const SendNotification: React.FC = () => {
     const selectedType = NOTIFICATION_TYPES.find((t) => t.value === form.type);
 
     return (
-        <div className="space-y-0 animate-fade-in pt-0 pb-4">
-            <div>
-                <h1 className="page-title text-2xl sm:text-3xl">{t("notifications.title")}</h1>
-                <p className="text-slate-500 font-medium text-xs sm:text-sm tracking-tight mb-2 sm:mb-4">
+        <div className="flex flex-col animate-fade-in xl:h-[calc(100vh-120px)]">
+            <div className="shrink-0 mb-0 xl:mb-1">
+                <h1 className="page-title text-2xl sm:text-3xl mb-0">{t("notifications.title")}</h1>
+                <p className="text-slate-500 font-medium text-xs sm:text-sm tracking-tight">
                     {t("notifications.subtitle")}
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-5 gap-0">
+            <div className="flex-1 grid grid-cols-1 xl:grid-cols-5 gap-4 min-h-0 xl:overflow-hidden pb-20 xl:pb-0">
                 {/* Send Form - Spans 3 columns on xl */}
                 <div
-                    className="xl:col-span-3 glass-card rounded-2xl border border-white/40 p-4 sm:p-6 premium-shadow flex flex-col h-full"
+                    className="xl:col-span-3 glass-card rounded-2xl border border-white/40 p-6 sm:p-8 premium-shadow flex flex-col h-full min-h-[500px] xl:min-h-0 overflow-hidden"
                     style={{ background: "rgba(255, 255, 255, 0.7)" }}
                 >
                     <form
                         onSubmit={handleSend}
-                        className="space-y-3 sm:space-y-4 flex flex-col"
+                        className="flex flex-col h-full min-h-0 gap-2 xl:gap-2"
                     >
-                        <div className="space-y-2">
+                        <div className="xl:flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-hide">
                             <div>
-                                <label className="label text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">
+                                <label className="label text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] mb-3 block text-slate-500">
                                     {t("notifications.form.category")}
                                 </label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                                     {NOTIFICATION_TYPES.map((type) => (
                                         <button
                                             key={type.value}
                                             type="button"
                                             onClick={() => setForm((p) => ({ ...p, type: type.value }))}
-                                            className={`text-[9px] sm:text-[10px] px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg font-bold uppercase tracking-wider border transition-all duration-300 ${form.type === type.value ? "border-indigo-200 shadow-sm " + type.color + " scale-105" : "border-slate-100 bg-white/50 text-slate-400 hover:text-indigo-600 shadow-sm"}`}
+                                            className={`text-[11px] sm:text-xs px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl font-bold uppercase tracking-wider border transition-all duration-300 flex items-center justify-center text-center leading-tight ${form.type === type.value ? "border-indigo-300 shadow-md ring-2 ring-indigo-50 " + type.color + " scale-102" : "border-slate-100 bg-white/60 text-slate-400 hover:border-indigo-200 hover:text-indigo-600 shadow-sm"}`}
                                         >
                                             {t(`notifications.types.${type.value}`)}
                                         </button>
@@ -198,9 +198,9 @@ const SendNotification: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-1 space-y-2">
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="label text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 block">
+                                    <label className="label text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] mb-2 block text-slate-500">
                                         {t("notifications.form.heading")}
                                     </label>
                                     <input
@@ -210,12 +210,12 @@ const SendNotification: React.FC = () => {
                                         }
                                         required
                                         placeholder={t("notifications.form.placeholders.heading")}
-                                        className="input-field rounded-xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-2 sm:py-3 text-sm"
+                                        className="input-field rounded-2xl bg-white/60 border-slate-200/50 focus:bg-white transition-all py-3 sm:py-4 text-sm font-bold shadow-sm"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="label text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 block">
+                                    <label className="label text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] mb-2 block text-slate-500">
                                         {t("notifications.form.content")}
                                     </label>
                                     <textarea
@@ -224,9 +224,9 @@ const SendNotification: React.FC = () => {
                                             setForm((p) => ({ ...p, body: e.target.value }))
                                         }
                                         required
-                                        rows={2}
+                                        rows={3}
                                         placeholder={t("notifications.form.placeholders.content")}
-                                        className="input-field rounded-xl bg-white/50 border-slate-200/50 focus:bg-white transition-all py-2 sm:py-3 text-sm resize-none"
+                                        className="input-field rounded-2xl bg-white/60 border-slate-200/50 focus:bg-white transition-all py-3 sm:py-4 text-sm font-medium resize-none shadow-sm"
                                     />
                                 </div>
                             </div>
@@ -234,22 +234,23 @@ const SendNotification: React.FC = () => {
                             {/* Preview */}
                             {form.title && (
                                 <div
-                                    className="p-6 rounded-2xl border border-dashed transition-all duration-500 opacity-100 translate-y-0"
+                                    className="p-6 rounded-2xl border border-dashed transition-all duration-500 opacity-100"
                                     style={{
                                         borderColor: selectedType?.color.split(" ")[1] || "#e2e8f0",
-                                        background: "rgba(255,255,255,0.4)",
+                                        background: "white",
                                     }}
                                 >
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 text-slate-400">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 text-slate-400 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                         {t("notifications.form.preview")}
                                     </p>
                                     <div
-                                        className={`p-4 rounded-xl shadow-sm border overflow-hidden ${selectedType?.color || "bg-slate-100"} border-white/40`}
+                                        className={`p-5 rounded-2xl shadow-xl border overflow-hidden ${selectedType?.color || "bg-slate-100"} border-white/50`}
                                     >
-                                        <p className="font-black text-sm tracking-tight break-words">
+                                        <p className="font-black text-base sm:text-lg tracking-tight break-all">
                                             {form.title}
                                         </p>
-                                        <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed break-words whitespace-pre-wrap">
+                                        <p className="text-sm mt-2 font-medium opacity-90 leading-relaxed break-all whitespace-pre-wrap">
                                             {form.body || t("notifications.form.previewPlaceholder")}
                                         </p>
                                     </div>
@@ -257,30 +258,32 @@ const SendNotification: React.FC = () => {
                             )}
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={sending}
-                            className="group w-full py-3 sm:py-4 rounded-xl text-white font-bold text-sm uppercase tracking-wider transition-all duration-500 hover:shadow-[0_10px_25px_rgba(99,102,241,0.4)] hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
-                            style={{ background: "var(--gradient-primary)" }}
-                        >
-                            <Send
-                                size={16}
-                                className="transition-transform group-hover:translate-x-1"
-                            />
-                            {sending ? t("notifications.form.processing") : t("notifications.form.submit")}
-                        </button>
+                        <div className="shrink-0 pt-16 xl:pt-4">
+                            <button
+                                type="submit"
+                                disabled={sending}
+                                className="group w-full py-4 sm:py-5 rounded-2xl text-white font-black text-sm sm:text-base uppercase tracking-widest transition-all duration-500 hover:shadow-[0_12px_30px_rgba(79,70,229,0.4)] hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
+                                style={{ background: "var(--gradient-primary)" }}
+                            >
+                                <Send
+                                    size={20}
+                                    className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1"
+                                />
+                                {sending ? t("notifications.form.processing") : t("notifications.form.submit")}
+                            </button>
+                        </div>
                     </form>
                 </div>
 
                 {/* History - Spans 2 columns on xl */}
                 <div
-                    className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow h-full"
+                    className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow h-full min-h-0"
                     style={{ background: "rgba(255, 255, 255, 0.6)" }}
                 >
-                    <div className="flex items-center justify-between p-6 sm:p-8 border-b border-white/30">
-                        <h2 className="text-base font-black text-slate-900 flex items-center gap-3 tracking-tight">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
-                                <Bell size={18} />
+                    <div className="shrink-0 flex items-center justify-between p-6 border-b border-white/30">
+                        <h2 className="text-lg font-black text-slate-900 flex items-center gap-3 tracking-tight">
+                            <div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
+                                <Bell size={20} />
                             </div>
                             {t("notifications.history.title")}
                         </h2>
@@ -288,13 +291,13 @@ const SendNotification: React.FC = () => {
                             <button
                                 onClick={handleClearAll}
                                 disabled={sending}
-                                className="text-[10px] font-black text-rose-500 hover:bg-rose-500 hover:text-white uppercase tracking-[0.15em] px-4 py-2 rounded-xl transition-all border border-rose-100 disabled:opacity-50"
+                                className="text-[10px] font-black text-rose-500 hover:bg-rose-500 hover:text-white uppercase tracking-[0.15em] px-5 py-2.5 rounded-xl transition-all border border-rose-100 disabled:opacity-50 shadow-sm"
                             >
                                 {t("notifications.history.clearAll")}
                             </button>
                         )}
                     </div>
-                    <div className="flex-1 p-6 sm:p-8 space-y-4 overflow-y-auto min-h-0 scrollbar-hide">
+                    <div className="flex-1 p-6 space-y-4 overflow-y-auto min-h-0 scroll-smooth scrollbar-hide">
                         {sent.map((n, i) => {
                             const typeInfo =
                                 NOTIFICATION_TYPES.find((x) => x.value === n.type) ||
@@ -306,30 +309,30 @@ const SendNotification: React.FC = () => {
                                     style={{ animationDelay: `${i * 0.05}s` }}
                                 >
                                     <div
-                                        className={`p-5 rounded-2xl border transition-all duration-300 hover:bg-white/80 ${typeInfo.color.split(" ")[1]} ${typeInfo.color.split(" ")[0]} border-white/60 relative premium-shadow overflow-hidden`}
+                                        className={`p-6 rounded-2xl border transition-all duration-300 hover:bg-white/90 ${typeInfo.color.split(" ")[1]} ${typeInfo.color.split(" ")[0]} border-white/60 relative shadow-sm hover:shadow-md overflow-hidden`}
                                     >
-                                        <div className="flex justify-between items-start mb-2 min-w-0">
-                                            <p className="font-black text-[15px] pr-8 tracking-tight leading-tight break-words min-w-0 overflow-hidden">
+                                        <div className="flex justify-between items-start mb-2 gap-4">
+                                            <p className="font-black text-base tracking-tight leading-tight break-all flex-1">
                                                 {n.title}
                                             </p>
                                             <button
                                                 onClick={() => deleteNotification(n.id)}
-                                                className="absolute top-3 right-3 z-10 p-2 rounded-lg bg-white text-red-500 hover:bg-red-50 hover:text-red-600 transition-all shadow-sm"
+                                                className="shrink-0 p-2.5 rounded-xl bg-white/80 text-red-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-rose-100/50"
                                                 title={t("common.delete")}
                                             >
-                                                <Trash2 size={13} />
+                                                <Trash2 size={14} />
                                             </button>
                                         </div>
-                                        <p className="text-[13px] font-medium opacity-80 leading-relaxed mb-4 break-words whitespace-pre-wrap">
+                                        <p className="text-sm font-medium opacity-90 leading-relaxed mb-5 break-all whitespace-pre-wrap">
                                             {n.body}
                                         </p>
-                                        <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mt-auto pt-3 border-t border-white/20">
-                                            <span className="bg-white/50 px-2.5 py-1 rounded-lg">
+                                        <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 pt-3 border-t border-white/30">
+                                            <span className="bg-white/60 px-3 py-1.5 rounded-xl shadow-xs">
                                                 🕒{" "}
                                                 {n.sentAt?.toDate?.().toLocaleDateString(i18n.language === 'te' ? 'te-IN' : 'en-IN') ||
                                                     t("notifications.labels.online")}
                                             </span>
-                                            <span className="bg-white/50 px-2.5 py-1 rounded-lg">
+                                            <span className="bg-white/60 px-3 py-1.5 rounded-xl shadow-xs">
                                                 {t("notifications.history.target")}: {n.target || t("notifications.labels.all")}
                                             </span>
                                         </div>
@@ -338,9 +341,11 @@ const SendNotification: React.FC = () => {
                             );
                         })}
                         {sent.length === 0 && (
-                            <div className="flex flex-col items-center justify-center py-20 opacity-30">
-                                <Bell size={48} className="mb-4" />
-                                <p className="text-sm font-black uppercase tracking-widest">
+                            <div className="flex flex-col items-center justify-center py-20 opacity-20">
+                                <div className="w-20 h-20 rounded-full bg-slate-200/50 flex items-center justify-center mb-4">
+                                    <Bell size={40} />
+                                </div>
+                                <p className="text-xs font-black uppercase tracking-widest">
                                     {t("notifications.history.empty")}
                                 </p>
                             </div>

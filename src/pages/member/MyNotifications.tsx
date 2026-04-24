@@ -185,7 +185,7 @@ const MyNotifications: React.FC = () => {
     );
 
   return (
-    <div className="flex flex-col animate-fade-in" style={{ height: "calc(100vh - 120px)" }}>
+    <div className="flex flex-col animate-fade-in md:h-[calc(100vh-120px)]">
       <div className="flex items-center justify-between mb-4 shrink-0">
         <div>
           <h1 className="page-title mb-0">{t("myNotifications.title")}</h1>
