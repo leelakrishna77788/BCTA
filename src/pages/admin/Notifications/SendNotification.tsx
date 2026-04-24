@@ -312,7 +312,7 @@ const SendNotification: React.FC = () => {
                             )}
                         </div>
 
-                        <div className="shrink-0 pt-16 xl:pt-4">
+                        <div className="shrink-0 pt-8 xl:pt-4">
                             <button
                                 type="submit"
                                 disabled={sending}
