@@ -18,6 +18,7 @@ import {
   Stethoscope,
   User,
   ShieldPlus,
+  Crown,
 } from "lucide-react";
 import type { Member, UserRole } from "../../types/member.types";
 import { useTranslation } from "react-i18next";
@@ -50,6 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { to: "/admin/payments", icon: CreditCard, label: t("sidebar.payments") },
     { to: "/admin/complaints", icon: MessageSquareWarning, label: t("sidebar.complaints") },
     { to: "/admin/notifications", icon: Bell, label: t("sidebar.notifications") },
+    { to: "/admin/presidents", icon: Crown, label: "Presidents" },
   ];
 
   const memberLinks = [
