@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation, Trans } from "react-i18next";
 import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -24,9 +25,6 @@ interface MemberDoc extends DocumentData {
     attendanceCount?: number;
 }
 
-const MODAL_HEIGHT = 320; // approximate delete confirm modal height
-const MODAL_MARGIN = 16;
-
 const MemberList: React.FC = () => {
     const { t, i18n } = useTranslation();
     const [members, setMembers] = useState<MemberDoc[]>([]);
@@ -37,11 +35,8 @@ const MemberList: React.FC = () => {
     const [bulkConfirmText, setBulkConfirmText] = useState<string>("");
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
     const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null);
-    const [deleteModalPosition, setDeleteModalPosition] = useState<{ top: number } | null>(null);
     // Track which member is currently being toggled (prevents double-clicks)
     const [togglingId, setTogglingId] = useState<string | null>(null);
-
-    const deleteModalRef = useRef<HTMLDivElement>(null);
 
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -252,40 +247,13 @@ const MemberList: React.FC = () => {
         event: React.MouseEvent<HTMLButtonElement>
     ) => {
         if (!id) return;
-
-        const buttonRect = event.currentTarget.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-
-        // Center modal vertically on the clicked button
-        let top = buttonRect.top + buttonRect.height / 2 - MODAL_HEIGHT / 2;
-
-        // Clamp so modal never goes above or below viewport bounds
-        top = Math.max(MODAL_MARGIN, Math.min(top, viewportHeight - MODAL_HEIGHT - MODAL_MARGIN));
-
-        setDeleteModalPosition({ top });
         setMemberToDelete({ id, name: name || "Member" });
         setShowDeleteConfirm(true);
     };
 
-    // After modal mounts, re-clamp based on actual rendered height
-    useEffect(() => {
-        if (!showDeleteConfirm || !deleteModalRef.current || !deleteModalPosition) return;
-
-        const actualHeight = deleteModalRef.current.offsetHeight;
-        const viewportHeight = window.innerHeight;
-
-        let top = deleteModalPosition.top;
-        top = Math.max(MODAL_MARGIN, Math.min(top, viewportHeight - actualHeight - MODAL_MARGIN));
-
-        if (top !== deleteModalPosition.top) {
-            setDeleteModalPosition({ top });
-        }
-    }, [showDeleteConfirm]);
-
     const confirmDelete = async () => {
         if (!memberToDelete) return;
         setShowDeleteConfirm(false);
-        setDeleteModalPosition(null);
 
         try {
             await membersApi.delete(memberToDelete.id);
@@ -321,25 +289,17 @@ const MemberList: React.FC = () => {
     return (
         <>
             {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && memberToDelete && deleteModalPosition && (
+            {showDeleteConfirm && memberToDelete && createPortal(
                 <div
-                    className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in"
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-lg animate-fade-in p-4"
                     onClick={() => {
                         setShowDeleteConfirm(false);
                         setMemberToDelete(null);
-                        setDeleteModalPosition(null);
                     }}
                 >
                     <div
-                        ref={deleteModalRef}
-                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
-                        style={{
-                            top: `${deleteModalPosition.top}px`,
-                            left: "50%",
-                            transform: "translateX(-50%)",
-                            maxHeight: `calc(100vh - ${MODAL_MARGIN * 2}px)`,
-                            overflowY: "auto",
-                        }}
+                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up relative"
+                        style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
@@ -369,7 +329,8 @@ const MemberList: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Bulk Deletion Modal */}

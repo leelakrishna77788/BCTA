@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import { CheckCircle, Trash2, MessageSquareWarning, Image, AlertTriangle, X } from "lucide-react";
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc } from "firebase/firestore";
@@ -27,8 +28,6 @@ const ComplaintsList: React.FC = () => {
     const [showResolveConfirm, setShowResolveConfirm] = useState<boolean>(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
     const [selectedComplaintId, setSelectedComplaintId] = useState<string | null>(null);
-    const [resolveButtonPosition, setResolveButtonPosition] = useState<{ top: number; left: number } | null>(null);
-    const [deleteButtonPosition, setDeleteButtonPosition] = useState<{ top: number; left: number } | null>(null);
     const [resolutionText, setResolutionText] = useState<string>("");
 
     useEffect(() => {
@@ -78,21 +77,6 @@ const ComplaintsList: React.FC = () => {
     const filtered = complaints.filter(c => filter === "all" ? true : c.status === filter);
 
     const handleResolve = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
-        const buttonRect = event.currentTarget.getBoundingClientRect();
-        const buttonTop = buttonRect.top + window.scrollY;
-        
-        // Calculate which group of 3 rows this button belongs to
-        const rowHeight = 150;
-        const groupSize = 3;
-        const groupIndex = Math.floor(buttonTop / (rowHeight * groupSize));
-        
-        // Position card at the center of this group
-        const groupCenterY = (groupIndex * rowHeight * groupSize) + (rowHeight * groupSize / 2);
-        
-        setResolveButtonPosition({
-            top: groupCenterY,
-            left: 0
-        });
         setSelectedComplaintId(id);
         setResolutionText(t("complaints.prompts.resolutionDefault"));
         setShowResolveConfirm(true);
@@ -101,7 +85,6 @@ const ComplaintsList: React.FC = () => {
     const confirmResolve = async () => {
         if (!selectedComplaintId) return;
         setShowResolveConfirm(false);
-        setResolveButtonPosition(null);
 
         try {
             const docRef = doc(db, "complaints", selectedComplaintId);
@@ -120,21 +103,6 @@ const ComplaintsList: React.FC = () => {
     };
 
     const handleDelete = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
-        const buttonRect = event.currentTarget.getBoundingClientRect();
-        const buttonTop = buttonRect.top + window.scrollY;
-        
-        // Calculate which group of 3 rows this button belongs to
-        const rowHeight = 150;
-        const groupSize = 3;
-        const groupIndex = Math.floor(buttonTop / (rowHeight * groupSize));
-        
-        // Position card at the center of this group
-        const groupCenterY = (groupIndex * rowHeight * groupSize) + (rowHeight * groupSize / 2);
-        
-        setDeleteButtonPosition({
-            top: groupCenterY,
-            left: 0
-        });
         setSelectedComplaintId(id);
         setShowDeleteConfirm(true);
     };
@@ -142,7 +110,6 @@ const ComplaintsList: React.FC = () => {
     const confirmDelete = async () => {
         if (!selectedComplaintId) return;
         setShowDeleteConfirm(false);
-        setDeleteButtonPosition(null);
 
         try {
             await deleteDoc(doc(db, "complaints", selectedComplaintId));
@@ -251,15 +218,11 @@ const ComplaintsList: React.FC = () => {
                 )}
             </div>
 
-            {showResolveConfirm && resolveButtonPosition && (
-                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in" onClick={() => { setShowResolveConfirm(false); setResolveButtonPosition(null); setSelectedComplaintId(null); }}>
+            {showResolveConfirm && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-lg animate-fade-in p-4" onClick={() => { setShowResolveConfirm(false); setSelectedComplaintId(null); }}>
                     <div 
-                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
-                        style={{
-                            top: `${resolveButtonPosition.top}px`,
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)'
-                        }}
+                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up relative"
+                        style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100">
@@ -280,7 +243,7 @@ const ComplaintsList: React.FC = () => {
                         />
                         <div className="flex gap-3">
                             <button
-                                onClick={() => { setShowResolveConfirm(false); setResolveButtonPosition(null); setSelectedComplaintId(null); }}
+                                onClick={() => { setShowResolveConfirm(false); setSelectedComplaintId(null); }}
                                 className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
                             >
                                 {t("common.cancel") || "Cancel"}
@@ -293,18 +256,15 @@ const ComplaintsList: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
-            {showDeleteConfirm && deleteButtonPosition && (
-                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in" onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); setSelectedComplaintId(null); }}>
+            {showDeleteConfirm && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-lg animate-fade-in p-4" onClick={() => { setShowDeleteConfirm(false); setSelectedComplaintId(null); }}>
                     <div 
-                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
-                        style={{
-                            top: `${deleteButtonPosition.top}px`,
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)'
-                        }}
+                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up relative"
+                        style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
@@ -318,7 +278,7 @@ const ComplaintsList: React.FC = () => {
                         </p>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); setSelectedComplaintId(null); }}
+                                onClick={() => { setShowDeleteConfirm(false); setSelectedComplaintId(null); }}
                                 className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
                             >
                                 {t("common.cancel") || "Cancel"}
@@ -331,7 +291,8 @@ const ComplaintsList: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

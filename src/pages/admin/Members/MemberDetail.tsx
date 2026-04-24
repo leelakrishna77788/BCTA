@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { doc, getDoc, updateDoc, collection, getDocs, query, where, Timestamp, DocumentData } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -67,7 +68,6 @@ const MemberDetail: React.FC = () => {
     const [showID, setShowID] = useState<boolean>(false);
     const [isDownloadingID, setIsDownloadingID] = useState<boolean>(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
-    const [deleteButtonPosition, setDeleteButtonPosition] = useState<{ top: number; left: number } | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -203,27 +203,12 @@ const MemberDetail: React.FC = () => {
 
     const handleDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
         if (!member) return;
-
-        const buttonRect = event.currentTarget.getBoundingClientRect();
-        const buttonTop = buttonRect.top + window.scrollY;
-
-        const rowHeight = 150;
-        const groupSize = 3;
-        const groupIndex = Math.floor(buttonTop / (rowHeight * groupSize));
-        const groupCenterY = (groupIndex * rowHeight * groupSize) + (rowHeight * groupSize / 2);
-
-        setDeleteButtonPosition({
-            top: groupCenterY,
-            left: 0
-        });
-
         setShowDeleteConfirm(true);
     };
 
     const confirmDelete = () => {
         if (!member) return;
         setShowDeleteConfirm(false);
-        setDeleteButtonPosition(null);
         toast.success(t("memberList.blocking"));
         navigate("/admin/members");
 
@@ -965,15 +950,11 @@ const MemberDetail: React.FC = () => {
                 </aside>
             </div>
 
-            {showDeleteConfirm && deleteButtonPosition && (
-                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in" onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); }}>
+            {showDeleteConfirm && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-lg animate-fade-in p-4" onClick={() => setShowDeleteConfirm(false)}>
                     <div
-                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
-                        style={{
-                            top: `${deleteButtonPosition.top}px`,
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)'
-                        }}
+                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up relative"
+                        style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
@@ -1000,7 +981,8 @@ const MemberDetail: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {showID && member && (

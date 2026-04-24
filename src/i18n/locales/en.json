@@ -727,6 +727,7 @@
     }
   },
   "memberDetail": {
+    "deleteWarning": "Delete Warning",
     "backToMembers": "Back to Members",
     "profileTitle": "Member Profile",
     "profileSubtitle": "Admin view with profile and account controls.",
