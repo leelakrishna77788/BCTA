@@ -1,3 +1,4 @@
+
 // Custom independent Admin API handler
 import { 
   verifyIdTokenSimple, 
@@ -9,7 +10,8 @@ import {
   createAuthUserREST,
   setFirestoreDocREST,
   getAllFcmTokens,
-  sendFCMNotification
+  sendFCMNotification,
+  deleteFilteredDocumentsREST
 } from "./adminUtils";
 
 // ── In-memory access token cache (survives across warm requests on Vercel) ──
@@ -53,20 +55,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   const idToken = authHeader.replace("Bearer ", "");
 
-  const saEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!saEnv) {
-    return res.status(500).json({ error: "FIREBASE_SERVICE_ACCOUNT environment variable is missing." });
+  let saRaw = process.env.FIREBASE_SERVICE_ACCOUNT || '{}';
+  // Strip surrounding single quotes if they exist (common in some .env configurations)
+  if (saRaw.trim().startsWith("'") && saRaw.trim().endsWith("'")) {
+    saRaw = saRaw.trim().slice(1, -1);
   }
-
+  
   try {
-    let saJson = saEnv.trim();
-    // Recursively strip any surrounding quotes (single or double)
-    while ((saJson.startsWith("'") && saJson.endsWith("'")) || (saJson.startsWith('"') && saJson.endsWith('"'))) {
-      saJson = saJson.slice(1, -1).trim();
-    }
-    
     console.log("[api/admin] Parsing service account JSON...");
-    const serviceAccount = JSON.parse(saJson);
+    const serviceAccount = JSON.parse(saRaw);
     if (serviceAccount.private_key) {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
@@ -181,16 +178,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!uids || !Array.isArray(uids)) return res.status(400).json({ error: "Missing or invalid uids for bulkDeleteUsers" });
         console.log(`[api/admin] Bulk deleting users: ${uids.length}`);
         
+        let successCount = 0;
+        let failCount = 0;
+
         for (const userId of uids) {
           try {
+            console.log(`[api/admin] Processing user: ${userId}`);
+            // 1. Delete Auth User
             await deleteAuthUserREST(projectId, accessToken, userId);
+            console.log(`[api/admin] Auth deleted for: ${userId}`);
+            
+            // 2. Delete Related Data in Parallel
+            console.log(`[api/admin] Cleaning up related data for: ${userId}`);
+            await Promise.allSettled([
+              deleteFilteredDocumentsREST(projectId, accessToken, "attendance", "memberUID", userId),
+              deleteFilteredDocumentsREST(projectId, accessToken, "payments", "memberUID", userId),
+              deleteFilteredDocumentsREST(projectId, accessToken, "complaints", "submittedByUID", userId),
+              deleteFilteredDocumentsREST(projectId, accessToken, "shopScans", "memberUid", userId),
+              deleteFilteredDocumentsREST(projectId, accessToken, "notifications", "recipientUID", userId)
+            ]);
+
+            // 3. Delete Main User Document
             await deleteFirestoreDocREST(projectId, accessToken, "users", userId);
+            console.log(`[api/admin] Firestore doc deleted for: ${userId}`);
+            
+            successCount++;
           } catch (e: any) {
-            console.error(`[api/admin] Failed to delete user ${userId}:`, e.message);
-            // continue with others
+            console.error(`[api/admin] Failed to fully delete user ${userId}:`, e.message);
+            failCount++;
           }
         }
-        return res.status(200).json({ message: `${uids.length} users processed for deletion` });
+        console.log(`[api/admin] Bulk cleanup finished. Success: ${successCount}, Failed: ${failCount}`);
+        return res.status(200).json({ message: `${successCount} users deleted, ${failCount} failed` });
       }
 
       case "broadcastNotification": {

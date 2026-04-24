@@ -1,5 +1,5 @@
+
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
 import { useTranslation, Trans } from "react-i18next";
 import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -25,6 +25,9 @@ interface MemberDoc extends DocumentData {
     attendanceCount?: number;
 }
 
+const MODAL_HEIGHT = 320; // approximate delete confirm modal height
+const MODAL_MARGIN = 16;
+
 const MemberList: React.FC = () => {
     const { t, i18n } = useTranslation();
     const [members, setMembers] = useState<MemberDoc[]>([]);
@@ -35,8 +38,12 @@ const MemberList: React.FC = () => {
     const [bulkConfirmText, setBulkConfirmText] = useState<string>("");
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
     const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null);
+    const [deleteModalPosition, setDeleteModalPosition] = useState<{ top: number } | null>(null);
     // Track which member is currently being toggled (prevents double-clicks)
     const [togglingId, setTogglingId] = useState<string | null>(null);
+    const [deletingProgress, setDeletingProgress] = useState<string>("");
+
+    const deleteModalRef = useRef<HTMLDivElement>(null);
 
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -247,13 +254,40 @@ const MemberList: React.FC = () => {
         event: React.MouseEvent<HTMLButtonElement>
     ) => {
         if (!id) return;
+
+        const buttonRect = event.currentTarget.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
+        // Center modal vertically on the clicked button
+        let top = buttonRect.top + buttonRect.height / 2 - MODAL_HEIGHT / 2;
+
+        // Clamp so modal never goes above or below viewport bounds
+        top = Math.max(MODAL_MARGIN, Math.min(top, viewportHeight - MODAL_HEIGHT - MODAL_MARGIN));
+
+        setDeleteModalPosition({ top });
         setMemberToDelete({ id, name: name || "Member" });
         setShowDeleteConfirm(true);
     };
 
+    // After modal mounts, re-clamp based on actual rendered height
+    useEffect(() => {
+        if (!showDeleteConfirm || !deleteModalRef.current || !deleteModalPosition) return;
+
+        const actualHeight = deleteModalRef.current.offsetHeight;
+        const viewportHeight = window.innerHeight;
+
+        let top = deleteModalPosition.top;
+        top = Math.max(MODAL_MARGIN, Math.min(top, viewportHeight - actualHeight - MODAL_MARGIN));
+
+        if (top !== deleteModalPosition.top) {
+            setDeleteModalPosition({ top });
+        }
+    }, [showDeleteConfirm]);
+
     const confirmDelete = async () => {
         if (!memberToDelete) return;
         setShowDeleteConfirm(false);
+        setDeleteModalPosition(null);
 
         try {
             await membersApi.delete(memberToDelete.id);
@@ -266,40 +300,55 @@ const MemberList: React.FC = () => {
     };
 
     const handleBulkDelete = async () => {
-        if (bulkConfirmText !== "DELETE ALL") {
+        const text = bulkConfirmText.trim().toUpperCase();
+        if (text !== "DELETE ALL" && text !== "DELETE") {
             toast.error(t("memberList.dangerZone.typeExactly"));
             return;
         }
 
         try {
             setIsDeleting(true);
-            await membersApi.deleteAll();
+            setDeletingProgress(t("memberList.processing") || "Processing...");
+            
+            // Note: membersApi.deleteAll fetches all members and calls bulkDelete in chunks
+            const result = await membersApi.deleteAll();
+            
             toast.success(t("memberList.dangerZone.cleanupComplete"));
             setShowBulkConfirm(false);
             setBulkConfirmText("");
         } catch (err: any) {
+            console.error("[MemberList] Bulk deletion error:", err);
             toast.error(err.message || "Bulk deletion failed");
             setShowBulkConfirm(false);
             setBulkConfirmText("");
         } finally {
             setIsDeleting(false);
+            setDeletingProgress("");
         }
     };
 
     return (
         <>
             {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && memberToDelete && createPortal(
+            {showDeleteConfirm && memberToDelete && deleteModalPosition && (
                 <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-lg animate-fade-in p-4"
+                    className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in"
                     onClick={() => {
                         setShowDeleteConfirm(false);
                         setMemberToDelete(null);
+                        setDeleteModalPosition(null);
                     }}
                 >
                     <div
-                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up relative"
-                        style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}
+                        ref={deleteModalRef}
+                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
+                        style={{
+                            top: `${deleteModalPosition.top}px`,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            maxHeight: `calc(100vh - ${MODAL_MARGIN * 2}px)`,
+                            overflowY: "auto",
+                        }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
@@ -329,8 +378,7 @@ const MemberList: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>,
-                document.body
+                </div>
             )}
 
             {/* Bulk Deletion Modal */}
@@ -380,11 +428,11 @@ const MemberList: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={handleBulkDelete}
-                                    className="bg-red-600 text-white font-black flex-1 py-4 rounded-2xl shadow-lg shadow-red-100 hover:shadow-red-200 hover:bg-red-700 transition-all flex items-center justify-center gap-2"
-                                    disabled={isDeleting || bulkConfirmText !== "DELETE ALL"}
+                                    className="bg-red-600 text-white font-black flex-1 py-4 rounded-2xl shadow-lg shadow-red-100 hover:shadow-red-200 hover:bg-red-700 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                                    disabled={isDeleting || (bulkConfirmText.trim().toUpperCase() !== "DELETE ALL" && bulkConfirmText.trim().toUpperCase() !== "DELETE")}
                                 >
-                                    {isDeleting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Trash2 size={20} />}
-                                    {isDeleting ? t("memberList.processing") : t("memberList.dangerZone.destroy")}
+                                    {isDeleting ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
+                                    {isDeleting ? (deletingProgress || t("memberList.processing")) : t("memberList.dangerZone.destroy")}
                                 </button>
                             </div>
                         </div>

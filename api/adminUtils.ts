@@ -1,3 +1,4 @@
+
 import crypto from 'crypto';
 
 interface ServiceAccount {
@@ -264,7 +265,7 @@ export async function setFirestoreDocREST(projectId: string, accessToken: string
 export async function sendFCMNotification(projectId: string, accessToken: string, tokens: string[], title: string, body: string, data?: any) {
   const url = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
   
-  const results = [];
+  const results: any[] = [];
   for (const token of tokens) {
     const payload = {
       message: {
@@ -335,3 +336,54 @@ export async function getAllFcmTokens(projectId: string, accessToken: string) {
   return [...new Set(tokens)]; // unique tokens
 }
 
+
+/**
+ * Queries documents from a collection by a field filter and deletes them.
+ * Useful for cleaning up related data (attendance, payments, etc).
+ */
+export async function deleteFilteredDocumentsREST(projectId: string, accessToken: string, collection: string, field: string, value: string) {
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+  
+  const queryPayload = {
+    structuredQuery: {
+      from: [{ collectionId: collection }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: field },
+          op: 'EQUAL',
+          value: { stringValue: value }
+        }
+      }
+    }
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(queryPayload)
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    console.error(`[adminUtils] Query failed for ${collection}.${field} == ${value}:`, data);
+    return; // Don't throw to allow other cleanup to continue
+  }
+
+  const results = await response.json();
+  if (!Array.isArray(results)) return;
+
+  for (const res of results) {
+    if (res.document && res.document.name) {
+      const parts = res.document.name.split('/');
+      const docId = parts[parts.length - 1];
+      try {
+        await deleteFirestoreDocREST(projectId, accessToken, collection, docId);
+      } catch (e: any) {
+        console.error(`[adminUtils] Failed to delete related doc ${docId} in ${collection}:`, e.message);
+      }
+    }
+  }
+}

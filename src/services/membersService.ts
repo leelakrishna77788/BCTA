@@ -1,3 +1,4 @@
+
 import {
   collection,
   doc,
@@ -78,10 +79,18 @@ export async function getMembers(lastDoc?: DocumentSnapshot): Promise<{ members:
 }
 
 /** Fetch ALL members (admin use — for stats, dropdowns, full lists) */
-export async function getAllMembers(maxLimit = 500): Promise<Member[]> {
-  const snap = await getDocs(
-    query(collection(db, "users"), where("role", "==", "member"), orderBy("createdAt", "desc"), limit(maxLimit))
-  );
+export async function getAllMembers(maxLimit?: number, ordered = true): Promise<Member[]> {
+  let q = query(collection(db, "users"), where("role", "==", "member"));
+  
+  if (ordered) {
+    q = query(q, orderBy("createdAt", "desc"));
+  }
+  
+  if (maxLimit) {
+    q = query(q, limit(maxLimit));
+  }
+  
+  const snap = await getDocs(q);
   return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as Member));
 }
 
@@ -367,47 +376,60 @@ export const membersApi = {
   bulkDelete: async (uids: string[]) => {
     console.log("[membersApi.bulkDelete] Attempting to delete multiple users:", uids.length);
     
-    if (import.meta.env.VITE_USE_SERVER_API && auth.currentUser) {
+    const isServerApiEnabled = String(import.meta.env.VITE_USE_SERVER_API) === 'true';
+    
+    if (isServerApiEnabled && auth.currentUser) {
       const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/admin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({ action: "bulkDeleteUsers", uids }),
-      });
+      // Even with server API, we might want to chunk if the list is massive to avoid timeouts
+      const CHUNK_SIZE = 50; 
+      const results = [];
+      
+      for (let i = 0; i < uids.length; i += CHUNK_SIZE) {
+        const chunk = uids.slice(i, i + CHUNK_SIZE);
+        const res = await fetch("/api/admin", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ action: "bulkDeleteUsers", uids: chunk }),
+        });
 
-      if (!res.ok) {
-        const text = await res.text();
-        let errorMsg = "Failed to bulk delete users via admin API";
-        try {
-          const errorData = JSON.parse(text);
-          errorMsg = errorData.error || errorMsg;
-        } catch {
-          errorMsg = `Server returned ${res.status}: ${text.slice(0, 100)}`;
+        if (!res.ok) {
+          const text = await res.text();
+          console.error(`[membersApi.bulkDelete] Chunk ${i/CHUNK_SIZE + 1} failed:`, text);
+          throw new Error(`Server cleanup failed for a batch of users: ${text}`);
+        } else {
+          results.push(await res.json());
         }
-        throw new Error(errorMsg);
       }
-
-      return res.json();
+      return { message: "Bulk deletion processed in chunks", results };
     }
 
-    // Local fallback: batch delete Firestore docs
+    // Local fallback: batch delete Firestore docs (MANDATORY CHUNKING for 500 limit)
     if (!auth.currentUser) throw new Error("No authenticated admin user");
     
-    const batch = writeBatch(db);
-    uids.forEach(uid => {
-      batch.delete(doc(db, "users", uid));
-    });
-    await batch.commit();
+    const CHUNK_SIZE = 450; // Staying safe below 500
+    for (let i = 0; i < uids.length; i += CHUNK_SIZE) {
+      const chunk = uids.slice(i, i + CHUNK_SIZE);
+      const batch = writeBatch(db);
+      chunk.forEach(uid => {
+        batch.delete(doc(db, "users", uid));
+      });
+      await batch.commit();
+      console.log(`[membersApi.bulkDelete] Local fallback: Committed chunk ${i/CHUNK_SIZE + 1}`);
+    }
+    
     return { message: "Firestore documents deleted (Auth records remain in local mode)" };
   },
 
   deleteAll: async () => {
-    const allMembers = await getAllMembers();
+    console.log("[membersApi.deleteAll] Fetching all members for cleanup...");
+    // Fetch WITHOUT ordering to avoid composite index requirements
+    const allMembers = await getAllMembers(undefined, false); 
     const uids = allMembers.map(m => m.uid).filter((uid): uid is string => !!uid);
     
+    console.log(`[membersApi.deleteAll] Found ${uids.length} members to remove.`);
     if (uids.length === 0) return { message: "No members to delete" };
     if (!auth.currentUser) throw new Error("No authenticated admin user");
 
