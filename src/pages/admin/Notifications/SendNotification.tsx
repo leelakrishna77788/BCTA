@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
     collection,
     query,
@@ -32,60 +33,75 @@ interface Notification {
 }
 
 const NOTIFICATION_TYPES = [
-    {
-        value: "meeting",
-        color: "bg-slate-100 text-[#4f46e5]",
-    },
-    {
-        value: "payment",
-        color: "bg-amber-100 text-amber-700",
-    },
-    {
-        value: "block",
-        color: "bg-red-100 text-red-700",
-    },
-    {
-        value: "emergency",
-        color: "bg-rose-100 text-rose-700",
-    },
-    {
-        value: "general",
-        color: "bg-slate-100 text-slate-700",
-    },
+    { value: "meeting",   color: "bg-slate-100 text-[#4f46e5]" },
+    { value: "payment",   color: "bg-amber-100 text-amber-700" },
+    { value: "block",     color: "bg-red-100 text-red-700" },
+    { value: "emergency", color: "bg-rose-100 text-rose-700" },
+    { value: "general",   color: "bg-slate-100 text-slate-700" },
 ];
+
+// ⚠️ Adjust these to match your actual layout dimensions
+const TOP_NAV_HEIGHT    = 64;  // px — top header height (both mobile & desktop)
+const BOTTOM_NAV_HEIGHT = 64;  // px — bottom tab bar height (mobile only; 0 on desktop)
+const SIDEBAR_WIDTH     = 256; // px — desktop sidebar width (set to 0 if no sidebar)
+
+interface ModalPortalProps {
+    onClose: () => void;
+    children: React.ReactNode;
+}
+
+const ModalPortal: React.FC<ModalPortalProps> = ({ onClose, children }) => {
+    // Detect desktop (sidebar visible) vs mobile (bottom nav visible)
+    const isDesktop = window.innerWidth >= 1024; // matches typical `lg:` breakpoint
+
+    return createPortal(
+        <div
+            style={{
+                position: "fixed",
+                top: TOP_NAV_HEIGHT,
+                left: isDesktop ? SIDEBAR_WIDTH : 0,
+                right: 0,
+                bottom: isDesktop ? 0 : BOTTOM_NAV_HEIGHT,
+                zIndex: 9999,
+                backgroundColor: "rgba(0,0,0,0.6)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "1rem",
+            }}
+            onClick={onClose}
+        >
+            <div onClick={(e) => e.stopPropagation()}>
+                {children}
+            </div>
+        </div>,
+        document.body
+    );
+};
 
 const SendNotification: React.FC = () => {
     const { t, i18n } = useTranslation();
-    const [form, setForm] = useState<NotificationForm>({
-        title: "",
-        body: "",
-        type: "",
-    });
+    const [form, setForm] = useState<NotificationForm>({ title: "", body: "", type: "" });
     const [sending, setSending] = useState<boolean>(false);
     const [sent, setSent] = useState<Notification[]>([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+    const [showClearAllConfirm, setShowClearAllConfirm] = useState<boolean>(false);
     const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
-    const [deleteButtonPosition, setDeleteButtonPosition] = useState<{ top: number; left: number } | null>(null);
 
-    // Load sent notifications
     useEffect(() => {
         const q = query(collection(db, "notifications"), orderBy("sentAt", "desc"));
         const unsub = onSnapshot(q, (snap) => {
-            setSent(
-                snap.docs
-                    .map((d) => ({ id: d.id, ...d.data() }) as Notification)
-                    .slice(0, 20),
-            );
+            setSent(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Notification).slice(0, 20));
         });
         return unsub;
     }, []);
 
-    // Lock background scroll when modal is open
     useEffect(() => {
-        if (!showDeleteConfirm) return;
+        if (!showDeleteConfirm && !showClearAllConfirm) return;
 
         const preventDefault = (e: Event) => e.preventDefault();
-
         window.addEventListener("wheel", preventDefault, { passive: false });
         window.addEventListener("touchmove", preventDefault, { passive: false });
         const blockKeys = (e: KeyboardEvent) => {
@@ -93,7 +109,6 @@ const SendNotification: React.FC = () => {
             if (keys.includes(e.key)) e.preventDefault();
         };
         window.addEventListener("keydown", blockKeys);
-
         document.body.style.overflow = "hidden";
         document.documentElement.style.overflow = "hidden";
 
@@ -104,23 +119,14 @@ const SendNotification: React.FC = () => {
             document.body.style.overflow = "";
             document.documentElement.style.overflow = "";
         };
-    }, [showDeleteConfirm]);
+    }, [showDeleteConfirm, showClearAllConfirm]);
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.type) {
-            toast.error(t("notifications.toasts.categoryRequired"));
-            return;
-        }
+        if (!form.type) { toast.error(t("notifications.toasts.categoryRequired")); return; }
         setSending(true);
         try {
-            await addDoc(collection(db, "notifications"), {
-                ...form,
-                sentAt: serverTimestamp(),
-                target: "all",
-            });
-
-            // FCM Broadcast via API
+            await addDoc(collection(db, "notifications"), { ...form, sentAt: serverTimestamp(), target: "all" });
             try {
                 const idToken = await auth.currentUser?.getIdToken();
                 if (idToken) {
@@ -129,16 +135,11 @@ const SendNotification: React.FC = () => {
                         title: form.title,
                         body: form.body,
                         data: { url: '/member/notifications' }
-                    }, {
-                        headers: { Authorization: `Bearer ${idToken}` }
-                    });
-                    console.log("[SendNotification] Push broadcast triggered successfully");
+                    }, { headers: { Authorization: `Bearer ${idToken}` } });
                 }
             } catch (fcmErr) {
                 console.error("[SendNotification] Push broadcast failed:", fcmErr);
-                // We don't block the UI as Firestore doc is already added
             }
-
             toast.success(t("notifications.toasts.sent"));
             setForm({ title: "", body: "", type: "" });
         } catch (err: any) {
@@ -149,22 +150,7 @@ const SendNotification: React.FC = () => {
         }
     };
 
-    const handleDelete = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
-        const buttonRect = event.currentTarget.getBoundingClientRect();
-        const buttonTop = buttonRect.top + window.scrollY;
-        
-        // Calculate which group of 3 rows this button belongs to
-        const rowHeight = 150;
-        const groupSize = 3;
-        const groupIndex = Math.floor(buttonTop / (rowHeight * groupSize));
-        
-        // Position card at the center of this group
-        const groupCenterY = (groupIndex * rowHeight * groupSize) + (rowHeight * groupSize / 2);
-        
-        setDeleteButtonPosition({
-            top: groupCenterY,
-            left: 0
-        });
+    const handleDelete = (id: string) => {
         setSelectedNotificationId(id);
         setShowDeleteConfirm(true);
     };
@@ -172,36 +158,24 @@ const SendNotification: React.FC = () => {
     const confirmDelete = async () => {
         if (!selectedNotificationId) return;
         setShowDeleteConfirm(false);
-        setDeleteButtonPosition(null);
-
         try {
             await deleteDoc(doc(db, "notifications", selectedNotificationId));
             toast.success(t("notifications.toasts.deleted"));
         } catch (err: any) {
             console.error("[deleteNotification] Error:", err);
-            toast.error(
-                `Failed to delete notification: ${err.message || "Permission denied"}`,
-            );
+            toast.error(`Failed to delete notification: ${err.message || "Permission denied"}`);
         } finally {
             setSelectedNotificationId(null);
         }
     };
 
     const handleClearAll = async () => {
+        setShowClearAllConfirm(false);
         if (sent.length === 0) return;
-        if (
-            !window.confirm(
-                t("notifications.history.clearAllConfirm", { count: sent.length })
-            )
-        )
-            return;
-
         setSending(true);
         try {
             const batch = writeBatch(db);
-            sent.forEach((n) => {
-                batch.delete(doc(db, "notifications", n.id));
-            });
+            sent.forEach((n) => batch.delete(doc(db, "notifications", n.id)));
             await batch.commit();
             toast.success(t("notifications.toasts.cleared"));
         } catch (err: any) {
@@ -259,24 +233,19 @@ const SendNotification: React.FC = () => {
                                     </label>
                                     <input
                                         value={form.title}
-                                        onChange={(e) =>
-                                            setForm((p) => ({ ...p, title: e.target.value }))
-                                        }
+                                        onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                                         required
                                         placeholder={t("notifications.form.placeholders.heading")}
                                         className="input-field rounded-2xl bg-white/60 border-slate-200/50 focus:bg-white transition-all py-3 sm:py-4 text-sm font-bold shadow-sm"
                                     />
                                 </div>
-
                                 <div>
                                     <label className="label text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] mb-2 block text-slate-500">
                                         {t("notifications.form.content")}
                                     </label>
                                     <textarea
                                         value={form.body}
-                                        onChange={(e) =>
-                                            setForm((p) => ({ ...p, body: e.target.value }))
-                                        }
+                                        onChange={(e) => setForm((p) => ({ ...p, body: e.target.value }))}
                                         required
                                         rows={3}
                                         placeholder={t("notifications.form.placeholders.content")}
@@ -285,7 +254,6 @@ const SendNotification: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Preview */}
                             {form.title && (
                                 <div
                                     className="p-6 rounded-2xl border border-dashed transition-all duration-500 opacity-100"
@@ -329,7 +297,7 @@ const SendNotification: React.FC = () => {
                     </form>
                 </div>
 
-                {/* History - Spans 2 columns on xl */}
+                {/* History */}
                 <div
                     className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow h-full min-h-0"
                     style={{ background: "rgba(255, 255, 255, 0.6)" }}
@@ -343,7 +311,7 @@ const SendNotification: React.FC = () => {
                         </h2>
                         {sent.length > 0 && (
                             <button
-                                onClick={handleClearAll}
+                                onClick={() => setShowClearAllConfirm(true)}
                                 disabled={sending}
                                 className="text-[10px] font-black text-rose-500 hover:bg-rose-500 hover:text-white uppercase tracking-[0.15em] px-5 py-2.5 rounded-xl transition-all border border-rose-100 disabled:opacity-50 shadow-sm"
                             >
@@ -353,9 +321,7 @@ const SendNotification: React.FC = () => {
                     </div>
                     <div className="flex-1 p-6 space-y-4 overflow-y-auto min-h-0 scroll-smooth scrollbar-hide">
                         {sent.map((n, i) => {
-                            const typeInfo =
-                                NOTIFICATION_TYPES.find((x) => x.value === n.type) ||
-                                NOTIFICATION_TYPES[4];
+                            const typeInfo = NOTIFICATION_TYPES.find((x) => x.value === n.type) || NOTIFICATION_TYPES[4];
                             return (
                                 <div
                                     key={n.id}
@@ -370,7 +336,7 @@ const SendNotification: React.FC = () => {
                                                 {n.title}
                                             </p>
                                             <button
-                                                onClick={(e) => handleDelete(e, n.id)}
+                                                onClick={() => handleDelete(n.id)}
                                                 className="shrink-0 p-2.5 rounded-xl bg-white/80 text-red-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-rose-100/50"
                                                 title={t("common.delete")}
                                             >
@@ -383,8 +349,7 @@ const SendNotification: React.FC = () => {
                                         <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 pt-3 border-t border-white/30">
                                             <span className="bg-white/60 px-3 py-1.5 rounded-xl shadow-xs">
                                                 🕒{" "}
-                                                {n.sentAt?.toDate?.().toLocaleDateString(i18n.language === 'te' ? 'te-IN' : 'en-IN') ||
-                                                    t("notifications.labels.online")}
+                                                {n.sentAt?.toDate?.().toLocaleDateString(i18n.language === 'te' ? 'te-IN' : 'en-IN') || t("notifications.labels.online")}
                                             </span>
                                             <span className="bg-white/60 px-3 py-1.5 rounded-xl shadow-xs">
                                                 {t("notifications.history.target")}: {n.target || t("notifications.labels.all")}
@@ -409,17 +374,9 @@ const SendNotification: React.FC = () => {
             </div>
 
             {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && deleteButtonPosition && (
-                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in" onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); setSelectedNotificationId(null); }}>
-                    <div 
-                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
-                        style={{
-                            top: `${deleteButtonPosition.top}px`,
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)'
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
+            {showDeleteConfirm && (
+                <ModalPortal onClose={() => { setShowDeleteConfirm(false); setSelectedNotificationId(null); }}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8">
                         <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
                             <AlertTriangle className="text-red-600" size={32} />
                         </div>
@@ -431,7 +388,7 @@ const SendNotification: React.FC = () => {
                         </p>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); setSelectedNotificationId(null); }}
+                                onClick={() => { setShowDeleteConfirm(false); setSelectedNotificationId(null); }}
                                 className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
                             >
                                 {t("common.cancel") || "Cancel"}
@@ -444,7 +401,38 @@ const SendNotification: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </ModalPortal>
+            )}
+
+            {/* Clear All Confirmation Modal */}
+            {showClearAllConfirm && (
+                <ModalPortal onClose={() => setShowClearAllConfirm(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8">
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
+                            <Trash2 className="text-red-600" size={32} />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
+                            {t("Clear All Notifications") || "Clear All Notifications?"}
+                        </h2>
+                        <p className="text-sm text-slate-600 text-center mb-6">
+                            {t("notifications.history.clearAllConfirm", { count: sent.length }) || `Are you sure you want to delete all ${sent.length} notifications? This action cannot be undone.`}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowClearAllConfirm(false)}
+                                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                            >
+                                {t("common.cancel") || "Cancel"}
+                            </button>
+                            <button
+                                onClick={handleClearAll}
+                                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                            >
+                                {t("notifications.history.clearAll") || "Clear All"}
+                            </button>
+                        </div>
+                    </div>
+                </ModalPortal>
             )}
         </div>
     );

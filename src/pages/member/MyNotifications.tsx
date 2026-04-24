@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -27,6 +28,47 @@ interface NotificationData {
   [key: string]: any;
 }
 
+// ⚠️ Adjust these to match your actual layout dimensions
+const TOP_NAV_HEIGHT    = 64;  // px — top header height (both mobile & desktop)
+const BOTTOM_NAV_HEIGHT = 64;  // px — bottom tab bar height (mobile only; 0 on desktop)
+const SIDEBAR_WIDTH     = 256; // px — desktop sidebar width (set to 0 if no sidebar)
+
+interface ModalPortalProps {
+  onClose: () => void;
+  children: React.ReactNode;
+}
+
+const ModalPortal: React.FC<ModalPortalProps> = ({ onClose, children }) => {
+  // Detect desktop (sidebar visible) vs mobile (bottom nav visible)
+  const isDesktop = window.innerWidth >= 1024; // matches typical `lg:` breakpoint
+
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        top: TOP_NAV_HEIGHT,
+        left: isDesktop ? SIDEBAR_WIDTH : 0,
+        right: 0,
+        bottom: isDesktop ? 0 : BOTTOM_NAV_HEIGHT,
+        zIndex: 9999,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
+      }}
+      onClick={onClose}
+    >
+      <div onClick={(e) => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 const MyNotifications: React.FC = () => {
   const { currentUser, userRole } = useAuth();
   const { t } = useTranslation();
@@ -34,6 +76,32 @@ const MyNotifications: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleteAllConfirm, setDeleteAllConfirm] = useState<boolean>(false);
+
+  // Block scrolling when modals are open
+  useEffect(() => {
+    if (!deleteConfirm && !deleteAllConfirm) return;
+
+    const preventDefault = (e: Event) => e.preventDefault();
+
+    window.addEventListener("wheel", preventDefault, { passive: false });
+    window.addEventListener("touchmove", preventDefault, { passive: false });
+    const blockKeys = (e: KeyboardEvent) => {
+      const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
+      if (keys.includes(e.key)) e.preventDefault();
+    };
+    window.addEventListener("keydown", blockKeys);
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("wheel", preventDefault);
+      window.removeEventListener("touchmove", preventDefault);
+      window.removeEventListener("keydown", blockKeys);
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, [deleteConfirm, deleteAllConfirm]);
 
   useEffect(() => {
     const q = query(collection(db, "notifications"), orderBy("sentAt", "desc"));
@@ -60,11 +128,9 @@ const MyNotifications: React.FC = () => {
 
     try {
       if (userRole === "admin" || userRole === "superadmin") {
-        // ✅ ADMIN → delete for everyone
         await deleteDoc(doc(db, "notifications", id));
         toast.success(t("myNotifications.toastDeletedSingle"));
       } else {
-        // ✅ MEMBER → hide only for self
         await updateDoc(doc(db, "notifications", id), {
           dismissedBy: arrayUnion(currentUser.uid),
         });
@@ -76,6 +142,7 @@ const MyNotifications: React.FC = () => {
       toast.error(t("myNotifications.toastDeleteFailed"));
     }
   };
+
   const deleteAllNotifications = async () => {
     if (!currentUser || notifications.length === 0) return;
 
@@ -83,25 +150,20 @@ const MyNotifications: React.FC = () => {
       const batch = writeBatch(db);
 
       if (userRole === "admin" || userRole === "superadmin") {
-        // ✅ ADMIN → delete all globally
         notifications.forEach((n) => {
           batch.delete(doc(db, "notifications", n.id));
         });
-
         await batch.commit();
         toast.success(t("myNotifications.toastDeletedAll"));
       } else {
-        // ✅ MEMBER → hide only for self
         const visibleNotifications = notifications.filter(
           (n) => !n.dismissedBy?.includes(currentUser.uid),
         );
-
         visibleNotifications.forEach((n) => {
           batch.update(doc(db, "notifications", n.id), {
             dismissedBy: arrayUnion(currentUser.uid),
           });
         });
-
         await batch.commit();
         toast.success(t("myNotifications.toastRemovedAll"));
       }
@@ -122,35 +184,23 @@ const MyNotifications: React.FC = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "meeting":
-        return "📅";
-      case "payment":
-        return "💳";
-      case "emergency":
-        return "🚨";
-      case "block":
-        return "🚫";
-      case "product":
-        return "📦";
-      default:
-        return "📢";
+      case "meeting":   return "📅";
+      case "payment":   return "💳";
+      case "emergency": return "🚨";
+      case "block":     return "🚫";
+      case "product":   return "📦";
+      default:          return "📢";
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "meeting":
-        return "bg-indigo-50 text-indigo-600 border-indigo-100";
-      case "payment":
-        return "bg-emerald-50 text-emerald-600 border-emerald-100";
-      case "emergency":
-        return "bg-red-50 text-red-600 border-red-100";
-      case "block":
-        return "bg-rose-50 text-rose-600 border-rose-100";
-      case "product":
-        return "bg-amber-50 text-amber-600 border-amber-100";
-      default:
-        return "bg-slate-50 text-slate-600 border-slate-100";
+      case "meeting":   return "bg-indigo-50 text-indigo-600 border-indigo-100";
+      case "payment":   return "bg-emerald-50 text-emerald-600 border-emerald-100";
+      case "emergency": return "bg-red-50 text-red-600 border-red-100";
+      case "block":     return "bg-rose-50 text-rose-600 border-rose-100";
+      case "product":   return "bg-amber-50 text-amber-600 border-amber-100";
+      default:          return "bg-slate-50 text-slate-600 border-slate-100";
     }
   };
 
@@ -169,11 +219,7 @@ const MyNotifications: React.FC = () => {
         </div>
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="card p-5 flex gap-4">
-            <LoadingSkeleton
-              width="3rem"
-              height="3rem"
-              borderRadius="0.75rem"
-            />
+            <LoadingSkeleton width="3rem" height="3rem" borderRadius="0.75rem" />
             <div className="flex-1 space-y-2">
               <LoadingSkeleton width="40%" height="1rem" />
               <LoadingSkeleton width="80%" height="0.875rem" />
@@ -249,9 +295,7 @@ const MyNotifications: React.FC = () => {
                   </div>
                 </div>
                 <div className="absolute top-3 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span
-                    className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${getTypeColor(n.type)}`}
-                  >
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${getTypeColor(n.type)}`}>
                     {n.type}
                   </span>
                 </div>
@@ -263,8 +307,8 @@ const MyNotifications: React.FC = () => {
 
       {/* Delete Single Notification Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-100 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in">
+        <ModalPortal onClose={() => setDeleteConfirm(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
               <Trash2 size={24} className="text-red-600" />
             </div>
@@ -289,13 +333,13 @@ const MyNotifications: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Delete All Notifications Confirmation Modal */}
       {deleteAllConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-100 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-scale-in">
+        <ModalPortal onClose={() => setDeleteAllConfirm(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
               <Trash2 size={24} className="text-red-600" />
             </div>
@@ -320,7 +364,7 @@ const MyNotifications: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

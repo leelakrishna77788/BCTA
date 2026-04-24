@@ -561,10 +561,10 @@ const MemberList: React.FC = () => {
                                 <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:gap-3 lg:gap-4 w-full lg:w-auto">
                                     <div className="rounded-xl px-3 py-2.5 text-center sm:px-4 bg-white/80 border border-white/80 min-h-[64px] flex flex-col justify-center">
                                         <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{t("memberList.blood")}</p>
-                                        <p className="text-base sm:text-sm font-black text-slate-800 flex items-center justify-center gap-1">
+                                        <div className="text-base sm:text-sm font-black text-slate-800 flex items-center justify-center gap-1">
                                             <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                             {m.bloodGroup || "N/A"}
-                                        </p>
+                                        </div>
                                     </div>
                                     <div className="rounded-xl px-3 py-2.5 text-center sm:px-4 bg-white/80 border border-white/80 min-h-[64px] flex flex-col justify-center">
                                         <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{t("memberList.meetings")}</p>

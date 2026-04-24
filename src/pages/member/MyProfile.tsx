@@ -136,8 +136,12 @@ const MyProfile: React.FC = () => {
     : "";
   const createdAt = userProfile?.createdAt;
   const memberSince =
-    createdAt && "toDate" in createdAt
+    createdAt && typeof createdAt === 'object' && 'toDate' in createdAt
       ? createdAt.toDate().getFullYear()
+      : createdAt instanceof Date
+      ? createdAt.getFullYear()
+      : typeof createdAt === 'string'
+      ? new Date(createdAt).getFullYear()
       : new Date().getFullYear();
   const profileInitial = (
     userProfile?.name?.[0] ??
@@ -366,27 +370,51 @@ const MyProfile: React.FC = () => {
   if (!userProfile)
     return (
       <div className="mx-auto w-full max-w-6xl space-y-6 px-3 sm:px-0 animate-fade-in">
-        <LoadingSkeleton height="2rem" width="180px" className="mb-2" />
-        <div className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
-          <CardSkeleton />
-          <CardSkeleton />
-        </div>
-        <div className="card space-y-4">
-          <LoadingSkeleton height="1rem" width="40%" />
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex justify-between">
-                <LoadingSkeleton height="0.75rem" width="30%" />
-                <LoadingSkeleton height="0.75rem" width="50%" />
+        {currentUser ? (
+          // Loading state - user is authenticated but profile is loading
+          <>
+            <LoadingSkeleton height="2rem" width="180px" className="mb-2" />
+            <div className="grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+            <div className="card space-y-4">
+              <LoadingSkeleton height="1rem" width="40%" />
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex justify-between">
+                    <LoadingSkeleton height="0.75rem" width="30%" />
+                    <LoadingSkeleton height="0.75rem" width="50%" />
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <LoadingSkeleton height="80px" borderRadius="1rem" />
+              <LoadingSkeleton height="80px" borderRadius="1rem" />
+              <LoadingSkeleton height="80px" borderRadius="1rem" />
+            </div>
+          </>
+        ) : (
+          // Error state - no user authenticated
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center p-8 bg-white rounded-2xl shadow-lg border border-red-200">
+              <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
+              <h2 className="text-xl font-bold text-slate-900 mb-2">
+                {t("profile.notAuthenticated") || "Not Authenticated"}
+              </h2>
+              <p className="text-slate-600 mb-4">
+                {t("profile.pleaseLogin") || "Please log in to view your profile."}
+              </p>
+              <button
+                onClick={() => window.location.href = "/login"}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+              >
+                {t("common.login") || "Login"}
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <LoadingSkeleton height="80px" borderRadius="1rem" />
-          <LoadingSkeleton height="80px" borderRadius="1rem" />
-          <LoadingSkeleton height="80px" borderRadius="1rem" />
-        </div>
+        )}
       </div>
     );
 
