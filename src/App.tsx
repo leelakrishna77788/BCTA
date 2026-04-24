@@ -59,6 +59,7 @@ const MeetingQR = lazyWithRetry(() => import("./pages/admin/Meetings/MeetingQR")
 const AttendanceDashboard = lazyWithRetry(() => import("./pages/admin/Meetings/AttendanceDashboard"));
 const GlobalAttendance = lazyWithRetry(() => import("./pages/admin/Meetings/GlobalAttendance"));
 const ShopList = lazyWithRetry(() => import("./pages/admin/Shops/ShopList"));
+const AddShop = lazyWithRetry(() => import("./pages/admin/Shops/AddShop"));
 const PaymentsDashboard = lazyWithRetry(() => import("./pages/admin/Payments/PaymentsDashboard"));
 const PaymentsHistory = lazyWithRetry(() => import("./pages/admin/Payments/PaymentsHistory"));
 const ComplaintsList = lazyWithRetry(() => import("./pages/admin/Complaints/ComplaintsList"));
@@ -234,6 +235,7 @@ function App() {
 
               {/* Shops */}
               <Route path="shops" element={<ShopList />} />
+              <Route path="shops/add" element={<AddShop />} />
 
               {/* Other admin */}
               <Route path="payments" element={<PaymentsDashboard />} />

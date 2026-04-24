@@ -13,7 +13,7 @@ import {
 import { db, auth } from "../../../firebase/firebaseConfig";
 import toast from "react-hot-toast";
 import axios from "axios";
-import { Bell, Send, Trash2 } from "lucide-react";
+import { Bell, Send, Trash2, AlertTriangle, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface NotificationForm {
@@ -63,6 +63,9 @@ const SendNotification: React.FC = () => {
     });
     const [sending, setSending] = useState<boolean>(false);
     const [sent, setSent] = useState<Notification[]>([]);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+    const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
+    const [deleteButtonPosition, setDeleteButtonPosition] = useState<{ top: number; left: number } | null>(null);
 
     // Load sent notifications
     useEffect(() => {
@@ -76,6 +79,32 @@ const SendNotification: React.FC = () => {
         });
         return unsub;
     }, []);
+
+    // Lock background scroll when modal is open
+    useEffect(() => {
+        if (!showDeleteConfirm) return;
+
+        const preventDefault = (e: Event) => e.preventDefault();
+
+        window.addEventListener("wheel", preventDefault, { passive: false });
+        window.addEventListener("touchmove", preventDefault, { passive: false });
+        const blockKeys = (e: KeyboardEvent) => {
+            const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
+            if (keys.includes(e.key)) e.preventDefault();
+        };
+        window.addEventListener("keydown", blockKeys);
+
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+
+        return () => {
+            window.removeEventListener("wheel", preventDefault);
+            window.removeEventListener("touchmove", preventDefault);
+            window.removeEventListener("keydown", blockKeys);
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
+        };
+    }, [showDeleteConfirm]);
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -120,16 +149,41 @@ const SendNotification: React.FC = () => {
         }
     };
 
-    const deleteNotification = async (id: string) => {
-        if (!window.confirm(t("notifications.history.deleteConfirm"))) return;
+    const handleDelete = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
+        const buttonRect = event.currentTarget.getBoundingClientRect();
+        const buttonTop = buttonRect.top + window.scrollY;
+        
+        // Calculate which group of 3 rows this button belongs to
+        const rowHeight = 150;
+        const groupSize = 3;
+        const groupIndex = Math.floor(buttonTop / (rowHeight * groupSize));
+        
+        // Position card at the center of this group
+        const groupCenterY = (groupIndex * rowHeight * groupSize) + (rowHeight * groupSize / 2);
+        
+        setDeleteButtonPosition({
+            top: groupCenterY,
+            left: 0
+        });
+        setSelectedNotificationId(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!selectedNotificationId) return;
+        setShowDeleteConfirm(false);
+        setDeleteButtonPosition(null);
+
         try {
-            await deleteDoc(doc(db, "notifications", id));
+            await deleteDoc(doc(db, "notifications", selectedNotificationId));
             toast.success(t("notifications.toasts.deleted"));
         } catch (err: any) {
             console.error("[deleteNotification] Error:", err);
             toast.error(
                 `Failed to delete notification: ${err.message || "Permission denied"}`,
             );
+        } finally {
+            setSelectedNotificationId(null);
         }
     };
 
@@ -316,7 +370,7 @@ const SendNotification: React.FC = () => {
                                                 {n.title}
                                             </p>
                                             <button
-                                                onClick={() => deleteNotification(n.id)}
+                                                onClick={(e) => handleDelete(e, n.id)}
                                                 className="shrink-0 p-2.5 rounded-xl bg-white/80 text-red-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-rose-100/50"
                                                 title={t("common.delete")}
                                             >
@@ -353,6 +407,45 @@ const SendNotification: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && deleteButtonPosition && (
+                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in" onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); setSelectedNotificationId(null); }}>
+                    <div 
+                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
+                        style={{
+                            top: `${deleteButtonPosition.top}px`,
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
+                            <AlertTriangle className="text-red-600" size={32} />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
+                            {t("notifications.history.deleteConfirm")}
+                        </h2>
+                        <p className="text-sm text-slate-600 text-center mb-6">
+                            {t("memberDetail.deleteWarning") || "This action cannot be undone. The notification will be permanently removed."}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); setSelectedNotificationId(null); }}
+                                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                            >
+                                {t("common.cancel") || "Cancel"}
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                            >
+                                {t("common.delete") || "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

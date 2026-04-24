@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation, Trans } from "react-i18next";
 import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -24,6 +24,9 @@ interface MemberDoc extends DocumentData {
     attendanceCount?: number;
 }
 
+const MODAL_HEIGHT = 320; // approximate delete confirm modal height
+const MODAL_MARGIN = 16;
+
 const MemberList: React.FC = () => {
     const { t, i18n } = useTranslation();
     const [members, setMembers] = useState<MemberDoc[]>([]);
@@ -32,8 +35,13 @@ const MemberList: React.FC = () => {
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
     const [showBulkConfirm, setShowBulkConfirm] = useState<boolean>(false);
     const [bulkConfirmText, setBulkConfirmText] = useState<string>("");
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+    const [memberToDelete, setMemberToDelete] = useState<{ id: string; name: string } | null>(null);
+    const [deleteModalPosition, setDeleteModalPosition] = useState<{ top: number } | null>(null);
     // Track which member is currently being toggled (prevents double-clicks)
     const [togglingId, setTogglingId] = useState<string | null>(null);
+
+    const deleteModalRef = useRef<HTMLDivElement>(null);
 
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -41,7 +49,7 @@ const MemberList: React.FC = () => {
 
     // Lock ALL scroll when modal is open
     useEffect(() => {
-        if (!showBulkConfirm) return;
+        if (!showBulkConfirm && !showDeleteConfirm) return;
 
         const preventDefault = (e: Event) => e.preventDefault();
 
@@ -67,7 +75,7 @@ const MemberList: React.FC = () => {
             document.body.style.overflow = "";
             document.documentElement.style.overflow = "";
         };
-    }, [showBulkConfirm]);
+    }, [showBulkConfirm, showDeleteConfirm]);
 
     useEffect(() => {
         setLoading(true);
@@ -238,15 +246,54 @@ const MemberList: React.FC = () => {
         }
     };
 
-    const handleDelete = async (id: string | undefined, name: string | undefined) => {
+    const handleDelete = async (
+        id: string | undefined,
+        name: string | undefined,
+        event: React.MouseEvent<HTMLButtonElement>
+    ) => {
         if (!id) return;
-        if (!window.confirm(t("memberList.removePermanently", { name }))) return;
-        
+
+        const buttonRect = event.currentTarget.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+
+        // Center modal vertically on the clicked button
+        let top = buttonRect.top + buttonRect.height / 2 - MODAL_HEIGHT / 2;
+
+        // Clamp so modal never goes above or below viewport bounds
+        top = Math.max(MODAL_MARGIN, Math.min(top, viewportHeight - MODAL_HEIGHT - MODAL_MARGIN));
+
+        setDeleteModalPosition({ top });
+        setMemberToDelete({ id, name: name || "Member" });
+        setShowDeleteConfirm(true);
+    };
+
+    // After modal mounts, re-clamp based on actual rendered height
+    useEffect(() => {
+        if (!showDeleteConfirm || !deleteModalRef.current || !deleteModalPosition) return;
+
+        const actualHeight = deleteModalRef.current.offsetHeight;
+        const viewportHeight = window.innerHeight;
+
+        let top = deleteModalPosition.top;
+        top = Math.max(MODAL_MARGIN, Math.min(top, viewportHeight - actualHeight - MODAL_MARGIN));
+
+        if (top !== deleteModalPosition.top) {
+            setDeleteModalPosition({ top });
+        }
+    }, [showDeleteConfirm]);
+
+    const confirmDelete = async () => {
+        if (!memberToDelete) return;
+        setShowDeleteConfirm(false);
+        setDeleteModalPosition(null);
+
         try {
-            await membersApi.delete(id);
-            toast.success(t("memberList.memberRemoved", { name }));
+            await membersApi.delete(memberToDelete.id);
+            toast.success(t("memberList.memberRemoved", { name: memberToDelete.name }));
         } catch (err: any) {
             toast.error(err.message || "Failed to delete member");
+        } finally {
+            setMemberToDelete(null);
         }
     };
 
@@ -273,12 +320,64 @@ const MemberList: React.FC = () => {
 
     return (
         <>
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && memberToDelete && deleteModalPosition && (
+                <div
+                    className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in"
+                    onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setMemberToDelete(null);
+                        setDeleteModalPosition(null);
+                    }}
+                >
+                    <div
+                        ref={deleteModalRef}
+                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
+                        style={{
+                            top: `${deleteModalPosition.top}px`,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            maxHeight: `calc(100vh - ${MODAL_MARGIN * 2}px)`,
+                            overflowY: "auto",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
+                            <AlertTriangle className="text-red-600" size={32} />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
+                            {t("memberList.removePermanently", { name: memberToDelete.name })}
+                        </h2>
+                        <p className="text-sm text-slate-600 text-center mb-6">
+                            {t("memberDetail.deleteWarning") || "This action cannot be undone. All member data will be permanently removed."}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowDeleteConfirm(false);
+                                    setMemberToDelete(null);
+                                }}
+                                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                            >
+                                {t("common.cancel") || "Cancel"}
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                            >
+                                {t("common.delete") || "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Bulk Deletion Modal */}
             {showBulkConfirm && (
                 <div className="fixed inset-0 z-100 backdrop-blur-md animate-fade-in">
                     <div className="absolute inset-0 flex items-start justify-center p-4 pt-8 sm:pt-12">
                         <div className="bg-white rounded-4xl shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
-                        <button 
+                        <button
                             onClick={() => setShowBulkConfirm(false)}
                             className="absolute top-4 sm:top-8 right-4 sm:right-8 text-slate-400 hover:text-slate-600 transition-colors z-50 p-2"
                             title={t("common.close")}
@@ -297,28 +396,28 @@ const MemberList: React.FC = () => {
                                 You are about to permanently delete <span className="text-red-600">{members.length} members</span>. This will remove all their data and login access. This action <span className="underline decoration-red-200 decoration-4 underline-offset-4">cannot be undone</span>.
                             </Trans>
                         </p>
-                        
+
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">{t("memberList.dangerZone.verifyLabel")}</label>
-                                <input 
-                                    type="text" 
+                                <input
+                                    type="text"
                                     value={bulkConfirmText}
                                     onChange={(e) => setBulkConfirmText(e.target.value)}
                                     placeholder={t("memberList.dangerZone.placeholder")}
                                     className="input-field w-full py-4 px-6 bg-slate-50 border-slate-200 focus:border-red-500 rounded-2xl font-black text-red-600 text-center tracking-widest uppercase transition-all"
                                 />
                             </div>
-                            
+
                             <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                                <button 
+                                <button
                                     onClick={() => { setShowBulkConfirm(false); setBulkConfirmText(""); }}
                                     className="btn-secondary flex-1 py-4 font-bold rounded-2xl hover:bg-slate-50"
                                     disabled={isDeleting}
                                 >
                                     {t("common.cancel")}
                                 </button>
-                                <button 
+                                <button
                                     onClick={handleBulkDelete}
                                     className="bg-red-600 text-white font-black flex-1 py-4 rounded-2xl shadow-lg shadow-red-100 hover:shadow-red-200 hover:bg-red-700 transition-all flex items-center justify-center gap-2"
                                     disabled={isDeleting || bulkConfirmText !== "DELETE ALL"}
@@ -342,22 +441,22 @@ const MemberList: React.FC = () => {
                     </h1>
                 </div>
                 <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:items-center">
-                    <button 
-                        onClick={() => setShowBulkConfirm(true)} 
+                    <button
+                        onClick={() => setShowBulkConfirm(true)}
                         className="group h-12 w-full justify-center px-5 rounded-2xl glass-card border border-red-200/50 text-red-600 hover:bg-red-50 transition-all flex items-center gap-2 shadow-sm font-bold text-sm sm:w-auto"
                     >
-                         <Trash2 size={18} className="transition-transform group-hover:scale-110" /> 
+                         <Trash2 size={18} className="transition-transform group-hover:scale-110" />
                         <span>{t("memberList.bulkCleanup")}</span>
                     </button>
                     <Link to="/admin/members/add" className="h-12 w-full justify-center px-6 rounded-2xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 sm:w-auto">
-                        <Plus size={20} strokeWidth={2.5} /> 
+                        <Plus size={20} strokeWidth={2.5} />
                         <span>{t("memberList.addMember")}</span>
                     </Link>
                 </div>
             </div>
 
-                        <div className="glass-card rounded-2xl sm:rounded-3xl border border-white/15 p-3.5 sm:p-4"
-                            style={{ background: "rgba(255, 255, 255, 0.18)" }}
+            <div className="glass-card rounded-2xl sm:rounded-3xl border border-white/15 p-3.5 sm:p-4"
+                style={{ background: "rgba(255, 255, 255, 0.18)" }}
             >
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="flex items-center gap-2 text-slate-400">
@@ -423,8 +522,7 @@ const MemberList: React.FC = () => {
                 </div>
             </div>
 
-            <div className="rounded-4xl overflow-hidden"
-            >
+            <div className="rounded-4xl overflow-hidden">
             <div className="space-y-4">
                 {loading ? (
                     <div className="p-8">
@@ -533,7 +631,7 @@ const MemberList: React.FC = () => {
                                             </button>
                                         )}
                                         <button
-                                            onClick={() => handleDelete(m.id || m.uid, m.name)}
+                                            onClick={(e) => handleDelete(m.id || m.uid, m.name, e)}
                                             className="h-12 sm:h-10 min-w-0 px-1.5 sm:px-2 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[11px] sm:text-xs leading-tight text-center hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-lg active:shadow-red-200/70"
                                             title={t("memberList.delete")}
                                         >

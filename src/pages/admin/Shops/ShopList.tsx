@@ -6,15 +6,12 @@ import {
   onSnapshot,
   query,
   orderBy,
-  addDoc,
-  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { QRCodeSVG } from "qrcode.react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Plus, Store, QrCode, Download } from "lucide-react";
-import { toPng } from "html-to-image";
 interface Shop {
   id: string;
   shopName: string;
@@ -24,25 +21,11 @@ interface Shop {
   createdAt?: any;
 }
 
-interface ShopForm {
-  shopName: string;
-  ownerName: string;
-  address: string;
-  phone: string;
-}
-
 const ShopList: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [shops, setShops] = useState<Shop[]>([]);
-  const [showForm, setShowForm] = useState<boolean>(false);
-  const [submitting, setSubmitting] = useState<boolean>(false);
   const [, forceUpdate] = useState({});
-  const [form, setForm] = useState<ShopForm>({
-    shopName: "",
-    ownerName: "",
-    address: "",
-    phone: "",
-  });
 
   // Force re-render when language changes
   useEffect(() => {
@@ -178,24 +161,6 @@ const ShopList: React.FC = () => {
       img.src = url;
     };
   };
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const shopsRef = collection(db, "shops");
-      await addDoc(shopsRef, {
-        ...form,
-        createdAt: serverTimestamp(),
-      });
-      toast.success(t("shopList.toasts.success"));
-      setShowForm(false);
-      setForm({ shopName: "", ownerName: "", address: "", phone: "" });
-    } catch (err: any) {
-      toast.error(t("shopList.toasts.error", { error: err.message || "" }));
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -213,111 +178,13 @@ const ShopList: React.FC = () => {
           </div>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
-          className={`h-12 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg ${
-            showForm
-              ? "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-              : "bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5"
-          }`}
+          onClick={() => navigate("/admin/shops/add")}
+          className="h-12 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5"
         >
-          {showForm ? (
-            <Plus className="rotate-45 transition-transform" />
-          ) : (
-            <Plus />
-          )}
-          <span>{showForm ? t("shopList.cancelRegistration") : t("shopList.registerNew")}</span>
+          <Plus />
+          <span>{t("shopList.registerNew")}</span>
         </button>
       </div>
-
-      {/* Add Shop Form */}
-      {showForm && (
-        <div
-          className="glass-card rounded-4xl border border-white/40 p-8 sm:p-10 premium-shadow animate-slide-up relative overflow-hidden"
-          style={{ background: "rgba(255, 255, 255, 0.7)" }}
-        >
-          <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
-            <Store size={120} />
-          </div>
-          <h2 className="text-[11px] font-black text-indigo-600 mb-8 tracking-[0.2em] uppercase flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            {t("shopList.form.title")}
-          </h2>
-
-          <form onSubmit={handleSubmit} className="relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                  {t("shopList.form.shopName")}
-                </label>
-                <input
-                  value={form.shopName}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, shopName: e.target.value }))
-                  }
-                  required
-                  placeholder={t("shopList.form.placeholders.shopName")}
-                  className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                  {t("shopList.form.proprietorName")}
-                </label>
-                <input
-                  value={form.ownerName}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, ownerName: e.target.value }))
-                  }
-                  required
-                  placeholder={t("shopList.form.placeholders.owner")}
-                  className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                  {t("shopList.form.contact")}
-                </label>
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, phone: e.target.value }))
-                  }
-                  placeholder={t("shopList.form.placeholders.phone")}
-                  className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                  {t("shopList.form.address")}
-                </label>
-                <input
-                  value={form.address}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, address: e.target.value }))
-                  }
-                  placeholder={t("shopList.form.placeholders.address")}
-                  className="w-full h-14 px-6 rounded-2xl bg-white border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-300 shadow-inner"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 h-14 rounded-2xl bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {submitting ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <QrCode size={18} />
-                )}
-                {submitting ? t("shopList.form.processing") : t("shopList.form.submit")}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Shop Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

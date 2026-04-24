@@ -13,6 +13,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { membersApi } from "../../../services/membersService";
 import LoadingSkeleton, { CardSkeleton } from "../../../components/shared/LoadingSkeleton";
 import { useTranslation } from "react-i18next";
+import { assets } from "../../../assets/assets";
 
 interface MemberDoc extends DocumentData {
     id: string;
@@ -65,6 +66,8 @@ const MemberDetail: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [showID, setShowID] = useState<boolean>(false);
     const [isDownloadingID, setIsDownloadingID] = useState<boolean>(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+    const [deleteButtonPosition, setDeleteButtonPosition] = useState<{ top: number; left: number } | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -86,13 +89,11 @@ const MemberDetail: React.FC = () => {
                 }
 
                 if (memberData) {
-                    // Start parallel data fetches
                     const canonicalId = memberData.id;
                     const now = new Date();
                     const currentMonth = now.getMonth() + 1;
                     const currentYear = now.getFullYear();
 
-                    // Parallel execution to maintain performance
                     const [paymentSnap, attSnap, prodSnap, meetSnap] = await Promise.allSettled([
                         getDocs(query(collection(db, "payments"), where("memberUID", "==", canonicalId), where("month", "==", currentMonth), where("year", "==", currentYear))),
                         getDocs(query(collection(db, "attendance"), where("memberUID", "==", canonicalId))),
@@ -100,13 +101,12 @@ const MemberDetail: React.FC = () => {
                         getDocs(collection(db, "meetings"))
                     ]);
 
-                    // Assign dynamic paymentStatus based on whether a payment record exists for current month
                     if (paymentSnap.status === 'fulfilled') {
                         memberData.paymentStatus = !paymentSnap.value.empty ? "paid" : "unpaid";
                     } else {
-                        memberData.paymentStatus = "unpaid"; // fallback if error
+                        memberData.paymentStatus = "unpaid";
                     }
-                    
+
                     setMember(memberData);
 
                     if (attSnap.status === 'fulfilled') {
@@ -138,39 +138,30 @@ const MemberDetail: React.FC = () => {
         fetchData();
     }, [id]);
 
-    // Lock background scroll while Digital ID modal is open.
     useEffect(() => {
-        if (!showID) return;
+        if (!showID && !showDeleteConfirm) return;
 
-        const scrollY = window.scrollY;
-        const previousBodyOverflow = document.body.style.overflow;
-        const previousBodyPosition = document.body.style.position;
-        const previousBodyTop = document.body.style.top;
-        const previousBodyLeft = document.body.style.left;
-        const previousBodyRight = document.body.style.right;
-        const previousBodyWidth = document.body.style.width;
-        const previousHtmlOverflow = document.documentElement.style.overflow;
+        const preventDefault = (e: Event) => e.preventDefault();
 
-        // Freeze page exactly where it is (prevents background movement on mobile).
+        window.addEventListener("wheel", preventDefault, { passive: false });
+        window.addEventListener("touchmove", preventDefault, { passive: false });
+        const blockKeys = (e: KeyboardEvent) => {
+            const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
+            if (keys.includes(e.key)) e.preventDefault();
+        };
+        window.addEventListener("keydown", blockKeys);
+
         document.body.style.overflow = "hidden";
-        document.body.style.position = "fixed";
-        document.body.style.top = `-${scrollY}px`;
-        document.body.style.left = "0";
-        document.body.style.right = "0";
-        document.body.style.width = "100%";
         document.documentElement.style.overflow = "hidden";
 
         return () => {
-            document.body.style.overflow = previousBodyOverflow;
-            document.body.style.position = previousBodyPosition;
-            document.body.style.top = previousBodyTop;
-            document.body.style.left = previousBodyLeft;
-            document.body.style.right = previousBodyRight;
-            document.body.style.width = previousBodyWidth;
-            document.documentElement.style.overflow = previousHtmlOverflow;
-            window.scrollTo(0, scrollY);
+            window.removeEventListener("wheel", preventDefault);
+            window.removeEventListener("touchmove", preventDefault);
+            window.removeEventListener("keydown", blockKeys);
+            document.body.style.overflow = "";
+            document.documentElement.style.overflow = "";
         };
-    }, [showID]);
+    }, [showID, showDeleteConfirm]);
 
     const toggleBlock = () => {
         if (!member) return;
@@ -188,7 +179,7 @@ const MemberDetail: React.FC = () => {
         }
 
         setMember((p) => (p ? { ...p, ...updatePayload } : null));
-        
+
         let toastMsg = "";
         if (actionText === "approved") toastMsg = t("memberList.memberApproved");
         else if (actionText === "blocked") toastMsg = t("memberDetail.toastBlocked");
@@ -210,11 +201,30 @@ const MemberDetail: React.FC = () => {
         })();
     };
 
-    const handleDelete = () => {
+    const handleDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
         if (!member) return;
-        if (!window.confirm(t("memberDetail.deleteConfirm"))) return;
 
-        toast.success(t("memberList.blocking")); // Reusing blocking string for background process msg
+        const buttonRect = event.currentTarget.getBoundingClientRect();
+        const buttonTop = buttonRect.top + window.scrollY;
+
+        const rowHeight = 150;
+        const groupSize = 3;
+        const groupIndex = Math.floor(buttonTop / (rowHeight * groupSize));
+        const groupCenterY = (groupIndex * rowHeight * groupSize) + (rowHeight * groupSize / 2);
+
+        setDeleteButtonPosition({
+            top: groupCenterY,
+            left: 0
+        });
+
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = () => {
+        if (!member) return;
+        setShowDeleteConfirm(false);
+        setDeleteButtonPosition(null);
+        toast.success(t("memberList.blocking"));
         navigate("/admin/members");
 
         membersApi.delete(member.id).then(() => {
@@ -226,9 +236,6 @@ const MemberDetail: React.FC = () => {
     };
 
     const handlePrintID = () => {
-        console.log("PRINT CLICKED");
-        console.log("REF:", idCardRef.current);
-
         const buildCaptureCanvas = async () => {
             if (!idCardRef.current || !member) return null;
 
@@ -239,54 +246,48 @@ const MemberDetail: React.FC = () => {
             const yearSafe = escapeHtml(String(memberSince));
             const photoUrl = member.photoURL || "";
 
+            const CARD_W = 380;
             const host = document.createElement("div");
-            host.style.position = "fixed";
-            host.style.left = "-99999px";
-            host.style.top = "0";
-            host.style.width = "420px";
-            host.style.height = "auto";
-            host.style.zIndex = "-1";
-            host.style.pointerEvents = "none";
-            host.style.background = "#ffffff";
+            host.style.cssText = `position:fixed;left:-99999px;top:0;width:${CARD_W}px;background:#ffffff;padding:0;margin:0;`;
 
             host.innerHTML = `
-                <div style="all: initial; box-sizing: border-box; width: 420px; border-radius: 24px; overflow: hidden; border: 1px solid #1e293b; background: #020617; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.12);">
-                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-                            <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.12);"></div>
-                            <div style="min-width:0;">
-                                <div style="font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:#e2e8f0; white-space:nowrap;">BCTA MEMBER</div>
-                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">${t("memberDetail.digitalIdentityPass")}</div>
+                <div style="box-sizing:border-box;width:${CARD_W}px;border-radius:20px;overflow:hidden;border:1px solid #1e293b;background:#020617;color:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+                    <div style="box-sizing:border-box;width:100%;display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.12);">
+                        <div style="display:flex;align-items:center;gap:7px;overflow:hidden;max-width:240px;">
+                            <div style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,0.12);flex-shrink:0;"></div>
+                            <div style="overflow:hidden;">
+                                <div style="font-size:9px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;">BCTA MEMBER</div>
+                                <div style="font-size:9px;font-weight:600;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;">${t("memberDetail.digitalIdentityPass")}</div>
                             </div>
                         </div>
-                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">${t("memberDetail.verified")}</div>
+                        <div style="font-size:9px;font-weight:700;color:#34d399;border:1px solid rgba(255,255,255,0.12);border-radius:999px;padding:3px 8px;background:rgba(255,255,255,0.1);white-space:nowrap;flex-shrink:0;">${t("memberDetail.verified")}</div>
                     </div>
 
-                    <div style="padding:16px;">
-                        <div style="display:flex; gap:14px; align-items:flex-start;">
-                            <div style="width:88px; height:88px; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.15); background:#1e1b4b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:700; text-transform:uppercase;">
-                                ${photoUrl ? `<img src="${photoUrl}" crossorigin="anonymous" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:cover;"/>` : escapeHtml((member.name?.[0] || "M").toUpperCase())}
+                    <div style="box-sizing:border-box;width:100%;padding:14px;">
+                        <div style="display:flex;gap:12px;align-items:flex-start;width:100%;box-sizing:border-box;">
+                            <div style="width:76px;height:76px;min-width:76px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.15);background:#1e1b4b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;text-transform:uppercase;">
+                                ${photoUrl ? `<img src="${photoUrl}" crossorigin="anonymous" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;"/>` : escapeHtml((member.name?.[0] || "M").toUpperCase())}
                             </div>
-                            <div style="flex:1; min-width:0;">
-                                <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.15; word-break:break-word;">${fullNameSafe}</div>
-                                <div style="margin-top:6px; font-size:11px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#a5b4fc; word-break:break-all;">${memberIdSafe}</div>
-                                <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
-                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px; text-transform:capitalize;">${statusSafe}</span>
-                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px;">${yearSafe}</span>
+                            <div style="flex:1;min-width:0;max-width:${CARD_W - 76 - 12 - 28}px;box-sizing:border-box;overflow:hidden;">
+                                <div style="font-size:16px;font-weight:800;color:#ffffff;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${fullNameSafe}</div>
+                                <div style="margin-top:5px;font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#a5b4fc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${memberIdSafe}</div>
+                                <div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap;">
+                                    <span style="font-size:8px;font-weight:600;color:#e2e8f0;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);border-radius:999px;padding:2px 7px;text-transform:capitalize;white-space:nowrap;">${statusSafe}</span>
+                                    <span style="font-size:8px;font-weight:600;color:#e2e8f0;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);border-radius:999px;padding:2px 7px;white-space:nowrap;">${yearSafe}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div style="display:flex; justify-content:center; margin-top:16px;">
-                            <div style="border-radius:16px; border:1px solid rgba(255,255,255,0.2); background:#ffffff; padding:14px;">
-                                ${qrSvg || `<div style='width:140px; height:140px; display:flex; align-items:center; justify-content:center; color:#0f172a; font-size:12px;'>QR</div>`}
+                        <div style="display:flex;justify-content:center;margin-top:14px;">
+                            <div style="border-radius:14px;border:1px solid rgba(255,255,255,0.2);background:#ffffff;padding:12px;display:inline-block;">
+                                ${qrSvg || `<div style='width:120px;height:120px;display:flex;align-items:center;justify-content:center;color:#0f172a;font-size:12px;'>QR</div>`}
                             </div>
                         </div>
 
-                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">${t("memberDetail.securedThrough")}</div>
-                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">${t("memberDetail.validForYear", { year: new Date().getFullYear() })}</div>
+                        <div style="margin-top:12px;text-align:center;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);">${t("memberDetail.securedThrough")}</div>
+                        <div style="margin-top:3px;text-align:center;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);">${t("memberDetail.validForYear", { year: new Date().getFullYear() })}</div>
                     </div>
-                    <div style="height:6px; background:linear-gradient(90deg, #1e1b4b, #4f46e5, #1e1b4b);"></div>
+                    <div style="height:5px;background:linear-gradient(90deg,#1e1b4b,#4f46e5,#1e1b4b);"></div>
                 </div>
             `;
 
@@ -328,11 +329,11 @@ const MemberDetail: React.FC = () => {
                             <style>
                                 html, body { margin: 0; padding: 0; background: #ffffff; }
                                 body { display: flex; justify-content: center; align-items: flex-start; padding: 20px; }
-                                img { width: 420px; max-width: 100%; height: auto; display: block; }
+                                img { width: 380px; max-width: 100%; height: auto; display: block; }
                                 @media print {
                                     @page { size: A4 portrait; margin: 10mm; }
                                     body { padding: 0; }
-                                    img { width: 420px; }
+                                    img { width: 380px; }
                                 }
                             </style>
                         </head>
@@ -342,14 +343,12 @@ const MemberDetail: React.FC = () => {
                                 (function () {
                                     var card = document.getElementById('printCard');
                                     var printed = false;
-
                                     function runPrint() {
                                         if (printed) return;
                                         printed = true;
                                         window.focus();
                                         window.print();
                                     }
-
                                     if (card && card.complete) {
                                         runPrint();
                                     } else if (card) {
@@ -358,7 +357,6 @@ const MemberDetail: React.FC = () => {
                                     } else {
                                         runPrint();
                                     }
-
                                     window.addEventListener('afterprint', function () {
                                         window.close();
                                     }, { once: true });
@@ -377,119 +375,265 @@ const MemberDetail: React.FC = () => {
         void runPrint();
     };
 
+    // ─── FIXED handleDownloadID ────────────────────────────────────────────────
     const handleDownloadID = async () => {
-        console.log("DOWNLOAD CLICKED");
-        console.log("REF:", idCardRef.current);
+        if (!idCardRef.current || !member) return;
 
-        if (!idCardRef.current) return;
-
-        const buildCaptureCanvas = async () => {
-            if (!idCardRef.current || !member) return null;
+        try {
+            setIsDownloadingID(true);
 
             const qrSvg = idCardRef.current.querySelector("svg")?.outerHTML || "";
+
             const fullNameSafe = escapeHtml(`${member.name || ""} ${member.surname || ""}`.trim() || "Member");
             const memberIdSafe = escapeHtml(member.memberId || "MEMBER ID PENDING");
             const statusSafe = escapeHtml(member.status || "unknown");
             const yearSafe = escapeHtml(String(memberSince));
             const photoUrl = member.photoURL || "";
+            const logoUrl = assets.herologo;
 
-            const host = document.createElement("div");
-            host.style.position = "fixed";
-            host.style.left = "-99999px";
-            host.style.top = "0";
-            host.style.width = "420px";
-            host.style.height = "auto";
-            host.style.zIndex = "-1";
-            host.style.pointerEvents = "none";
-            host.style.background = "#ffffff";
-
-            host.innerHTML = `
-                <div style="all: initial; box-sizing: border-box; width: 420px; border-radius: 24px; overflow: hidden; border: 1px solid #1e293b; background: #020617; color: #ffffff; font-family: Arial, Helvetica, sans-serif;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.12);">
-                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-                            <div style="width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,0.12);"></div>
-                            <div style="min-width:0;">
-                                <div style="font-size:10px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; color:#e2e8f0; white-space:nowrap;">BCTA MEMBER</div>
-                                <div style="font-size:10px; font-weight:600; color:#94a3b8;">${t("memberDetail.digitalIdentityPass")}</div>
-                            </div>
-                        </div>
-                        <div style="font-size:10px; font-weight:700; color:#34d399; border:1px solid rgba(255,255,255,0.12); border-radius:999px; padding:4px 8px; background:rgba(255,255,255,0.1);">${t("memberDetail.verified")}</div>
-                    </div>
-
-                    <div style="padding:16px;">
-                        <div style="display:flex; gap:14px; align-items:flex-start;">
-                            <div style="width:88px; height:88px; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.15); background:#1e1b4b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:700; text-transform:uppercase;">
-                                ${photoUrl ? `<img src="${photoUrl}" crossorigin="anonymous" referrerpolicy="no-referrer" style="width:100%; height:100%; object-fit:cover;"/>` : escapeHtml((member.name?.[0] || "M").toUpperCase())}
-                            </div>
-                            <div style="flex:1; min-width:0;">
-                                <div style="font-size:22px; font-weight:800; color:#ffffff; line-height:1.15; word-break:break-word;">${fullNameSafe}</div>
-                                <div style="margin-top:6px; font-size:11px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#a5b4fc; word-break:break-all;">${memberIdSafe}</div>
-                                <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
-                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px; text-transform:capitalize;">${statusSafe}</span>
-                                    <span style="font-size:10px; font-weight:600; color:#e2e8f0; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); border-radius:999px; padding:2px 8px;">${yearSafe}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style="display:flex; justify-content:center; margin-top:16px;">
-                            <div style="border-radius:16px; border:1px solid rgba(255,255,255,0.2); background:#ffffff; padding:14px;">
-                                ${qrSvg || `<div style='width:140px; height:140px; display:flex; align-items:center; justify-content:center; color:#0f172a; font-size:12px;'>QR</div>`}
-                            </div>
-                        </div>
-
-                        <div style="margin-top:14px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">${t("memberDetail.securedThrough")}</div>
-                        <div style="margin-top:4px; text-align:center; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.45);">${t("memberDetail.validForYear", { year: new Date().getFullYear() })}</div>
-                    </div>
-                    <div style="height:6px; background:linear-gradient(90deg, #1e1b4b, #4f46e5, #1e1b4b);"></div>
-                </div>
+            const exportCard = document.createElement("div");
+            exportCard.style.cssText = `
+                position: fixed;
+                left: -9999px;
+                top: 0;
+                width: 340px;
             `;
 
-            document.body.appendChild(host);
-            try {
-                const { default: html2canvas } = await import("html2canvas");
-                return await html2canvas(host.firstElementChild as HTMLElement, {
-                    backgroundColor: "#ffffff",
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    logging: false,
-                });
-            } finally {
-                host.remove();
-            }
-        };
+            exportCard.innerHTML = `
+            <div style="
+                width: 340px;
+                border-radius: 20px;
+                overflow: hidden;
+                border: 2px solid #1e293b;
+                background: #020617;
+                color: #ffffff;
+                font-family: Arial, Helvetica, sans-serif;
+                box-sizing: border-box;
+            ">
+                <!-- HEADER -->
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 16px;
+                    border-bottom: 1px solid rgba(255,255,255,0.12);
+                ">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="
+                            width:44px;height:44px;
+                            border-radius:14px;
+                            background:#fff;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            overflow:hidden;
+                        ">
+                            <img src="${logoUrl}" crossorigin="anonymous"
+                            style="width:100%;height:100%;object-fit:contain;padding:6px;" />
+                        </div>
 
-        try {
-            setIsDownloadingID(true);
-            const canvas = await buildCaptureCanvas();
-            if (!canvas) return;
-            const safeName = `${member?.name || "member"}-${member?.surname || "id"}`.replace(/\s+/g, "-").toLowerCase();
-            const fileName = `${safeName}-digital-id.png`;
+                        <div>
+                            <div style="
+                                font-size:12px;
+                                font-weight:800;
+                                letter-spacing:0.15em;
+                                text-transform:uppercase;
+                                color:#ffffff;
+                            ">
+                                BCTA MEMBER
+                            </div>
+                            <div style="
+                                font-size:11px;
+                                font-weight:600;
+                                color:#cbd5f5;
+                            ">
+                                Digital Identity Pass
+                            </div>
+                        </div>
+                    </div>
 
-            const blob = await new Promise<Blob>((resolve, reject) => {
-                canvas.toBlob((result) => {
-                    if (result) resolve(result);
-                    else reject(new Error("Unable to generate image blob"));
-                }, "image/png");
+                    <div style="
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        text-align:center;
+                        font-size:10px;
+                        font-weight:700;
+                        color:#34d399;
+                        padding:6px 12px;
+                        border-radius:999px;
+                        background:rgba(255,255,255,0.1);
+                        line-height:1;
+                    ">
+                        Verified
+                    </div>
+                </div>
+
+                <!-- BODY -->
+                <div style="padding:18px;">
+                    
+                    <!-- PROFILE -->
+                    <div style="display:flex; gap:12px; margin-bottom:16px;">
+                        
+                        <!-- AVATAR -->
+                        <div style="
+                            width:75px;height:75px;
+                            border-radius:16px;
+                            background:#1e1b4b;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            color:#fff;
+                            font-size:32px;
+                            font-weight:700;
+                            text-transform:uppercase;
+                        ">
+                            ${
+                                photoUrl
+                                ? `<img src="${photoUrl}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;" />`
+                                : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;line-height:1;font-size:32px;position:relative;top:1px;">${escapeHtml((member.name?.[0] || "M").toUpperCase())}</span>`
+                            }
+                        </div>
+
+                        <!-- TEXT -->
+                        <div style="flex:1;">
+                            <div style="
+                                font-size:17px;
+                                font-weight:800;
+                                line-height:1.3;
+                                word-break:break-word;
+                            ">
+                                ${fullNameSafe}
+                            </div>
+
+                            <div style="
+                                font-size:11px;
+                                font-weight:800;
+                                color:#a5b4fc;
+                                margin-top:4px;
+                                margin-bottom:8px;
+                            ">
+                                ${memberIdSafe}
+                            </div>
+
+                            <!-- STATUS ALIGNED WITH NAME -->
+                            <div style="
+                                display:flex;
+                                justify-content:flex-start;
+                                gap:6px;
+                                margin-top:6px;
+                            ">
+                                <span style="
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    text-align:center;
+                                    font-size:10px;
+                                    font-weight:600;
+                                    padding:4px 12px;
+                                    border-radius:999px;
+                                    border:1px solid rgba(255,255,255,0.15);
+                                    background:rgba(255,255,255,0.08);
+                                    min-height:24px;
+                                    line-height:1;
+                                ">
+                                    ${statusSafe}
+                                </span>
+
+                                <span style="
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    text-align:center;
+                                    font-size:10px;
+                                    font-weight:600;
+                                    padding:4px 12px;
+                                    border-radius:999px;
+                                    border:1px solid rgba(255,255,255,0.15);
+                                    background:rgba(255,255,255,0.08);
+                                    min-height:24px;
+                                    line-height:1;
+                                ">
+                                    ${yearSafe}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QR -->
+                    <div style="display:flex; justify-content:center; margin-bottom:14px;">
+                        <div style="
+                            background:#fff;
+                            padding:14px;
+                            border-radius:16px;
+                        ">
+                            ${qrSvg}
+                        </div>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div style="text-align:center;">
+                        <div style="
+                            font-size:9px;
+                            color:rgba(255,255,255,0.5);
+                            margin-bottom:4px;
+                        ">
+                            SECURED THROUGH BCTA DIGITAL IDENTITY
+                        </div>
+                        <div style="
+                            font-size:9px;
+                            color:rgba(255,255,255,0.5);
+                        ">
+                            VALID FOR ${new Date().getFullYear()} FISCAL YEAR
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BAR -->
+                <div style="
+                    height:6px;
+                    background:linear-gradient(90deg,#1e1b4b,#4f46e5,#1e1b4b);
+                "></div>
+            </div>
+            `;
+
+            document.body.appendChild(exportCard);
+
+            await new Promise(r => setTimeout(r, 300));
+
+            const { default: html2canvas } = await import("html2canvas");
+
+            const canvas = await html2canvas(exportCard.firstElementChild as HTMLElement, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: "#020617",
             });
 
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            document.body.removeChild(exportCard);
+
+            const { default: jsPDF } = await import("jspdf");
+
+            const pdf = new jsPDF({
+                unit: "px",
+                format: [canvas.width + 40, canvas.height + 40],
+            });
+
+            pdf.addImage(canvas.toDataURL("image/png"), "PNG", 20, 20, canvas.width, canvas.height);
+
+            const safeName = `${member?.name || "member"}-${member?.surname || "id"}`
+                .replace(/\s+/g, "-")
+                .toLowerCase();
+            pdf.save(`${safeName}-digital-id.pdf`);
 
             toast.success(t("memberDetail.idCardDownloaded"));
-        } catch (error) {
-            console.error("Download failed:", error);
-            toast.error(t("memberDetail.toastDownloadFailed") || "Failed to download ID card");
+        } catch (e) {
+            console.error(e);
+            toast.error(t("memberDetail.toastDownloadFailed") || "Download failed");
         } finally {
             setIsDownloadingID(false);
         }
     };
+    // ─── END FIXED handleDownloadID ───────────────────────────────────────────
 
     if (loading) {
         return (
@@ -596,7 +740,6 @@ const MemberDetail: React.FC = () => {
                 <div className="pointer-events-none absolute -bottom-16 -left-16 h-52 w-52 rounded-full bg-white/10 blur-3xl" />
                 <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
                     <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
-                        {/* Mobile: centered avatar, SM+: left-aligned */}
                         <div className="flex justify-center sm:justify-start">
                             {member.photoURL ? (
                                 <img
@@ -617,9 +760,8 @@ const MemberDetail: React.FC = () => {
                                 <p className="text-sm text-white/80">{member.email || t("memberDetail.noEmail")}</p>
                             </div>
 
-                            {/* Mobile: blood + member ID + member since, SM+: add active status */}
                             <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
-                                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold" style={{...(statusTone ? {borderColor: 'inherit'} : {})}}>
+                                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold">
                                     <ShieldCheck size={12} /> {member.status || "unknown"}
                                 </span>
                                 <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
@@ -633,7 +775,6 @@ const MemberDetail: React.FC = () => {
                                 </span>
                             </div>
 
-                            {/* Mobile hidden, SM+ visible */}
                             <div className="hidden sm:flex flex-wrap items-center gap-2 text-xs text-white/70">
                                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-semibold ${memberIdVerified ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100" : "border-amber-300/40 bg-amber-400/10 text-amber-100"}`}>
                                     {memberIdVerified ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
@@ -646,7 +787,6 @@ const MemberDetail: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Mobile: 3 columns compact, SM: 2 cols, LG: 3 cols */}
                     <div className="grid gap-2 grid-cols-3 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3">
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-2.5 backdrop-blur sm:p-4">
                             <p className="text-[9px] uppercase tracking-[0.18em] text-white/60 sm:text-xs">{t("memberDetail.attendanceInfo")}</p>
@@ -686,7 +826,7 @@ const MemberDetail: React.FC = () => {
                                 { label: t("memberDetail.fullName"), value: fullName || "-" },
                                 { label: t("memberDetail.age"), value: member.age ? t("memberDetail.ageValue", { age: member.age }) : "-" },
                                 { label: t("memberDetail.bloodGroup"), value: member.bloodGroup || "-", icon: Droplet },
-                                { label: t("memberList.meetings"), value: member.email || "-", icon: Mail }, // email but icon says meeting? wait. Icon: Mail.
+                                { label: t("memberList.meetings"), value: member.email || "-", icon: Mail },
                                 { label: t("addMember.phone"), value: member.phone || "-", icon: Phone },
                                 { label: t("memberDetail.aadhaarNumber"), value: member.aadhaarLast4 ? `XXXXXXXX${member.aadhaarLast4}` : "-", icon: ShieldCheck },
                                 { label: t("memberDetail.attendanceInfo"), value: `${attendance.length} / ${meetings.length || 0} ${t("memberList.meetings")}` },
@@ -825,6 +965,44 @@ const MemberDetail: React.FC = () => {
                 </aside>
             </div>
 
+            {showDeleteConfirm && deleteButtonPosition && (
+                <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-lg animate-fade-in" onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); }}>
+                    <div
+                        className="fixed bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up mx-4"
+                        style={{
+                            top: `${deleteButtonPosition.top}px`,
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
+                            <AlertTriangle className="text-red-600" size={32} />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
+                            {t("memberDetail.deleteConfirm")}
+                        </h2>
+                        <p className="text-sm text-slate-600 text-center mb-6">
+                            {t("memberDetail.deleteWarning") || "This action cannot be undone. All member data will be permanently removed."}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); }}
+                                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                            >
+                                {t("common.cancel") || "Cancel"}
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                            >
+                                {t("common.delete") || "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showID && member && (
                 <div className="fixed inset-0 z-100 bg-white/70 backdrop-blur-md animate-fade-in overflow-hidden overscroll-none">
                     <div className="h-full w-full flex items-start justify-center overflow-hidden">
@@ -842,103 +1020,102 @@ const MemberDetail: React.FC = () => {
 
                                 <div ref={idCardRef} className="card p-0! overflow-hidden bg-black border border-white/10 shadow-2xl rounded-[1.6rem] relative" style={{ backgroundColor: "#020617", color: "#ffffff" }}>
                                     <div className="p-2 sm:p-2.5 pr-10 sm:pr-12 flex items-center justify-between border-b border-white/5">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                                            <div className="w-4 h-4 bg-indigo-500 rounded-sm rotate-45" />
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                                                <div className="w-4 h-4 bg-indigo-500 rounded-sm rotate-45" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">{t("common.bctaMember")}</p>
+                                                <p className="text-[10px] font-semibold text-white/55">{t("memberDetail.digitalIdentityPass")}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">{t("common.bctaMember")}</p>
-                                            <p className="text-[10px] font-semibold text-white/55">{t("memberDetail.digitalIdentityPass")}</p>
-                                        </div>
+                                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold bg-white/10 text-emerald-300 border border-white/10">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                            {t("memberDetail.verified")}
+                                        </span>
                                     </div>
-                                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold bg-white/10 text-emerald-300 border border-white/10">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                                        {t("memberDetail.verified")}
-                                    </span>
-                                </div>
 
-                                <div className="p-4 sm:p-5">
-                                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:gap-5">
-                                        <div className="shrink-0">
-                                            <div className="w-18 h-18 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-3xl">
-                                                {member.photoURL ? (
-                                                    <img src={member.photoURL} alt={t("common.userProfile")} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    member.name?.[0]
-                                                )}
+                                    <div className="p-4 sm:p-5">
+                                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:gap-5">
+                                            <div className="shrink-0">
+                                                <div className="w-18 h-18 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-3xl">
+                                                    {member.photoURL ? (
+                                                        <img src={member.photoURL} alt={t("common.userProfile")} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        member.name?.[0]
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-1 flex flex-col justify-center min-w-0">
+                                                <h3 className="text-base sm:text-lg font-black text-white tracking-tight wrap-break-word leading-tight">
+                                                    {member.name} {member.surname}
+                                                </h3>
+                                                <p className="mt-1 text-[10px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.14em] break-all">
+                                                    {member.memberId || t("memberDetail.memberIdStatus")}
+                                                </p>
+                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                    <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
+                                                        {t("common." + (member.status || "unknown"))}
+                                                    </span>
+                                                    <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
+                                                        {memberSince}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex-1 flex flex-col justify-center min-w-0">
-                                            <h3 className="text-base sm:text-lg font-black text-white tracking-tight wrap-break-word leading-tight">
-                                                {member.name} {member.surname}
-                                            </h3>
-                                            <p className="mt-1 text-[10px] sm:text-xs font-black text-indigo-300 uppercase tracking-[0.14em] break-all">
-                                                {member.memberId || t("memberDetail.memberIdStatus")}
+                                        <div className="flex justify-center mb-4">
+                                            <div className="rounded-2xl border border-white/10 bg-white p-3.5 sm:p-5 shadow-sm">
+                                                <div className="sm:hidden">
+                                                    <QRCodeSVG
+                                                        value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
+                                                        size={108}
+                                                        level="H"
+                                                        includeMargin={false}
+                                                        fgColor="#1e1b4b"
+                                                    />
+                                                </div>
+                                                <div className="hidden sm:block">
+                                                    <QRCodeSVG
+                                                        value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
+                                                        size={140}
+                                                        level="H"
+                                                        includeMargin={false}
+                                                        fgColor="#1e1b4b"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="text-center">
+                                            <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em]">
+                                                {t("memberDetail.securedThrough")}
                                             </p>
-                                            <div className="mt-2 flex flex-wrap gap-1.5">
-                                                <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
-                                                    {t("common." + (member.status || "unknown"))}
-                                                </span>
-                                                <span className="text-[9px] font-semibold text-white/80 border border-white/15 bg-white/10 rounded-full px-2 py-0.5">
-                                                    {memberSince}
-                                                </span>
-                                            </div>
+                                            <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em] mt-0.5">
+                                                {t("memberDetail.validForYear", { year: new Date().getFullYear() })}
+                                            </p>
                                         </div>
                                     </div>
-
-                                    <div className="flex justify-center mb-4">
-                                        <div className="rounded-2xl border border-white/10 bg-white p-3.5 sm:p-5 shadow-sm">
-                                            <div className="sm:hidden">
-                                                <QRCodeSVG
-                                                    value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
-                                                    size={108}
-                                                    level="H"
-                                                    includeMargin={false}
-                                                    fgColor="#1e1b4b"
-                                                />
-                                            </div>
-                                            <div className="hidden sm:block">
-                                                <QRCodeSVG
-                                                    value={JSON.stringify({ type: "member", uid: member.id, memberId: member.memberId })}
-                                                    size={140}
-                                                    level="H"
-                                                    includeMargin={false}
-                                                    fgColor="#1e1b4b"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="text-center">
-                                        <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em]">
-                                            {t("memberDetail.securedThrough")}
-                                        </p>
-                                        <p className="text-[8px] text-white/35 font-bold uppercase tracking-[0.14em] mt-0.5">
-                                            {t("memberDetail.validForYear", { year: new Date().getFullYear() })}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="h-1.5 bg-linear-to-r from-[#1e1b4b] via-indigo-600 to-[#1e1b4b] opacity-90" />
+                                    <div className="h-1.5 bg-linear-to-r from-[#1e1b4b] via-indigo-600 to-[#1e1b4b] opacity-90" />
                                 </div>
                             </div>
 
-                            <div className="mt-2 grid grid-cols-3 gap-2 pb-1">
-                                <button onClick={handlePrintID} className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-white text-slate-800 rounded-lg font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none transition-all border border-slate-300 hover:bg-slate-50">
-                                    <span className="truncate block sm:hidden">{t("common.print")}</span>
-                                    <span className="truncate hidden sm:block">{t("memberList.printPass")}</span>
-                                </button>
+                            <div className="mt-4 flex gap-3 pb-2">
                                 <button
                                     onClick={handleDownloadID}
                                     disabled={isDownloadingID}
-                                    className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-slate-900 text-white rounded-lg font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none transition-all border border-slate-900 inline-flex items-center justify-center gap-1 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    className="flex-1 h-11 sm:h-12 px-4 bg-black text-white rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg inline-flex items-center justify-center gap-2 hover:bg-slate-900 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
-                                    <Download size={11} className="shrink-0" />
-                                    <span className="truncate sm:hidden">{isDownloadingID ? t("common.saving") : t("common.save")}</span>
-                                    <span className="truncate hidden sm:inline">{isDownloadingID ? t("common.saving") : t("common.download")}</span>
+                                    <Download size={16} className="shrink-0" />
+                                    <span>{isDownloadingID ? t("Downloading") || "Downloading..." : t("Download") || "Download"}</span>
                                 </button>
-                                <button onClick={() => setShowID(false)} className="min-w-0 w-full h-9 sm:h-10 px-1.5 sm:px-2 bg-white text-slate-900 rounded-lg font-black text-[9px] sm:text-[10px] uppercase tracking-[0.08em] leading-none hover:bg-slate-100 transition-all border border-slate-300">
-                                    {t("common.close")}
+                                <button 
+                                    onClick={() => setShowID(false)} 
+                                    className="flex-1 h-11 sm:h-12 px-4 bg-white text-slate-700 rounded-xl font-bold text-xs sm:text-sm hover:bg-slate-50 transition-all shadow-lg border border-slate-200 inline-flex items-center justify-center gap-2 active:scale-95"
+                                >
+                                    <X size={16} className="shrink-0" />
+                                    <span>{t("Close") || "Close"}</span>
                                 </button>
                             </div>
                         </div>
