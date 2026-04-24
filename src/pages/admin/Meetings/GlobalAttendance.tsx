@@ -71,14 +71,35 @@ const GlobalAttendance: React.FC = () => {
         });
 
         mList = mList
-          .map((m) => ({
-            ...m,
-            displayDate: m.date?.toDate
-              ? m.date.toDate().toLocaleDateString(i18n.language === 'te' ? 'te-IN' : 'en-IN')
-              : typeof m.date === "string"
-                ? m.date
-                : t("common.noDate"),
-          }))
+          .map((m) => {
+            let parsedDate;
+            if (m.date?.toDate) {
+              parsedDate = m.date.toDate();
+            } else if (typeof m.date === 'string') {
+              const parts = m.date.split('-');
+              if (parts.length === 3) {
+                 parsedDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+              } else {
+                 parsedDate = new Date(m.date);
+              }
+            } else if (m.date) {
+              parsedDate = new Date(m.date);
+            }
+
+            let displayDate = t("common.noDate");
+            if (parsedDate && !isNaN(parsedDate.getTime())) {
+               const day = String(parsedDate.getDate()).padStart(2, '0');
+               const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+               const month = monthNames[parsedDate.getMonth()];
+               const year = parsedDate.getFullYear();
+               displayDate = `${day}-${month}-${year}`;
+            }
+
+            return {
+              ...m,
+              displayDate
+            };
+          })
           .slice(0, 20); // Show more meetings now that it's structurable
         setMeetings(mList);
 
@@ -145,64 +166,173 @@ const GlobalAttendance: React.FC = () => {
     fetchGlobalData();
   }, []);
 
-  const handleDownloadExcel = () => {
+  const handleDownloadExcel = async () => {
     try {
-      // 1. Prepare Headers
-      const staticHeaders = [
-        t("meetings.globalReport.excel.memberName"),
-        t("meetings.globalReport.excel.memberId"),
-        t("meetings.globalReport.excel.totalPresence")
-      ];
-      const meetingHeaders = meetings.map(
-        (m) => `${m.displayDate} - ${m.topic || (i18n.language === 'te' ? "సమావేశం" : "Meeting")}`,
-      );
-      const headers = [...staticHeaders, ...meetingHeaders];
+      const XLSXStyle = await import("xlsx-js-style");
+      const XLSX = XLSXStyle.default ?? XLSXStyle;
 
-      // 2. Prepare Rows
-      const rows = members.map((member) => {
-        const attendedCount = Object.keys(
-          attendanceMap[member.id] || {},
-        ).length;
-        
-        // Ensure we're using the human-readable BCTA-ID, not the long Firestore UID
-        const row = [member.name || (i18n.language === 'te' ? "తెలియదు" : "Unknown"), member.memberId || (i18n.language === 'te' ? "పెండింగ్‌లో ఉంది" : "Pending"), attendedCount];
+      const wb = XLSX.utils.book_new();
 
-        meetings.forEach((m) => {
-          row.push(attendanceMap[member.id]?.[m.id] ? t("meetings.statsDashboard.present") : t("meetings.statsDashboard.absent"));
-        });
+      // ── Shared styles ───────────────────────────────────────────
+      const BORDER_ALL = {
+        top:    { style: "thin", color: { rgb: "CBD5E1" } },
+        bottom: { style: "thin", color: { rgb: "CBD5E1" } },
+        left:   { style: "thin", color: { rgb: "CBD5E1" } },
+        right:  { style: "thin", color: { rgb: "CBD5E1" } },
+      } as const;
 
-        return row;
+      const headerStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 },
+        fill: { fgColor: { rgb: "4F46E5" }, patternType: "solid" },
+        alignment: { horizontal: "center", vertical: "center", wrapText: true },
+        border: BORDER_ALL,
+      } as const;
+
+      const nameStyle = {
+        font: { bold: true, color: { rgb: "1E293B" }, sz: 10 },
+        alignment: { horizontal: "left", vertical: "center" },
+        border: BORDER_ALL,
+      } as const;
+
+      const idStyle = {
+        font: { color: { rgb: "475569" }, sz: 10 },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: BORDER_ALL,
+      } as const;
+
+      const presentStyle = {
+        font: { bold: true, color: { rgb: "065F46" }, sz: 10 },
+        fill: { fgColor: { rgb: "D1FAE5" }, patternType: "solid" }, // Light Green
+        alignment: { horizontal: "center", vertical: "center" },
+        border: BORDER_ALL,
+      } as const;
+
+      const absentStyle = {
+        font: { bold: true, color: { rgb: "991B1B" }, sz: 10 },
+        fill: { fgColor: { rgb: "FEE2E2" }, patternType: "solid" }, // Light Red
+        alignment: { horizontal: "center", vertical: "center" },
+        border: BORDER_ALL,
+      } as const;
+
+      const totalPresentStyle = {
+        font: { bold: true, color: { rgb: "065F46" }, sz: 11 },
+        fill: { fgColor: { rgb: "A7F3D0" }, patternType: "solid" },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: BORDER_ALL,
+      } as const;
+
+      const totalAbsentStyle = {
+        font: { bold: true, color: { rgb: "991B1B" }, sz: 11 },
+        fill: { fgColor: { rgb: "FECDD3" }, patternType: "solid" },
+        alignment: { horizontal: "center", vertical: "center" },
+        border: BORDER_ALL,
+      } as const;
+
+
+      // Sort meetings chronologically (oldest → newest)
+      const chronoMeetings = [...meetings].sort((a, b) => {
+        const dA = a.date?.toDate ? a.date.toDate() : new Date(a.date || 0);
+        const dB = b.date?.toDate ? b.date.toDate() : new Date(b.date || 0);
+        return dA.getTime() - dB.getTime();
       });
 
-      // 3. Convert to CSV String (Structured with title spacing)
-      const reportTitle = `"${t("meetings.globalReport.excel.reportTitle")} - ${t("meetings.globalReport.excel.generatedOn")}: ${new Date().toLocaleDateString()}"`;
-      
-      const csvContent = [
-        reportTitle, // Custom title for visual spacing in excel
-        "", // Blank line for spacing
-        headers.map(h => `"${h}"`).join(","),
-        ...rows.map((row) =>
-          row.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(","),
-        ),
-      ].join("\n");
+      const matrixData: any[][] = [];
 
-      // 4. Trigger Download
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
+      // Helper function for DD-MMM-YYYY format
+      const formatDate = (dateInput: any) => {
+        let dateObj;
+        if (dateInput?.toDate) {
+            dateObj = dateInput.toDate();
+        } else if (typeof dateInput === 'string' && dateInput.includes('/')) {
+            // handle DD/MM/YYYY format
+            const parts = dateInput.split('/');
+            if(parts.length === 3) {
+              dateObj = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+            } else {
+               dateObj = new Date(dateInput);
+            }
+        } else if (dateInput) {
+            dateObj = new Date(dateInput);
+        } else {
+            return "";
+        }
+        
+        if (isNaN(dateObj.getTime())) return "";
+
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = monthNames[dateObj.getMonth()];
+        const year = dateObj.getFullYear();
+        return `${day}-${month}-${year}`;
+      };
+
+      // Header row
+      const headerRow: any[] = [
+        { v: "Member Name", s: headerStyle },
+        { v: "Member ID", s: headerStyle },
+        ...chronoMeetings.map((m) => ({
+          v: m.date ? formatDate(m.date) : (m.displayDate ? formatDate(m.displayDate) : ""),
+          s: headerStyle,
+        })),
+        { v: "Total Present", s: headerStyle },
+        { v: "Total Absent", s: headerStyle },
+      ];
+      matrixData.push(headerRow);
+
+      // Data rows (one per member)
+      members.forEach((member) => {
+        const att = attendanceMap[member.id] || {};
+        let totalP = 0;
+        let totalA = 0;
+
+        const datesCells = chronoMeetings.map((m) => {
+          const isP = !!att[m.id];
+          if (isP) totalP++; else totalA++;
+          return isP
+            ? { v: "P", s: presentStyle }
+            : { v: "A", s: absentStyle };
+        });
+
+        matrixData.push([
+          { v: member.name || "Unknown", s: nameStyle },
+          { v: member.memberId || "Pending", s: idStyle },
+          ...datesCells,
+          { v: totalP, s: totalPresentStyle },
+          { v: totalA, s: totalAbsentStyle },
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(matrixData);
+
+      // Auto-fit column widths
+      ws["!cols"] = [
+        { wch: 30 }, // Member Name
+        { wch: 18 }, // Member ID
+        ...chronoMeetings.map(() => ({ wch: 12 })), // date columns
+        { wch: 15 }, // Total Present
+        { wch: 15 }, // Total Absent
+      ];
+
+      // Row heights (slightly taller for header)
+      ws["!rows"] = matrixData.map((_, i) => (i === 0 ? { hpt: 30 } : { hpt: 22 }));
+
+      XLSX.utils.book_append_sheet(wb, ws, "Attendance Matrix");
+
+      // Write and download
+      const wbArray = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([wbArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute(
-        "download",
-        `BCTA_Attendance_Report_${new Date().toISOString().split("T")[0]}.csv`,
-      );
-      link.style.visibility = "hidden";
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `BCTA_Attendance_Report_${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
 
       toast.success(t("meetings.globalReport.successToast"));
     } catch (err) {
-      console.error("CSV Export Error:", err);
+      console.error("Excel Export Error:", err);
       toast.error(t("meetings.globalReport.failToast"));
     }
   };

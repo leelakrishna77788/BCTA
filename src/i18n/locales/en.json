@@ -1,5 +1,6 @@
 {
   "common": {
+    "language": "Language",
     "active": "Active",
     "blocked": "Blocked",
     "pending": "Pending",
