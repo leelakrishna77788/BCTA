@@ -60,9 +60,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     let saJson = saEnv.trim();
-    if ((saJson.startsWith("'") && saJson.endsWith("'")) || (saJson.startsWith('"') && saJson.endsWith('"'))) {
-      saJson = saJson.slice(1, -1);
+    // Recursively strip any surrounding quotes (single or double)
+    while ((saJson.startsWith("'") && saJson.endsWith("'")) || (saJson.startsWith('"') && saJson.endsWith('"'))) {
+      saJson = saJson.slice(1, -1).trim();
     }
+    
+    console.log("[api/admin] Parsing service account JSON...");
     const serviceAccount = JSON.parse(saJson);
     if (serviceAccount.private_key) {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
