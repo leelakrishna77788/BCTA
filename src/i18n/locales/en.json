@@ -727,6 +727,7 @@
     }
   },
   "memberDetail": {
+    "relationship":"Relationship",
     "deleteWarning": "Delete Warning",
     "backToMembers": "Back to Members",
     "profileTitle": "Member Profile",

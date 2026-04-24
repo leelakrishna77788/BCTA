@@ -360,7 +360,6 @@ const MemberDetail: React.FC = () => {
         void runPrint();
     };
 
-    // ─── FIXED handleDownloadID ────────────────────────────────────────────────
     const handleDownloadID = async () => {
         if (!idCardRef.current || !member) return;
 
@@ -618,7 +617,6 @@ const MemberDetail: React.FC = () => {
             setIsDownloadingID(false);
         }
     };
-    // ─── END FIXED handleDownloadID ───────────────────────────────────────────
 
     if (loading) {
         return (
@@ -858,7 +856,7 @@ const MemberDetail: React.FC = () => {
                                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-2">{t("memberDetail.nomineeDetails")}</p>
                                     <div className="space-y-1.5">
                                         <div>
-                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{t("addMember.firstName")}</p>
+                                            <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">{t("profile.firstName")}</p>
                                             <p className="text-xs font-semibold text-slate-900 mt-0.5">{member.nomineeDetails.name}</p>
                                         </div>
                                         <div>
@@ -968,7 +966,7 @@ const MemberDetail: React.FC = () => {
                         </p>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => { setShowDeleteConfirm(false); setDeleteButtonPosition(null); }}
+                                onClick={() => setShowDeleteConfirm(false)}
                                 className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
                             >
                                 {t("common.cancel") || "Cancel"}

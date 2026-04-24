@@ -804,6 +804,7 @@
     }
   },
   "memberDetail": {
+    "relationship":"సంబంధం",
     "deleteWarning": "హెచ్చరిక",
     "backToMembers": "సభ్యులకు తిరిగి",
     "profileTitle": "సభ్యుని ప్రొఫైల్",
