@@ -42,14 +42,27 @@ const ShopList: React.FC = () => {
   // Block scroll when any modal is open
   useEffect(() => {
     if (editingId || deletingId || deletingAll) {
-      const preventDefault = (e: Event) => e.preventDefault();
+      const preventDefault = (e: Event) => {
+        const target = e.target as HTMLElement;
+        // Allow scrolling inside textarea FIRST (before any other check)
+        if (target.tagName === 'TEXTAREA') {
+          e.stopPropagation();
+          return;
+        }
+        e.preventDefault();
+      };
 
       // Block mouse wheel
       window.addEventListener("wheel", preventDefault, { passive: false });
-      // Block touch scroll (mobile)
+      // Block touch scroll (mobile) but allow inside textarea
       window.addEventListener("touchmove", preventDefault, { passive: false });
       // Block keyboard scroll (arrow keys, space, page up/down)
       const blockKeys = (e: KeyboardEvent) => {
+        const target = e.target as HTMLElement;
+        // Allow arrow keys in textarea
+        if (target.tagName === 'TEXTAREA') {
+          return;
+        }
         const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
         if (keys.includes(e.key)) e.preventDefault();
       };
@@ -304,18 +317,18 @@ const ShopList: React.FC = () => {
           {shops.length > 0 && (
             <button
               onClick={confirmDeleteAll}
-              className="h-12 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg bg-red-600 text-white shadow-red-200 hover:bg-red-700 hover:shadow-xl hover:-translate-y-0.5"
+              className="h-12 px-4 sm:px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg bg-red-600 text-white shadow-red-200 hover:bg-red-700 hover:shadow-xl hover:-translate-y-0.5"
             >
               <Trash2 size={20} />
-              <span>{t("shopList.deleteAll")}</span>
+              <span className="text-xs sm:text-sm">{t("shopList.deleteAll")}</span>
             </button>
           )}
           <button
             onClick={() => navigate("/admin/shops/add")}
-            className="h-12 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5"
+            className="h-12 px-4 sm:px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5"
           >
             <Plus />
-            <span>{t("shopList.registerNew")}</span>
+            <span className="text-xs sm:text-sm">{t("shopList.registerNew")}</span>
           </button>
         </div>
       </div>
@@ -375,8 +388,6 @@ const ShopList: React.FC = () => {
               )}
             </div>
 
-
-
             {/* ── QR Code ── */}
             <div className="flex justify-center p-8 bg-white border border-slate-100 rounded-3xl mb-6 shadow-inner relative group/qr overflow-hidden">
               <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover/qr:opacity-100 transition-opacity" />
@@ -433,97 +444,103 @@ const ShopList: React.FC = () => {
 
       {/* ── Edit Shop Modal ── */}
       {editingId && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-md animate-fade-in overflow-y-auto"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-md animate-fade-in"
+          style={{ padding: '70px 16px' }}
           onClick={cancelEdit}
         >
-          <div 
-            className="w-full max-w-lg bg-white rounded-3xl premium-shadow border border-slate-200 overflow-hidden relative my-8"
+          <div
+            className="w-full max-w-md bg-white rounded-3xl premium-shadow border border-slate-200 overflow-hidden relative modal-content"
+            style={{ maxHeight: 'calc(100vh - 140px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50 to-transparent rounded-full blur-3xl opacity-50 pointer-events-none" />
-            <div className="p-6 sm:p-8 relative z-10">
-              <div className="flex justify-between items-start mb-6">
+            <div className="p-4 sm:p-5 relative z-10 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+              <div className="flex justify-between items-start mb-3 sm:mb-4">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                    <Pencil size={24} className="text-indigo-600" />
-                    {t("shopList.editShop")}
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                    <Pencil size={18} className="text-indigo-600" />
+                    {t("Edit Shop")}
                   </h2>
-                  <p className="text-sm text-slate-500 mt-1">{t("shopList.editShopDesc")}</p>
+                  <p className="text-xs text-slate-500 mt-1">{t("Edit Shop Desc")}</p>
                 </div>
                 <button
                   onClick={cancelEdit}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
-              <div className="space-y-5">
-                <div className="space-y-1.5">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-1 sm:space-y-1.5">
                   <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                    <Store size={12} className="text-indigo-600" /> {t("shopList.shopNameLabel")} <span className="text-red-500">*</span>
+                    <Store size={12} className="text-indigo-600" /> {t("ShopName")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={editForm.shopName ?? ""}
                     onChange={(e) => setEditForm((p) => ({ ...p, shopName: e.target.value }))}
-                    className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800"
+                    className="w-full h-9 sm:h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800 text-sm"
                   />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1 sm:space-y-1.5">
                   <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                    <User size={12} className="text-indigo-600" /> {t("shopList.ownerNameLabel")} <span className="text-red-500">*</span>
+                    <User size={12} className="text-indigo-600" /> {t("Owner Name")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={editForm.ownerName ?? ""}
                     onChange={(e) => setEditForm((p) => ({ ...p, ownerName: e.target.value }))}
-                    className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800"
+                    className="w-full h-9 sm:h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800 text-sm"
                   />
                 </div>
 
-                <div className="space-y-5">
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                      <Phone size={12} className="text-indigo-600" /> {t("shopList.phoneLabel")}
-                    </label>
-                    <input
-                      type="tel"
-                      value={editForm.phone ?? ""}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                        setEditForm((p) => ({ ...p, phone: value }));
-                      }}
-                      maxLength={10}
-                      className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                      <MapPin size={12} className="text-indigo-600" /> {t("shopList.addressLabel")}
-                    </label>
-                    <textarea
-                      value={editForm.address ?? ""}
-                      onChange={(e) => setEditForm((p) => ({ ...p, address: e.target.value }))}
-                      rows={3}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800 resize-none"
-                    />
-                  </div>
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                    <Phone size={12} className="text-indigo-600" /> {t("Phone")}
+                  </label>
+                  <input
+                    type="tel"
+                    value={editForm.phone ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setEditForm((p) => ({ ...p, phone: value }));
+                    }}
+                    maxLength={10}
+                    className="w-full h-9 sm:h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800 text-sm"
+                  />
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="space-y-1 sm:space-y-1.5">
+                  <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
+                    <MapPin size={12} className="text-indigo-600" /> {t("Address")}
+                  </label>
+                  <textarea
+                    value={editForm.address ?? ""}
+                    onChange={(e) => setEditForm((p) => ({ ...p, address: e.target.value }))}
+                    rows={4}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800 text-sm resize-none"
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      overflowY: 'scroll',
+                    }}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.stopPropagation()}
+                  />
+                </div>
+
+                <div className="flex gap-2 sm:gap-3 pt-2 sm:pt-3">
                   <button
                     onClick={cancelEdit}
-                    className="flex-1 h-11 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
+                    className="flex-1 h-9 sm:h-10 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
                   >
-                    {t("shopList.cancelRegistration").replace("నమోదు ", "")}
+                    {t("Cancel").replace("నమోదు ", "")}
                   </button>
                   <button
                     onClick={() => editingId && saveEdit(editingId)}
-                    className="flex-1 h-11 rounded-xl bg-indigo-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200"
+                    className="flex-1 h-9 sm:h-10 rounded-xl bg-indigo-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200"
                   >
-                    {t("shopList.saveChanges")}
+                    {t("Save Changes")}
                   </button>
                 </div>
               </div>
@@ -534,11 +551,11 @@ const ShopList: React.FC = () => {
 
       {/* ── Delete Confirmation Modal ── */}
       {deletingId && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-lg animate-fade-in"
           onClick={cancelDelete}
         >
-          <div 
+          <div
             className="w-full max-w-sm bg-white rounded-3xl premium-shadow border border-slate-200 p-6 sm:p-8 text-center relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
@@ -569,11 +586,11 @@ const ShopList: React.FC = () => {
 
       {/* ── Delete All Confirmation Modal ── */}
       {deletingAll && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-lg animate-fade-in"
           onClick={cancelDeleteAll}
         >
-          <div 
+          <div
             className="w-full max-w-md bg-white rounded-3xl premium-shadow border border-red-200 p-6 sm:p-8 text-center relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
