@@ -116,36 +116,38 @@ const AddShop: React.FC = () => {
                 />
               </div>
 
-              {/* Phone & Address Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Phone */}
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-xs font-black text-slate-700 uppercase tracking-widest">
-                    <Phone size={14} className="text-indigo-600" />
-                    {t("shopList.form.contact")}
-                  </label>
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                    placeholder={t("shopList.form.placeholders.phone")}
-                    className="w-full h-12 px-5 rounded-xl bg-white border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-400 shadow-sm hover:border-slate-300"
-                  />
-                </div>
+              {/* Phone */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-black text-slate-700 uppercase tracking-widest">
+                  <Phone size={14} className="text-indigo-600" />
+                  {t("shopList.form.contact")}
+                </label>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setForm((p) => ({ ...p, phone: value }));
+                  }}
+                  maxLength={10}
+                  placeholder={t("shopList.form.placeholders.phone")}
+                  className="w-full h-12 px-5 rounded-xl bg-white border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-400 shadow-sm hover:border-slate-300"
+                />
+              </div>
 
-                {/* Address */}
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-xs font-black text-slate-700 uppercase tracking-widest">
-                    <MapPin size={14} className="text-indigo-600" />
-                    {t("shopList.form.address")}
-                  </label>
-                  <input
-                    value={form.address}
-                    onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
-                    placeholder={t("shopList.form.placeholders.address")}
-                    className="w-full h-12 px-5 rounded-xl bg-white border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-400 shadow-sm hover:border-slate-300"
-                  />
-                </div>
+              {/* Address */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-black text-slate-700 uppercase tracking-widest">
+                  <MapPin size={14} className="text-indigo-600" />
+                  {t("shopList.form.address")}
+                </label>
+                <textarea
+                  value={form.address}
+                  onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
+                  placeholder={t("shopList.form.placeholders.address")}
+                  rows={3}
+                  className="w-full px-5 py-3 rounded-xl bg-white border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-400 shadow-sm hover:border-slate-300 resize-none"
+                />
               </div>
 
               {/* Submit Buttons */}

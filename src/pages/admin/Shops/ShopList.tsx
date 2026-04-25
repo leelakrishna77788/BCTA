@@ -33,10 +33,41 @@ const ShopList: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Shop>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingAll, setDeletingAll] = useState<boolean>(false);
 
   useEffect(() => {
     forceUpdate({});
   }, [i18n.language]);
+
+  // Block scroll when any modal is open
+  useEffect(() => {
+    if (editingId || deletingId || deletingAll) {
+      const preventDefault = (e: Event) => e.preventDefault();
+
+      // Block mouse wheel
+      window.addEventListener("wheel", preventDefault, { passive: false });
+      // Block touch scroll (mobile)
+      window.addEventListener("touchmove", preventDefault, { passive: false });
+      // Block keyboard scroll (arrow keys, space, page up/down)
+      const blockKeys = (e: KeyboardEvent) => {
+        const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Space", " "];
+        if (keys.includes(e.key)) e.preventDefault();
+      };
+      window.addEventListener("keydown", blockKeys);
+
+      // Also lock body/html as fallback
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+
+      return () => {
+        window.removeEventListener("wheel", preventDefault);
+        window.removeEventListener("touchmove", preventDefault);
+        window.removeEventListener("keydown", blockKeys);
+        document.body.style.overflow = "";
+        document.documentElement.style.overflow = "";
+      };
+    }
+  }, [editingId, deletingId, deletingAll]);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -95,10 +126,33 @@ const ShopList: React.FC = () => {
   const handleDelete = async (shopId: string) => {
     try {
       await deleteDoc(doc(db, "shops", shopId));
-      toast.success("Shop deleted.");
+      toast.success(t("shopList.toasts.deleteSuccess"));
       setDeletingId(null);
     } catch (err) {
-      toast.error("Failed to delete shop.");
+      toast.error(t("shopList.toasts.deleteFailed"));
+    }
+  };
+
+  const confirmDeleteAll = () => {
+    if (shops.length === 0) {
+      toast.error(t("shopList.toasts.noShopsToDelete"));
+      return;
+    }
+    setDeletingAll(true);
+  };
+
+  const cancelDeleteAll = () => {
+    setDeletingAll(false);
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      const deletePromises = shops.map((shop) => deleteDoc(doc(db, "shops", shop.id)));
+      await Promise.all(deletePromises);
+      toast.success(t("shopList.toasts.deleteAllSuccess", { count: shops.length }));
+      setDeletingAll(false);
+    } catch (err) {
+      toast.error(t("shopList.toasts.deleteAllFailed"));
     }
   };
 
@@ -246,13 +300,24 @@ const ShopList: React.FC = () => {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => navigate("/admin/shops/add")}
-          className="h-12 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5"
-        >
-          <Plus />
-          <span>{t("shopList.registerNew")}</span>
-        </button>
+        <div className="flex gap-3">
+          {shops.length > 0 && (
+            <button
+              onClick={confirmDeleteAll}
+              className="h-12 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg bg-red-600 text-white shadow-red-200 hover:bg-red-700 hover:shadow-xl hover:-translate-y-0.5"
+            >
+              <Trash2 size={20} />
+              <span>{t("shopList.deleteAll")}</span>
+            </button>
+          )}
+          <button
+            onClick={() => navigate("/admin/shops/add")}
+            className="h-12 px-6 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5"
+          >
+            <Plus />
+            <span>{t("shopList.registerNew")}</span>
+          </button>
+        </div>
       </div>
 
       {/* Shop Grid */}
@@ -264,46 +329,50 @@ const ShopList: React.FC = () => {
             className="glass-card rounded-3xl border border-white/40 p-6 premium-shadow hover:bg-white/90 transition-all duration-500 group"
           >
             {/* ── Card Header ── */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500">
+            <div className="flex items-start justify-between mb-4 gap-3">
+              <div className="flex items-start gap-4 flex-1 min-w-0">
+                <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500 flex-shrink-0">
                   <Store size={26} className="text-indigo-600" />
                 </div>
 
                 {/* ── View mode ── */}
-                <div>
-                  <h3 className="font-black text-slate-900 tracking-tight text-base leading-tight">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black text-slate-900 tracking-tight text-base leading-tight break-words">
                     {shop.shopName}
                   </h3>
-                  <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                  <p className="text-xs font-semibold text-slate-400 mt-0.5 break-words">
                     {shop.ownerName}
                   </p>
                   {shop.phone && (
-                    <p className="text-xs text-slate-400">{shop.phone}</p>
+                    <p className="text-xs text-slate-500 mt-1 break-all">{shop.phone}</p>
                   )}
                   {shop.address && (
-                    <p className="text-xs text-slate-400">{shop.address}</p>
+                    <p className="text-xs text-slate-500 mt-1 break-words whitespace-normal leading-relaxed max-w-full overflow-hidden">
+                      {shop.address}
+                    </p>
                   )}
                 </div>
               </div>
 
               {/* ── Action buttons ── */}
-              <div className="flex gap-1.5">
-                <button
-                  onClick={() => startEdit(shop)}
-                  className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center transition-all"
-                  title="Edit"
-                >
-                  <Pencil size={15} />
-                </button>
-                <button
-                  onClick={() => confirmDelete(shop.id)}
-                  className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 text-red-400 hover:bg-red-100 flex items-center justify-center transition-all"
-                  title="Delete"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
+              {editingId !== shop.id && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => startEdit(shop)}
+                    className="w-9 h-9 rounded-xl bg-indigo-100 border border-indigo-200 text-indigo-600 hover:bg-indigo-200 flex items-center justify-center transition-all shadow-sm"
+                    title="Edit"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    onClick={() => confirmDelete(shop.id)}
+                    className="w-9 h-9 rounded-xl bg-red-100 border border-red-200 text-red-600 hover:bg-red-200 flex items-center justify-center transition-all shadow-sm"
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )}
             </div>
 
 
@@ -364,17 +433,23 @@ const ShopList: React.FC = () => {
 
       {/* ── Edit Shop Modal ── */}
       {editingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg bg-white rounded-3xl premium-shadow border border-slate-200 overflow-hidden relative">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-md animate-fade-in overflow-y-auto"
+          onClick={cancelEdit}
+        >
+          <div 
+            className="w-full max-w-lg bg-white rounded-3xl premium-shadow border border-slate-200 overflow-hidden relative my-8"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-50 to-transparent rounded-full blur-3xl opacity-50 pointer-events-none" />
             <div className="p-6 sm:p-8 relative z-10">
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
                     <Pencil size={24} className="text-indigo-600" />
-                    Edit Shop
+                    {t("shopList.editShop")}
                   </h2>
-                  <p className="text-sm text-slate-500 mt-1">Update the shop's details below.</p>
+                  <p className="text-sm text-slate-500 mt-1">{t("shopList.editShopDesc")}</p>
                 </div>
                 <button
                   onClick={cancelEdit}
@@ -387,7 +462,7 @@ const ShopList: React.FC = () => {
               <div className="space-y-5">
                 <div className="space-y-1.5">
                   <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                    <Store size={12} className="text-indigo-600" /> Shop Name <span className="text-red-500">*</span>
+                    <Store size={12} className="text-indigo-600" /> {t("shopList.shopNameLabel")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={editForm.shopName ?? ""}
@@ -398,7 +473,7 @@ const ShopList: React.FC = () => {
 
                 <div className="space-y-1.5">
                   <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                    <User size={12} className="text-indigo-600" /> Owner Name <span className="text-red-500">*</span>
+                    <User size={12} className="text-indigo-600" /> {t("shopList.ownerNameLabel")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={editForm.ownerName ?? ""}
@@ -407,26 +482,32 @@ const ShopList: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-5">
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                      <Phone size={12} className="text-indigo-600" /> Phone
+                      <Phone size={12} className="text-indigo-600" /> {t("shopList.phoneLabel")}
                     </label>
                     <input
+                      type="tel"
                       value={editForm.phone ?? ""}
-                      onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setEditForm((p) => ({ ...p, phone: value }));
+                      }}
+                      maxLength={10}
                       className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 uppercase tracking-widest">
-                      <MapPin size={12} className="text-indigo-600" /> Address
+                      <MapPin size={12} className="text-indigo-600" /> {t("shopList.addressLabel")}
                     </label>
-                    <input
+                    <textarea
                       value={editForm.address ?? ""}
                       onChange={(e) => setEditForm((p) => ({ ...p, address: e.target.value }))}
-                      className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800"
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-semibold text-slate-800 resize-none"
                     />
                   </div>
                 </div>
@@ -436,13 +517,13 @@ const ShopList: React.FC = () => {
                     onClick={cancelEdit}
                     className="flex-1 h-11 rounded-xl bg-white border-2 border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all"
                   >
-                    Cancel
+                    {t("shopList.cancelRegistration").replace("నమోదు ", "")}
                   </button>
                   <button
                     onClick={() => editingId && saveEdit(editingId)}
                     className="flex-1 h-11 rounded-xl bg-indigo-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200"
                   >
-                    Save Changes
+                    {t("shopList.saveChanges")}
                   </button>
                 </div>
               </div>
@@ -453,27 +534,68 @@ const ShopList: React.FC = () => {
 
       {/* ── Delete Confirmation Modal ── */}
       {deletingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-sm bg-white rounded-3xl premium-shadow border border-slate-200 p-6 sm:p-8 text-center relative overflow-hidden">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-lg animate-fade-in"
+          onClick={cancelDelete}
+        >
+          <div 
+            className="w-full max-w-sm bg-white rounded-3xl premium-shadow border border-slate-200 p-6 sm:p-8 text-center relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={32} />
             </div>
-            <h2 className="text-xl font-black text-slate-900 mb-2">Delete Shop</h2>
+            <h2 className="text-xl font-black text-slate-900 mb-2">{t("shopList.deleteShop")}</h2>
             <p className="text-sm text-slate-500 mb-6">
-              Are you sure you want to delete this shop? This action cannot be undone.
+              {t("shopList.deleteShopConfirm")}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={cancelDelete}
                 className="flex-1 h-11 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => handleDelete(deletingId)}
                 className="flex-1 h-11 rounded-xl bg-red-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-md shadow-red-200"
               >
-                Delete
+                {t("common.delete")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete All Confirmation Modal ── */}
+      {deletingAll && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-lg animate-fade-in"
+          onClick={cancelDeleteAll}
+        >
+          <div 
+            className="w-full max-w-md bg-white rounded-3xl premium-shadow border border-red-200 p-6 sm:p-8 text-center relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={32} />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 mb-2">{t("shopList.deleteAllShops")}</h2>
+            <p className="text-sm text-slate-600 mb-2 font-semibold">
+              {t("shopList.deleteAllConfirm", { count: shops.length })}
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={cancelDeleteAll}
+                className="flex-1 h-11 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                className="flex-1 h-11 rounded-xl bg-red-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-md shadow-red-200"
+              >
+                {t("shopList.deleteAll")}
               </button>
             </div>
           </div>
