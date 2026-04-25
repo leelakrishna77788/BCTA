@@ -146,7 +146,7 @@ const LoginPage: React.FC = () => {
               >
                 🏠︎ {t("login.home")}
               </button>
-              <LanguageSwitcher variant="light" />
+              
             </div>
 
             {/* Center Logo + Title */}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   Plus,
@@ -634,11 +635,15 @@ const MeetingList: React.FC = () => {
           )}
         </div>
       </div>
-      {deleteModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* FULL WIDTH BLUR BACKGROUND */}
-          {/* MODAL */}
-          <div className="relative bg-white rounded-2xl shadow-xl w-[90%] max-w-sm p-5">
+      {deleteModal.open && createPortal(
+        <div
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-white/30 backdrop-blur-md animate-fade-in p-4"
+          onClick={() => setDeleteModal({ open: false, id: null, topic: "" })}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-xl w-[90%] max-w-sm p-5 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="text-lg font-bold text-slate-900 mb-2">
               {t("meetings.deleteTitle")}
             </h2>
@@ -665,7 +670,8 @@ const MeetingList: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
