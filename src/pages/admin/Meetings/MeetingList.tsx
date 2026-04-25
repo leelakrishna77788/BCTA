@@ -10,6 +10,7 @@ import {
   QrCode,
   Loader2,
   AlertCircle,
+  AlertTriangle,
   RefreshCw,
   Trash2,
 } from "lucide-react";
@@ -77,34 +78,14 @@ const MeetingList: React.FC = () => {
   });
   useEffect(() => {
     if (deleteModal.open) {
-      const scrollY = window.scrollY;
-
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = "0";
-      document.body.style.right = "0";
       document.body.style.overflow = "hidden";
       document.documentElement.style.overflow = "hidden";
     } else {
-      const scrollY = document.body.style.top;
-
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
-
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY) * -1);
-      }
     }
 
     return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
     };
@@ -495,9 +476,6 @@ const MeetingList: React.FC = () => {
       )}
       {/* Meetings List */}
       <div className="relative">
-        {deleteModal.open && (
-          <div className="absolute inset-0 z-40 bg-white/20 backdrop-blur-lg rounded-2xl pointer-events-none" />
-        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {" "}
@@ -637,18 +615,22 @@ const MeetingList: React.FC = () => {
       </div>
       {deleteModal.open && createPortal(
         <div
-          className="fixed inset-0 z-9999 flex items-center justify-center bg-white/30 backdrop-blur-md animate-fade-in p-4"
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in"
           onClick={() => setDeleteModal({ open: false, id: null, topic: "" })}
         >
-          <div
-            className="relative bg-white rounded-2xl shadow-xl w-[90%] max-w-sm p-5 animate-scale-up"
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 sm:p-8 animate-scale-up relative"
+            style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-slate-900 mb-2">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-red-100">
+                <AlertTriangle className="text-red-600" size={32} />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
               {t("meetings.deleteTitle")}
             </h2>
 
-            <p className="text-sm text-slate-500 mb-6">
+            <p className="text-sm text-slate-600 text-center mb-6">
               {t("meetings.deleteConfirmation", { topic: deleteModal.topic })}
             </p>
 
@@ -657,16 +639,16 @@ const MeetingList: React.FC = () => {
                 onClick={() =>
                   setDeleteModal({ open: false, id: null, topic: "" })
                 }
-                className="flex-1 bg-slate-100 py-2.5 rounded-xl"
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
               >
-                {t("common.cancel")}
+                {t("common.cancel") || "Cancel"}
               </button>
 
               <button
                 onClick={handleDelete}
-                className="flex-1 bg-rose-600 text-white py-2.5 rounded-xl"
+                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
               >
-                {t("common.delete")}
+                {t("common.delete") || "Delete"}
               </button>
             </div>
           </div>

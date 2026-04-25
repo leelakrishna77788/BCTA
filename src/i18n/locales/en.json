@@ -1274,6 +1274,7 @@
     "subtitle": "Manage member shops and QR codes",
     "activePoints": "{{count}} active distribution points",
     "registerNew": "Register New Shop",
+    "deleteAll": "Delete All",
     "cancelRegistration": "Cancel Registration",
     "form": {
       "title": "Registration Form",
@@ -1300,9 +1301,18 @@
       "title": "No Shops Registered",
       "subtitle": "Registry is currently empty"
     },
+    "deleteShop": "Delete Shop",
+    "deleteShopConfirm": "Are you sure you want to delete this shop? This action cannot be undone.",
+    "deleteAllShops": "Delete All Shops?",
+    "deleteAllConfirm": "You are about to delete {{count}} shop(s). This action cannot be undone. All shop data will be permanently removed.",
     "toasts": {
       "success": "Shop created successfully!",
-      "error": "Failed to create shop: {{error}}"
+      "error": "Failed to create shop: {{error}}",
+      "deleteSuccess": "Shop deleted successfully!",
+      "deleteAllSuccess": "{{count}} shops deleted successfully.",
+      "deleteFailed": "Failed to delete shop.",
+      "deleteAllFailed": "Failed to delete all shops.",
+      "noShopsToDelete": "No shops to delete."
     }
   },
   "myProfile": {

@@ -23,7 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { assets, presidents } from "../assets/assets";
+import { assets } from "../assets/assets";
 import Navbar from "../components/shared/Navbar";
 import Footer from "../components/shared/Footer";
 
@@ -116,6 +116,14 @@ function Reveal({
 /* ── Live Stats Hook ── */
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
+import { subscribePresidents } from "../services/presidentsService";
+import type { President } from "../types/president.types";
+
+function useFirestorePresidents() {
+  const [presidents, setPresidents] = useState<President[]>([]);
+  useEffect(() => subscribePresidents(setPresidents), []);
+  return presidents;
+}
 
 function usePlatformStats() {
   const [stats, setStats] = useState({
@@ -198,6 +206,7 @@ const LandingPage: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const platformStats = usePlatformStats();
+  const presidents = useFirestorePresidents();
 
   const SERVICES = [
     { id: 5, title: t("landing.cameraRepair"), description: t("landing.cameraRepairDesc"), features: [t("landing.cameraFeature1"), t("landing.cameraFeature2"), t("landing.cameraFeature3"), t("landing.cameraFeature4")], gradient: "linear-gradient(135deg, #ec4899, #be185d)", icon: "📸" },
@@ -359,14 +368,14 @@ const LandingPage: React.FC = () => {
             {/* Mobile: Horizontal Scroll */}
             <div className="md:hidden overflow-hidden pb-4">
               <div className="flex gap-4 px-2 animate-marquee 8s linear infinite whitespace-nowrap">
-                {[...presidents, ...presidents].map((p, i) => (
+                  {presidents.map((p, i) => (
                   <Link
                     key={i}
                     to="/presidents"
                     className="min-w-[200px] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-4 text-center border border-slate-100 shrink-0"
                   >
                     <img
-                      src={p.image}
+                      src={p.imageUrl}
                       alt={p.name}
                       loading="lazy"
                       className="w-20 h-20 mx-auto rounded-full object-cover mb-3 ring-2 ring-indigo-50"
@@ -384,14 +393,14 @@ const LandingPage: React.FC = () => {
 
             {/* Desktop: Marquee Animation */}
             <div className="hidden md:flex gap-6 sm:gap-8 animate-marquee">
-              {[...presidents, ...presidents].map((p, i) => (
+                {presidents.map((p, i) => (
                 <Link
                   key={i}
                   to="/presidents"
                   className="min-w-[200px] sm:min-w-[250px] bg-white/90 backdrop-blur-sm rounded-xl shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 p-4 sm:p-6 text-center border border-slate-100 cursor-pointer"
                 >
                   <img
-                    src={p.image}
+                    src={p.imageUrl}
                     alt={p.name}
                     loading="lazy"
                     className="w-20 h-20 sm:w-28 sm:h-28 mx-auto rounded-full object-cover mb-3 sm:mb-4 ring-4 ring-indigo-50"

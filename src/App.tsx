@@ -64,6 +64,9 @@ const PaymentsDashboard = lazyWithRetry(() => import("./pages/admin/Payments/Pay
 const PaymentsHistory = lazyWithRetry(() => import("./pages/admin/Payments/PaymentsHistory"));
 const ComplaintsList = lazyWithRetry(() => import("./pages/admin/Complaints/ComplaintsList"));
 const SendNotification = lazyWithRetry(() => import("./pages/admin/Notifications/SendNotification"));
+const PresidentsList = lazyWithRetry(() => import("./pages/admin/Presidents/PresidentsList"));
+const AddPresident = lazyWithRetry(() => import("./pages/admin/Presidents/AddPresident"));
+const EditPresident = lazyWithRetry(() => import("./pages/admin/Presidents/EditPresident"));
 
 // Member pages
 const MemberDashboard = lazyWithRetry(() => import("./pages/member/MemberDashboard"));
@@ -242,6 +245,11 @@ function App() {
               <Route path="payments/history" element={<PaymentsHistory />} />
               <Route path="complaints" element={<ComplaintsList />} />
               <Route path="notifications" element={<SendNotification />} />
+
+              {/* Presidents */}
+              <Route path="presidents" element={<PresidentsList />} />
+              <Route path="presidents/add" element={<AddPresident />} />
+              <Route path="presidents/:id/edit" element={<EditPresident />} />
 
               <Route index element={<Navigate to="dashboard" replace />} />
             </Route>

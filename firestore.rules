@@ -130,6 +130,12 @@ service cloud.firestore {
       allow create, update, delete:  if isAdmin();
     }
 
+    // ─── Presidents ────────────────────────────────────────────────────────
+    match /presidents/{presidentId} {
+      allow read:                    if isAuthenticated();
+      allow create, update, delete:  if isAdmin();
+    }
+
     // ─── Deny all else ─────────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
