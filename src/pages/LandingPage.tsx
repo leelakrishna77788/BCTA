@@ -368,7 +368,7 @@ const LandingPage: React.FC = () => {
             {/* Mobile: Horizontal Scroll */}
             <div className="md:hidden overflow-hidden pb-4">
               <div className="flex gap-4 px-2 animate-marquee 8s linear infinite whitespace-nowrap">
-                {[...presidents, ...presidents].map((p, i) => (
+                  {presidents.map((p, i) => (
                   <Link
                     key={i}
                     to="/presidents"
@@ -393,7 +393,7 @@ const LandingPage: React.FC = () => {
 
             {/* Desktop: Marquee Animation */}
             <div className="hidden md:flex gap-6 sm:gap-8 animate-marquee">
-              {[...presidents, ...presidents].map((p, i) => (
+                {presidents.map((p, i) => (
                 <Link
                   key={i}
                   to="/presidents"

@@ -69,7 +69,7 @@ export async function getPresidents(): Promise<President[]> {
 
 export function subscribePresidents(cb: (presidents: President[]) => void): () => void {
   return onSnapshot(
-    query(collection(db, COLLECTION), orderBy("createdAt", "asc")),
+    query(collection(db, COLLECTION), orderBy("createdAt", "desc")),
     (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as President))),
     (err) => console.warn("[presidentsService] snapshot error:", err)
   );
@@ -84,7 +84,7 @@ export async function getPresidentById(id: string): Promise<President | null> {
 export async function addPresident(data: CreatePresidentInput): Promise<string> {
   const ref = await addDoc(collection(db, COLLECTION), {
     ...data,
-    createdAt: serverTimestamp(),
+    createdAt: Date.now(),
   });
   return ref.id;
 }
