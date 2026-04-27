@@ -1,12 +1,23 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
     "strict": true,
+    "jsx": "react-jsx",
+
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
     "types": ["node"]
-  }
+  },
+  "include": ["src", "api"],
+  "exclude": ["node_modules"]
 }
