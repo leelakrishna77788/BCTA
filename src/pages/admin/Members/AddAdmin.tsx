@@ -168,7 +168,7 @@ const AddAdmin: React.FC = () => {
       {/* ══════════════════════════════════════
           MOBILE — scrollable, fits any screen
           ══════════════════════════════════════ */}
-      <div className="sm:hidden space-y-5 pb-8 animate-fade-in">
+      <div className="sm:hidden min-h-[100dvh] space-y-5 pb-8 animate-fade-in">
         {/* Top bar */}
         <div className="flex items-center gap-4">
           <button
@@ -263,22 +263,22 @@ const AddAdmin: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-indigo-600 text-white font-black uppercase tracking-[0.12em] text-[12px] py-4 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            >
+              {loading ? <Loader2 className="animate-spin" size={16} /> : <UserPlus size={16} />}
+              {loading ? provisionStage || t("common.processing") : t("addAdmin.createAdmin")}
+            </button>
             <button
               type="button"
               onClick={() => navigate(-1)}
               disabled={loading}
-              className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.12em] text-[10px] py-3.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="bg-white border border-slate-200 text-slate-500 font-black uppercase tracking-[0.12em] text-[12px] py-4 rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {t("addAdmin.abort")}
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-indigo-600 text-white font-black uppercase tracking-[0.12em] text-[10px] py-3.5 rounded-xl shadow-lg shadow-indigo-200 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-            >
-              {loading ? <Loader2 className="animate-spin" size={14} /> : <UserPlus size={14} />}
-              {loading ? provisionStage || t("common.processing") : t("addAdmin.createAdmin")}
             </button>
           </div>
         </form>
