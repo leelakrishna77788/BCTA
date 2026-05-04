@@ -35,7 +35,7 @@ const toDate = (value?: Timestamp | Date) => {
 };
 
 const currentYear = new Date().getFullYear();
-const historyStartYear = 2025;
+const historyStartYear = 2020;
  
 const PaymentsHistory: React.FC = () => {
   const { t, i18n } = useTranslation();

@@ -1125,11 +1125,17 @@
     "noRecords": "No attendance records found"
   },
   "payments": {
+    "filters": {
+      "all": "All",
+      "paid": "Paid",
+      "unpaid": "Unpaid"
+    },
     "dashboard": {
       "title": "Payments Dashboard",
       "subtitle": "Manage member payments and dues",
       "paymentHistory": "Payment History",
       "noMembers": "No members matching this filter",
+      "futureMonthNoData": "No data available for future months.",
       "monthlyFee": "Monthly Fee",
       "period": "Period",
       "status": {
@@ -1316,6 +1322,15 @@
       "deleteAllFailed": "Failed to delete all shops.",
       "noShopsToDelete": "No shops to delete."
     }
+  },
+  "myPayments": {
+    "title": "My Payments",
+    "totalFeesPaid": "Total Fixed Fees Paid",
+    "currentStatus": "Current Status",
+    "unpaidWarning": "You have unpaid monthly fees (₹100). Please pay them to maintain active status.",
+    "paymentHistory": "Payment History",
+    "noHistory": "No payment history found",
+    "paidCheck": "Paid ✓"
   },
   "myProfile": {
     "title": "My Profile",

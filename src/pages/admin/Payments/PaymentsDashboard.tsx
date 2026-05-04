@@ -40,7 +40,11 @@ const PaymentsDashboard: React.FC = () => {
 
     const yearsList = useMemo(() => {
         const currentYearNumeric = new Date().getFullYear();
-        return [currentYearNumeric - 1, currentYearNumeric, currentYearNumeric + 1];
+        const years = [];
+        for (let y = 2020; y <= currentYearNumeric + 1; y++) {
+            years.push(y);
+        }
+        return years;
     }, []);
     const [members, setMembers] = useState<Member[]>([]);
     const [payments, setPayments] = useState<PaymentDoc[]>([]);
@@ -51,6 +55,7 @@ const PaymentsDashboard: React.FC = () => {
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [markPaidConfirm, setMarkPaidConfirm] = useState<Member | null>(null);
     const [markUnpaidConfirm, setMarkUnpaidConfirm] = useState<Member | null>(null);
+    const [paymentAmount, setPaymentAmount] = useState<number>(100);
 
     const getCurrentPeriod = () => {
         const now = new Date();
@@ -61,6 +66,15 @@ const PaymentsDashboard: React.FC = () => {
     };
 
     const [{ month: selectedMonth, year: selectedYear }, setCurrentPeriod] = useState(getCurrentPeriod());
+
+    const isFuturePeriod = useMemo(() => {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+        if (selectedYear > currentYear) return true;
+        if (selectedYear === currentYear && selectedMonth > currentMonth) return true;
+        return false;
+    }, [selectedMonth, selectedYear]);
 
     useEffect(() => {
         const isModalOpen = markPaidConfirm !== null || markUnpaidConfirm !== null;
@@ -87,16 +101,7 @@ const PaymentsDashboard: React.FC = () => {
         };
     }, [markPaidConfirm, markUnpaidConfirm]);
 
-    useEffect(() => {
-        const syncCurrentPeriod = () => {
-            setCurrentPeriod(getCurrentPeriod());
-        };
 
-        syncCurrentPeriod();
-        const intervalId = window.setInterval(syncCurrentPeriod, 60_000);
-
-        return () => window.clearInterval(intervalId);
-    }, []);
 
     useEffect(() => {
         const q = query(collection(db, "users"), where("role", "==", "member"));
@@ -140,7 +145,7 @@ const PaymentsDashboard: React.FC = () => {
     const paidMembersCount = computedMembers.filter(m => m.computedStatus === "paid").length;
     const pendingMembersCount = computedMembers.filter(m => m.computedStatus !== "paid").length;
 
-    const totalCollected = paidMembersCount * 100;
+    const totalCollected = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     const filtered = filter === "all" ? computedMembers :
         filter === "paid" ? computedMembers.filter(m => m.computedStatus === "paid") :
@@ -153,7 +158,7 @@ const PaymentsDashboard: React.FC = () => {
 
         setProcessingId(member.uid);
         try {
-            await markMemberFeePaid(member.uid, member.memberId, `${member.name} ${member.surname || ""}`.trim(), selectedMonth, selectedYear, currentUser.uid);
+            await markMemberFeePaid(member.uid, member.memberId, `${member.name} ${member.surname || ""}`.trim(), selectedMonth, selectedYear, currentUser.uid, paymentAmount);
             toast.success(t("payments.dashboard.toasts.feeCollected", { name: member.name }));
             setMarkPaidConfirm(null);
         } catch (error) {
@@ -207,7 +212,13 @@ const PaymentsDashboard: React.FC = () => {
                                 </div>
                                 <div className="flex items-center justify-between gap-4 py-1 text-xs sm:text-sm">
                                     <span className="font-semibold text-slate-500">{t("payments.dashboard.modal.amount")}:</span>
-                                    <span className="font-black text-slate-900 text-base sm:text-lg">₹100</span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={paymentAmount}
+                                        onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                                        className="w-24 text-right font-black text-slate-900 text-base sm:text-lg bg-white border border-slate-200 rounded-lg px-2 py-1 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                    />
                                 </div>
                                 <div className="flex items-center justify-between gap-4 py-1 text-xs sm:text-sm">
                                     <span className="font-semibold text-slate-500">{t("payments.dashboard.modal.period")}:</span>
@@ -307,21 +318,19 @@ const PaymentsDashboard: React.FC = () => {
                             </div>
                             <select
                                 value={selectedMonth}
-                                disabled
-                                onChange={() => undefined}
-                                className="h-8 sm:h-9 min-w-[82px] sm:min-w-[90px] bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm rounded-lg px-2 sm:px-2.5 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                                onChange={(e) => setCurrentPeriod({ month: Number(e.target.value), year: selectedYear })}
+                                className="h-8 sm:h-9 min-w-[82px] sm:min-w-[90px] bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm rounded-lg px-2 sm:px-2.5"
                             >
-                                {monthsList.filter((m) => m.value === selectedMonth).map((m) => (
+                                {monthsList.map((m) => (
                                     <option key={m.value} value={m.value}>{m.label}</option>
                                 ))}
                             </select>
                             <select
                                 value={selectedYear}
-                                disabled
-                                onChange={() => undefined}
-                                className="h-8 sm:h-9 min-w-[72px] sm:min-w-[78px] bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm rounded-lg px-2 sm:px-2.5 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                                onChange={(e) => setCurrentPeriod({ month: selectedMonth, year: Number(e.target.value) })}
+                                className="h-8 sm:h-9 min-w-[72px] sm:min-w-[78px] bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm rounded-lg px-2 sm:px-2.5"
                             >
-                                {yearsList.filter((y) => y === selectedYear).map((y) => (
+                                {yearsList.map((y) => (
                                     <option key={y} value={y}>{y}</option>
                                 ))}
                             </select>
@@ -337,6 +346,15 @@ const PaymentsDashboard: React.FC = () => {
                 </div>
             </div>
 
+        {isFuturePeriod ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-20 text-center shadow-sm">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex justify-center items-center mx-auto mb-4">
+                    <CalendarDays className="text-slate-300" size={28} />
+                </div>
+                <p className="text-slate-400 text-sm font-medium">{t("payments.dashboard.futureMonthNoData")}</p>
+            </div>
+        ) : (
+            <>
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
                 {[
                     { label: t("payments.dashboard.stats.totalMembers"), value: totalMembers, color: "bg-indigo-600", icon: CreditCard },
@@ -410,7 +428,7 @@ const PaymentsDashboard: React.FC = () => {
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.dashboard.monthlyFee")}</p>
-                                        <p className="mt-1 text-sm font-bold text-slate-900">₹100</p>
+                                        <p className="mt-1 text-sm font-bold text-slate-900">₹{paymentAmount}</p>
                                     </div>
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.dashboard.period")}</p>
@@ -450,7 +468,7 @@ const PaymentsDashboard: React.FC = () => {
                                 <div className="grid grid-cols-2 gap-3 lg:px-6 lg:border-r lg:border-slate-200">
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.dashboard.monthlyFee")}</p>
-                                        <p className="mt-1 text-sm font-bold text-slate-900">₹100</p>
+                                        <p className="mt-1 text-sm font-bold text-slate-900">₹{paymentAmount}</p>
                                     </div>
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t("payments.dashboard.period")}</p>
@@ -486,6 +504,8 @@ const PaymentsDashboard: React.FC = () => {
                     ))
                 )}
             </div>
+            </>
+        )}
         </div>
         </>
     );
