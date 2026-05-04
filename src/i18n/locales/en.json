@@ -678,9 +678,11 @@
     "unknownDate": "Unknown date"
   },
   "memberList": {
+    "phone":"Phone",
     "title": "Members",
     "directory": "Directory",
     "subtitle": "Manage all BCTA members",
+    "shopAddress": "Shop Address",
     "addMember": "Add Member",
     "bulkCleanup": "Bulk Cleanup",
     "searchPlaceholder": "Search name, ID, email, blood group...",

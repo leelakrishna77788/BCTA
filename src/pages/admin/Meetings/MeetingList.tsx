@@ -363,7 +363,7 @@ const MeetingList: React.FC = () => {
                   setForm((p) => ({ ...p, topic: e.target.value }))
                 }
                 required
-                placeholder={t("meetings.topicPlaceholder")}
+                placeholder={t("meetings.topic")}
                 className="input-field"
               />
             </div>

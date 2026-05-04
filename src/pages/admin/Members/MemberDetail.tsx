@@ -810,7 +810,7 @@ const MemberDetail: React.FC = () => {
                                 { label: t("memberDetail.age"), value: member.age ? t("memberDetail.ageValue", { age: member.age }) : "-" },
                                 { label: t("memberDetail.bloodGroup"), value: member.bloodGroup || "-", icon: Droplet },
                                 { label: t("memberList.meetings"), value: member.email || "-", icon: Mail },
-                                { label: t("addMember.phone"), value: member.phone || "-", icon: Phone },
+                                { label: t("memberList.phone"), value: member.phone || "-", icon: Phone },
                                 { label: t("memberDetail.aadhaarNumber"), value: member.aadhaarLast4 ? `XXXXXXXX${member.aadhaarLast4}` : "-", icon: ShieldCheck },
                                 { label: t("memberDetail.attendanceInfo"), value: `${attendance.length} / ${meetings.length || 0} ${t("memberList.meetings")}` },
                                 { label: t("memberDetail.balanceDue"), value: `${t("memberDetail.rs")} ${totalDue.toLocaleString()}`, icon: CreditCard },
@@ -845,7 +845,7 @@ const MemberDetail: React.FC = () => {
                                         <MapPin size={14} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-1.5">{t("addMember.shopAddress")}</p>
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-1.5">{t("memberList.shopAddress")}</p>
                                         <p className="text-xs font-medium text-slate-800 leading-5 line-clamp-2">{member.shopAddress || t("memberDetail.noAddress")}</p>
                                     </div>
                                 </div>

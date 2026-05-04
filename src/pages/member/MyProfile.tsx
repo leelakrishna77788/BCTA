@@ -441,7 +441,7 @@ const MyProfile: React.FC = () => {
             </div>
             <div className="min-w-0 space-y-4">
               <div className="space-y-1 text-left">
-                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
                   {fullName || userProfile.name}
                 </h1>
               </div>

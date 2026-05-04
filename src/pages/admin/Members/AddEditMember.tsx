@@ -416,6 +416,22 @@ const AddEditMember: React.FC = () => {
                             </div>
                             <User className="text-[#000080]" size={20} />
                         </div>
+                        
+                        <div className="mb-5 flex flex-wrap items-center gap-4">
+                            <div className="h-20 w-20 overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50">
+                                {photoPreview ? (
+                                    <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-slate-300">
+                                        <Upload size={22} />
+                                    </div>
+                                )}
+                            </div>
+                            <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#000080] px-3 py-2 text-xs font-semibold text-white hover:bg-[#000066]">
+                                <Upload size={14} /> {photoPreview ? t("addEditMember.replacePhoto") : t("addEditMember.uploadPhoto")}
+                                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+                            </label>
+                        </div>
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             <Field label={t("addEditMember.firstName")} name="name" value={form.name} onChange={handleChange} placeholder={t("addEditMember.firstName")} required />
@@ -522,21 +538,6 @@ const AddEditMember: React.FC = () => {
                             <ShieldCheck className="text-[#000080]" size={20} />
                         </div>
 
-                        <div className="mb-5 flex flex-wrap items-center gap-4">
-                            <div className="h-20 w-20 overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50">
-                                {photoPreview ? (
-                                    <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
-                                ) : (
-                                    <div className="flex h-full w-full items-center justify-center text-slate-300">
-                                        <Upload size={22} />
-                                    </div>
-                                )}
-                            </div>
-                            <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#000080] px-3 py-2 text-xs font-semibold text-white hover:bg-[#000066]">
-                                <Upload size={14} /> {photoPreview ? t("addEditMember.replacePhoto") : t("addEditMember.uploadPhoto")}
-                                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
-                            </label>
-                        </div>
 
                         <div className="space-y-4">
                             <Field label={t("addEditMember.nomineeName")} name="nomineeName" value={form.nomineeName} onChange={handleChange} placeholder={t("addEditMember.nomineeName")} required />
