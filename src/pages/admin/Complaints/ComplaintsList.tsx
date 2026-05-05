@@ -188,11 +188,11 @@ const ComplaintsList: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center justify-end gap-2 flex-wrap min-w-fit">
                                         {c.status === "open" && (
                                             <button onClick={(e) => handleResolve(e, c.id)}
-                                                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded bg-emerald-600 text-white text-[8px] font-black uppercase hover:bg-emerald-700 transition-all" title={t("complaints.actions.resolve")}>
-                                                <CheckCircle size={10} /> {t("complaints.actions.resolve")}
+                                                className="px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg flex items-center gap-1 sm:gap-2 bg-emerald-600 text-white hover:scale-105 transition duration-200 shadow-sm" title={t("complaints.actions.resolve")}>
+                                                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" /> {t("complaints.actions.resolve")}
                                             </button>
                                         )}
                                         
@@ -201,8 +201,8 @@ const ComplaintsList: React.FC = () => {
                                         )}
 
                                         <button onClick={(e) => handleDelete(e, c.id)}
-                                            className="p-1 rounded bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all" title={t("complaints.actions.delete")}>
-                                            <Trash2 size={11} />
+                                            className="px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg flex items-center gap-1 sm:gap-2 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white hover:scale-105 transition duration-200 shadow-sm" title={t("complaints.actions.delete")}>
+                                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" /> {t("complaints.actions.delete")}
                                         </button>
                                     </div>
                                 </div>
