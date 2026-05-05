@@ -189,7 +189,7 @@ const SendNotification: React.FC = () => {
     const selectedType = NOTIFICATION_TYPES.find((t) => t.value === form.type);
 
     return (
-        <div className="min-h-screen sm:min-h-0 flex flex-col animate-fade-in xl:h-auto">
+        <div className="flex flex-col animate-fade-in">
             <div className="shrink-0 mb-0 xl:mb-1">
                 <h1 className="page-title text-2xl sm:text-3xl mb-0">{t("notifications.title")}</h1>
                 <p className="text-slate-500 font-medium text-xs sm:text-sm tracking-tight">
@@ -197,17 +197,17 @@ const SendNotification: React.FC = () => {
                 </p>
             </div>
 
-            <div className="flex-1 sm:flex-none min-h-0 sm:min-h-0 grid grid-cols-1 xl:grid-cols-5 gap-4 xl:overflow-hidden pb-0 xl:pb-0">
+            <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 xl:overflow-hidden pb-20 xl:pb-0">
                 {/* Send Form - Spans 3 columns on xl */}
                 <div
-                    className="xl:col-span-3 glass-card rounded-2xl border border-white/40 p-6 sm:p-8 premium-shadow flex flex-col h-full xl:h-[480px] min-h-0 overflow-hidden"
+                    className="xl:col-span-3 glass-card rounded-2xl border border-white/40 p-6 sm:p-8 premium-shadow flex flex-col h-full xl:h-[495px] min-h-0 overflow-hidden"
                     style={{ background: "rgba(255, 255, 255, 0.7)" }}
                 >
                     <form
                         onSubmit={handleSend}
                         className="flex flex-col h-full min-h-0 gap-2 xl:gap-2"
                     >
-                        <div className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-hide pb-20 sm:pb-0">
+                        <div className="flex-1 overflow-y-auto pr-1 space-y-4 scrollbar-hide">
                             <div>
                                 <label className="label text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] mb-3 block text-slate-500">
                                     {t("notifications.form.category")}
@@ -299,7 +299,7 @@ const SendNotification: React.FC = () => {
 
                 {/* History */}
                 <div
-                    className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow h-full xl:h-[480px] min-h-0"
+                    className="xl:col-span-2 glass-card rounded-2xl sm:rounded-3xl border border-white/40 overflow-hidden flex flex-col premium-shadow h-full xl:h-[495px] min-h-0"
                     style={{ background: "rgba(255, 255, 255, 0.6)" }}
                 >
                     <div className="shrink-0 flex items-center justify-between p-6 border-b border-white/30">
