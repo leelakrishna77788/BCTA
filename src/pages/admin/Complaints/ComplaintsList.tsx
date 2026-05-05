@@ -202,7 +202,8 @@ const ComplaintsList: React.FC = () => {
 
                                         <button onClick={(e) => handleDelete(e, c.id)}
                                             className="px-2.5 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg flex items-center gap-1 sm:gap-2 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white hover:scale-105 transition duration-200 shadow-sm" title={t("complaints.actions.delete")}>
-                                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" /> {t("complaints.actions.delete")}
+                                            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                                            <span className="hidden sm:inline">{t("complaints.actions.delete")}</span>
                                         </button>
                                     </div>
                                 </div>
