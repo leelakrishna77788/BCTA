@@ -54,146 +54,79 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
     }
   };
 
-  const inputCls = "w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-400 outline-none text-sm";
-  const labelCls = "flex items-center gap-1.5 text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1.5";
+  const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1 transition-all";
+  const labelCls = "text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-[#000080] transition-colors mb-1.5 block text-left";
 
   return (
-    <form onSubmit={handleSubmit}>
-      {/* ── Desktop: two-column layout ── */}
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-10">
+        {/* Photo Upload Section - Side by Side on Mobile, Stacked on Desktop */}
+        <div className="flex flex-row sm:flex-col items-center sm:items-start gap-4 shrink-0 w-full sm:w-auto">
+          <div
+            className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-dashed transition-all overflow-hidden flex items-center justify-center bg-slate-50 shrink-0 ${dragOver ? "border-[#000080] bg-indigo-50" : "border-slate-200 hover:border-slate-300"}`}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+          >
+            {preview ? (
+              <img src={preview} alt="preview" className="w-full h-full object-cover" />
+            ) : (
+              <div className="flex flex-col items-center text-slate-300">
+                <Upload size={24} />
+              </div>
+            )}
+          </div>
+          <label className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-[#000080] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#000066] transition-colors shadow-sm w-auto whitespace-nowrap">
+            <Upload size={14} /> {preview ? "Replace Photo" : "Upload Photo"}
+            <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) applyFile(f); }} className="hidden" />
+          </label>
+        </div>
 
-        {/* LEFT — form fields */}
-        <div className="flex-1 min-w-0 space-y-5">
-
-          {/* Name */}
-          <div>
-            <label className={labelCls}><User size={11} className="text-indigo-500" /> Name <span className="text-red-400">*</span></label>
-            <input value={form.name} onChange={set("name")} required placeholder="Full name" className={inputCls} />
+        {/* Form Fields - Right Side on Desktop */}
+        <div className="flex-1 space-y-4 w-full text-left">
+          <div className="group">
+            <label className={labelCls}>Name <span className="text-rose-500">*</span></label>
+            <input value={form.name} onChange={set("name")} required placeholder="Enter full name" className={inputCls} />
           </div>
 
-          {/* Year */}
-          <div>
-            <label className={labelCls}><Calendar size={11} className="text-indigo-500" /> Year / Term <span className="text-red-400">*</span></label>
+          <div className="group">
+            <label className={labelCls}>Year / Term <span className="text-rose-500">*</span></label>
             <input value={form.year} onChange={set("year")} required placeholder="e.g. 2022 – 2024" className={inputCls} />
           </div>
 
-          {/* Description */}
-          <div>
-            <label className={labelCls}><FileText size={11} className="text-indigo-500" /> Description <span className="text-red-400">*</span></label>
+          <div className="group">
+            <label className={labelCls}>Description <span className="text-rose-500">*</span></label>
             <textarea
               value={form.description}
               onChange={set("description")}
               required
-              rows={6}
+              rows={5}
               placeholder="Brief description of their tenure and achievements..."
-              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all font-semibold text-slate-800 placeholder:text-slate-400 outline-none resize-none text-sm"
+              className={`${inputCls} resize-none py-3`}
             />
           </div>
 
-          {/* Buttons — desktop only */}
-          <div className="hidden lg:flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 h-11 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition-all"
-            >
-              Cancel
-            </button>
+          {/* Buttons */}
+          <div className="pt-4 space-y-3">
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black text-sm shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full h-12 rounded-xl bg-[#000080] text-white font-bold text-sm shadow-sm hover:bg-[#000066] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {(submitting || uploading) ? (
-                <><Loader2 size={15} className="animate-spin" />{uploading ? "Uploading..." : "Saving..."}</>
+                <><Loader2 size={16} className="animate-spin" />{uploading ? "Processing..." : "Saving..."}</>
               ) : submitLabel}
+            </button>
+
+            <button
+              type="button"
+              onClick={onCancel}
+              className="w-full h-12 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-sm hover:bg-slate-50 transition-all"
+            >
+              Cancel
             </button>
           </div>
         </div>
-
-        {/* RIGHT — image upload, equal flex so it fills space */}
-        <div className="lg:flex-1 shrink-0 flex flex-col gap-4">
-
-          <div>
-            <label className={labelCls}>
-              <ImageIcon size={11} className="text-indigo-500" /> Photo
-              {!initialValues?.imageUrl && <span className="text-red-400">*</span>}
-            </label>
-
-            {/* Drop zone */}
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-              className={`rounded-2xl border-2 border-dashed transition-all ${dragOver ? "border-indigo-400 bg-indigo-50" : "border-slate-200 bg-slate-50 hover:border-indigo-300"}`}
-            >
-              {preview ? (
-                <div className="flex flex-col items-center p-5 gap-4">
-                  {/* Large preview on desktop */}
-                  <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 border-white shadow-lg">
-                    <img src={preview} alt="preview" className="w-full h-full object-cover object-top" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-lg px-2 py-1">
-                      <Crown size={10} className="text-white/80 shrink-0" />
-                      <span className="text-white text-[10px] font-bold truncate">{form.name || "President"}</span>
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs font-bold text-slate-600 truncate max-w-[180px]">{imageFile?.name ?? "Current photo"}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Drag or click to replace</p>
-                  </div>
-                  <label className="cursor-pointer h-9 px-5 rounded-xl bg-indigo-600 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-700 transition-colors w-full justify-center">
-                    <Upload size={13} /> Change Photo
-                    <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) applyFile(f); }} className="hidden" />
-                  </label>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center py-16 px-4 cursor-pointer text-center">
-                  <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mb-3">
-                    <Upload size={28} className="text-indigo-500" />
-                  </div>
-                  <p className="text-sm font-bold text-slate-600">Drop photo here</p>
-                  <p className="text-xs text-slate-400 mt-1">or <span className="text-indigo-600 font-semibold">browse files</span></p>
-                  <p className="text-[11px] text-slate-300 mt-2">PNG, JPG, WEBP · max 10MB</p>
-                  <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) applyFile(f); }} required={!initialValues?.imageUrl} className="hidden" />
-                </label>
-              )}
-            </div>
-          </div>
-
-          {/* Tips card */}
-          <div className="hidden lg:block bg-indigo-50 rounded-2xl p-4 border border-indigo-100">
-            <p className="text-[11px] font-black text-indigo-600 uppercase tracking-widest mb-2">Tips</p>
-            <ul className="space-y-1.5">
-              {["Use a clear portrait photo", "Square or portrait ratio works best", "High resolution recommended"].map((tip, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-indigo-500">
-                  <span className="w-1 h-1 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
-                  {tip}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Buttons — mobile only */}
-      <div className="flex lg:hidden gap-3 mt-5">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 h-11 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition-all"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="flex-1 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black text-sm shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {(submitting || uploading) ? (
-            <><Loader2 size={15} className="animate-spin" />{uploading ? "Uploading..." : "Saving..."}</>
-          ) : submitLabel}
-        </button>
       </div>
     </form>
   );

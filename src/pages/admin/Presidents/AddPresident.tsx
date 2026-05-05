@@ -24,31 +24,34 @@ const AddPresident: React.FC = () => {
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-semibold mb-6 transition-colors text-sm w-fit"
+        className="inline-flex items-center gap-2 text-slate-400 hover:text-[#000080] font-semibold mb-6 transition-colors text-sm w-fit"
       >
         <ArrowLeft size={16} /> Back
       </button>
 
-      {/* Container — full width on desktop to use space */}
-      <div className="w-full max-w-4xl">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 shrink-0">
-            <Crown size={22} className="text-white" />
+      <div className="max-w-4xl mx-auto w-full px-3 sm:px-6">
+        <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="p-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shrink-0">
+                <Crown size={22} className="text-[#000080]" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-slate-900 tracking-tight">Add President</h1>
+                <p className="text-slate-500 text-xs mt-0.5">Add a new president to BCTA records</p>
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Add President</h1>
-            <p className="text-slate-400 text-xs mt-0.5">Add a new president to BCTA records</p>
-          </div>
-        </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-7">
-          <PresidentForm
-            onSubmit={handleSubmit}
-            submitLabel="Add President"
-            onCancel={() => navigate(-1)}
-          />
+          {/* Form Content */}
+          <div className="p-5 sm:p-8">
+            <PresidentForm
+              onSubmit={handleSubmit}
+              submitLabel="Add President"
+              onCancel={() => navigate(-1)}
+            />
+          </div>
         </div>
       </div>
     </div>

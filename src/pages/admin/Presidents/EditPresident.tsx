@@ -53,39 +53,42 @@ const EditPresident: React.FC = () => {
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-semibold mb-6 transition-colors text-sm w-fit"
+        className="inline-flex items-center gap-2 text-slate-400 hover:text-[#000080] font-semibold mb-6 transition-colors text-sm w-fit"
       >
         <ArrowLeft size={16} /> Back
       </button>
 
-      {/* Container — full width on desktop to use space */}
-      <div className="w-full max-w-4xl">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="relative shrink-0">
-            <img
-              src={initial.imageUrl}
-              alt={initial.name}
-              className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-100 shadow-md"
-            />
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow">
-              <Crown size={10} className="text-white" />
+      <div className="max-w-4xl mx-auto w-full px-3 sm:px-6">
+        <div className="card rounded-[1.75rem] border border-slate-200 bg-white shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="p-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="relative shrink-0">
+                <img
+                  src={initial.imageUrl}
+                  alt={initial.name}
+                  className="w-11 h-11 rounded-2xl object-cover border border-slate-100 shadow-sm"
+                />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#000080] rounded-lg flex items-center justify-center shadow">
+                  <Crown size={10} className="text-white" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-slate-900 tracking-tight">Edit President</h1>
+                <p className="text-slate-500 text-xs mt-0.5 truncate max-w-[200px]">{initial.name}</p>
+              </div>
             </div>
           </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Edit President</h1>
-            <p className="text-slate-400 text-xs mt-0.5 truncate max-w-[200px]">{initial.name}</p>
-          </div>
-        </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 sm:p-7">
-          <PresidentForm
-            initialValues={initial}
-            onSubmit={handleSubmit}
-            submitLabel="Save Changes"
-            onCancel={() => navigate(-1)}
-          />
+          {/* Form Content */}
+          <div className="p-5 sm:p-8">
+            <PresidentForm
+              initialValues={initial}
+              onSubmit={handleSubmit}
+              submitLabel="Save Changes"
+              onCancel={() => navigate(-1)}
+            />
+          </div>
         </div>
       </div>
     </div>
