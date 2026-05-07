@@ -58,12 +58,7 @@ const PresidentsList: React.FC = () => {
             </div>
           </div>
         </div>
-        <button
-          onClick={() => navigate("/admin/presidents/add")}
-          className="h-12 px-6 rounded-2xl font-bold flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all active:scale-95 text-sm"
-        >
-          <Plus size={18} /> Add President
-        </button>
+        
       </div>
 
       {/* ── List ── */}
