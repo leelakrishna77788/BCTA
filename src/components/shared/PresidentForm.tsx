@@ -18,6 +18,7 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
   const [preview, setPreview] = useState<string>(initialValues?.imageUrl ?? "");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [dragOver, setDragOver] = useState(false);
 
   const set = (key: keyof CreatePresidentInput) =>
@@ -25,6 +26,22 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
       setForm((p) => ({ ...p, [key]: e.target.value }));
 
   const applyFile = (file: File) => {
+    // Validate file type and size (< 2MB)
+    const maxBytes = 2 * 1024 * 1024;
+    const newErrors: Record<string, string> = { ...errors };
+    if (!file.type.startsWith("image/")) {
+      newErrors.image = "Only image files are allowed.";
+      setErrors(newErrors);
+      return;
+    }
+    if (file.size > maxBytes) {
+      newErrors.image = "Image must be smaller than 2 MB.";
+      setErrors(newErrors);
+      return;
+    }
+    // clear image error
+    delete newErrors.image;
+    setErrors(newErrors);
     setImageFile(file);
     setPreview(URL.createObjectURL(file));
   };
@@ -40,6 +57,9 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
     e.preventDefault();
     setSubmitting(true);
     try {
+      // client-side validation
+      const ok = validateAll();
+      if (!ok) return;
       let finalForm = { ...form };
       if (imageFile) {
         setUploading(true);
@@ -53,6 +73,45 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
       setUploading(false);
     }
   };
+
+  function validateYear(value: string) {
+    if (!value || !value.trim()) return "Year is required.";
+    // Accept formats like "2022 - 2024", "2022–2024", "2022 – 2024" or single year "2022"
+    const cleaned = value.replace(/[–—]/g, "-").replace(/\s+/g, "");
+    const parts = cleaned.split("-");
+    const isValidYear = (y: string) => /^\d{4}$/.test(y) && Number(y) >= 1900 && Number(y) <= 2100;
+    if (parts.length === 1) {
+      if (!isValidYear(parts[0])) return "Enter a valid 4-digit year (e.g. 2022).";
+      return "";
+    }
+    if (parts.length === 2) {
+      if (!isValidYear(parts[0]) || !isValidYear(parts[1])) return "Enter valid 4-digit years (e.g. 2022 - 2024).";
+      if (Number(parts[0]) > Number(parts[1])) return "Start year must be less than or equal to end year.";
+      return "";
+    }
+    return "Enter a valid year or year-range (e.g. 2022 - 2024).";
+  }
+
+  function validateAll() {
+    const next: Record<string, string> = {};
+    if (!form.name || !form.name.trim()) next.name = "Name is required.";
+    const yErr = validateYear(form.year);
+    if (yErr) next.year = yErr;
+    if (!form.description || form.description.trim().length < 10) next.description = "Description must be at least 10 characters.";
+    if (imageFile) {
+      const maxBytes = 2 * 1024 * 1024;
+      if (!imageFile.type.startsWith("image/")) next.image = "Only image files are allowed.";
+      else if (imageFile.size > maxBytes) next.image = "Image must be smaller than 2 MB.";
+    } else if (!form.imageUrl) {
+      // if no new file and no existing url, require an image
+      next.image = "Please upload a photo.";
+    }
+
+    setErrors(next);
+    const ok = Object.keys(next).length === 0;
+    if (!ok) setSubmitting(false);
+    return ok;
+  }
 
   const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 outline-none ring-[#000080] focus:ring-1 transition-all";
   const labelCls = "text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-[#000080] transition-colors mb-1.5 block text-left";
@@ -80,6 +139,7 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
             <Upload size={14} /> {preview ? "Replace Photo" : "Upload Photo"}
             <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) applyFile(f); }} className="hidden" />
           </label>
+          {errors.image && <p className="text-rose-500 text-xs mt-1">{errors.image}</p>}
         </div>
 
         {/* Form Fields - Right Side on Desktop */}
@@ -87,11 +147,13 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
           <div className="group">
             <label className={labelCls}>Name <span className="text-rose-500">*</span></label>
             <input value={form.name} onChange={set("name")} required placeholder="Enter full name" className={inputCls} />
+            {errors.name && <p className="text-rose-500 text-xs mt-1">{errors.name}</p>}
           </div>
 
           <div className="group">
             <label className={labelCls}>Year / Term <span className="text-rose-500">*</span></label>
             <input value={form.year} onChange={set("year")} required placeholder="e.g. 2022 – 2024" className={inputCls} />
+            {errors.year && <p className="text-rose-500 text-xs mt-1">{errors.year}</p>}
           </div>
 
           <div className="group">
@@ -104,6 +166,7 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
               placeholder="Brief description of their tenure and achievements..."
               className={`${inputCls} resize-none py-3`}
             />
+            {errors.description && <p className="text-rose-500 text-xs mt-1">{errors.description}</p>}
           </div>
 
           {/* Buttons */}
