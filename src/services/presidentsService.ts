@@ -17,6 +17,7 @@ import type {
   President,
   CreatePresidentInput,
 } from "../types/president.types";
+import { deleteImage } from "../utils/cloudinary";
 
 const COLLECTION = "presidents";
 
@@ -163,5 +164,15 @@ export async function deletePresident(
         error
       );
     }
+  }
+}
+
+export async function deletePresidentImage(publicId: string): Promise<void> {
+  if (!publicId) return;
+  try {
+    await deleteImage(publicId);
+  } catch (err) {
+    console.warn("[presidentsService] Failed to delete president image:", err);
+    throw err;
   }
 }
