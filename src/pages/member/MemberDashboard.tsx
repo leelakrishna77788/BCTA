@@ -189,13 +189,13 @@ const MemberDashboard: React.FC = () => {
           <div className="flex items-center gap-4">
             {/* Left Image */}
             <div>
-              {userProfile?.photoURL ? (
-                <img
-                  src={userProfile.photoURL}
-                  alt="User"
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border border-slate-200"
-                />
-              ) : (
+              {(userProfile?.imageUrl || currentUser?.photoURL) ? (
+                    <img
+                      src={userProfile.imageUrl || (currentUser?.photoURL as string)}
+                      alt="User"
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border border-slate-200"
+                    />
+                  ) : (
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-slate-100 flex items-center justify-center text-base font-bold text-slate-700">
                   {userProfile?.name?.[0]}
                 </div>

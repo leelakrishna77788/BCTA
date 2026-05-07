@@ -166,6 +166,7 @@ const SidebarContent: React.FC<SidebarContentProps> = React.memo(
     setMobileOpen,
   }) => {
     const { t } = useTranslation();
+    const { currentUser } = useAuth();
 
     return (
       <div className="flex flex-col h-full text-slate-300">
@@ -260,9 +261,9 @@ const SidebarContent: React.FC<SidebarContentProps> = React.memo(
               className="flex items-center gap-3 rounded-xl p-3 mb-3 transition-colors"
               style={{ background: "rgba(255,255,255,0.04)" }}
             >
-              {userProfile?.photoURL ? (
+              {userProfile?.imageUrl || currentUser?.photoURL ? (
                 <img
-                  src={userProfile.photoURL}
+                  src={userProfile.imageUrl || (currentUser?.photoURL as string)}
                   alt=""
                   className="w-10 h-10 rounded-lg object-cover ring-2 ring-indigo-500/20"
                 />

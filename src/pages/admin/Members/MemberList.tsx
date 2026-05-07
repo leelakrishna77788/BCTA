@@ -511,8 +511,8 @@ const MemberList: React.FC = () => {
                                 {/* Avatar and Basic Info */}
                                 <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                                     <div className="relative shrink-0">
-                                        {m.photoURL ? (
-                                            <img src={m.photoURL} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl object-cover shadow-md border-2 border-white" />
+                                        {m.imageUrl || m.photoURL ? (
+                                            <img src={m.imageUrl || m.photoURL} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl object-cover shadow-md border-2 border-white" />
                                         ) : (
                                             <div className="w-14 h-14 sm:w-16 sm:h-16 bg-indigo-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-indigo-600 font-black border-2 border-indigo-100 shadow-inner text-xl sm:text-2xl">
                                                 {m.name?.[0]}
@@ -549,7 +549,7 @@ const MemberList: React.FC = () => {
                                     <div className="rounded-xl px-3 py-2.5 text-center sm:px-4 bg-white/80 border border-white/80 min-h-[64px] flex flex-col justify-center">
                                         <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{t("memberList.status")}</p>
                                         <p className={`text-base sm:text-sm font-black uppercase flex items-center justify-center gap-1.5 ${m.status === "active" ? "text-indigo-700" : m.status === "pending" ? "text-amber-700" : "text-slate-600"}`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full ${m.status === "active" ? "bg-indigo-500 animate-pulse" : m.status === "pending" ? "bg-amber-500" : "bg-slate-400"}`}></div>
+                                            <span className={`w-1.5 h-1.5 rounded-full inline-block ${m.status === "active" ? "bg-indigo-500 animate-pulse" : m.status === "pending" ? "bg-amber-500" : "bg-slate-400"}`}></span>
                                             {t(`common.${m.status || 'pending'}`)}
                                         </p>
                                     </div>

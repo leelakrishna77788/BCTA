@@ -19,6 +19,7 @@ import {
 } from "firebase/firestore";
 import { createUserWithEmailAndPassword, deleteUser } from "firebase/auth";
 import { db, auth } from "../firebase/firebaseConfig";
+import { deleteImage } from "../utils/cloudinary";
 import type { Member, CreateMemberInput, MemberStats } from "../types/member.types";
 
 const MEMBERS_PER_PAGE = 20;
@@ -122,7 +123,8 @@ export async function createMember(input: CreateMemberInput): Promise<Member> {
     bloodGroup: input.bloodGroup ?? "",
     aadhaarLast4: input.aadhaarLast4 ?? "",
     shopAddress: input.shopAddress ?? "",
-    photoURL: "",
+    imageUrl: "",
+    imagePublicId: "",
     role: "member",
     status: "active",
     attendanceCount: 0,
@@ -219,7 +221,8 @@ export const membersApi = {
       bloodGroup: input.bloodGroup ?? "",
       aadhaarLast4: input.aadhaarLast4 ?? "",
       shopAddress: input.shopAddress ?? "",
-      photoURL: "",
+      imageUrl: input.imageUrl ?? "",
+      imagePublicId: input.imagePublicId ?? "",
       role: "member",
       status: "active",
       attendanceCount: 0,
@@ -331,6 +334,19 @@ export const membersApi = {
     
     console.log("[membersApi.delete] Using local fallback, deleting Firestore doc for:", uid);
     try {
+      // attempt to delete cloudinary image if present
+      try {
+        const snap = await getDoc(doc(db, "users", uid));
+        if (snap.exists()) {
+          const data = snap.data() as any;
+          if (data?.imagePublicId) {
+            try { await deleteImage(data.imagePublicId); } catch (e) { console.warn("Failed to delete cloudinary image during member delete", e); }
+          }
+        }
+      } catch (innerErr) {
+        console.warn("Could not fetch member doc for image deletion:", innerErr);
+      }
+
       await deleteDoc(doc(db, "users", uid));
       console.log("[membersApi.delete] Successfully deleted:", uid);
       return { message: "Document deleted successfully" };

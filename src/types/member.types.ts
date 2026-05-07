@@ -23,6 +23,8 @@ export interface Member {
   aadhaarLast4?: string;
   shopAddress?: string;
   photoURL?: string;
+  imageUrl?: string;
+  imagePublicId?: string;
   role: UserRole;
   status: UserStatus;
   attendanceCount: number;
@@ -45,6 +47,8 @@ export interface CreateMemberInput {
   nomineeDetails?: NomineeDetails;
   memberId?: string;
   phone?: string;
+  imageUrl?: string;
+  imagePublicId?: string;
 }
 
 export interface MemberStats {

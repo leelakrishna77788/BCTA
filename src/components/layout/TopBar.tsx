@@ -309,9 +309,9 @@ className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-50 text-red-400 opacit
               {userRole || t("common.member")}
             </p>
           </div>
-          {userProfile?.photoURL || currentUser?.photoURL ? (
+          {userProfile?.imageUrl || currentUser?.photoURL ? (
             <img
-              src={userProfile?.photoURL || (currentUser?.photoURL as string)}
+              src={userProfile?.imageUrl || (currentUser?.photoURL as string)}
               alt=""
               className="w-9 h-9 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-indigo-200 transition-all shadow-sm"
             />

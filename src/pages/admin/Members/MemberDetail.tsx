@@ -229,7 +229,7 @@ const MemberDetail: React.FC = () => {
             const memberIdSafe = escapeHtml(member.memberId || "MEMBER ID PENDING");
             const statusSafe = escapeHtml(member.status || "unknown");
             const yearSafe = escapeHtml(String(memberSince));
-            const photoUrl = member.photoURL || "";
+            const photoUrl = (member.imageUrl || member.photoURL) || "";
 
             const CARD_W = 380;
             const host = document.createElement("div");
@@ -372,7 +372,7 @@ const MemberDetail: React.FC = () => {
             const memberIdSafe = escapeHtml(member.memberId || "MEMBER ID PENDING");
             const statusSafe = escapeHtml(member.status || "unknown");
             const yearSafe = escapeHtml(String(memberSince));
-            const photoUrl = member.photoURL || "";
+            const photoUrl = (member.imageUrl || member.photoURL) || "";
             const logoUrl = assets.herologo;
 
             const exportCard = document.createElement("div");
@@ -724,18 +724,18 @@ const MemberDetail: React.FC = () => {
                 <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.95fr)] lg:items-center">
                     <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
                         <div className="flex justify-center sm:justify-start">
-                            {member.photoURL ? (
-                                <img
-                                    src={member.photoURL}
-                                    alt={t("common.userProfile")}
-                                    className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
-                                />
-                            ) : (
-                                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
-                                    {profileInitial}
-                                </div>
-                            )}
-                        </div>
+                                {(member.imageUrl || member.photoURL) ? (
+                                    <img
+                                        src={member.imageUrl || member.photoURL}
+                                        alt={t("common.userProfile")}
+                                        className="h-24 w-24 rounded-3xl object-cover ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28"
+                                    />
+                                ) : (
+                                    <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 text-4xl font-bold ring-4 ring-white/20 shadow-xl sm:h-28 sm:w-28">
+                                        {profileInitial}
+                                    </div>
+                                )}
+                            </div>
 
                         <div className="min-w-0 space-y-4">
                             <div className="space-y-1 text-center sm:text-left">
@@ -1019,8 +1019,8 @@ const MemberDetail: React.FC = () => {
                                         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:gap-5">
                                             <div className="shrink-0">
                                                 <div className="w-18 h-18 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-white/10 bg-[#1e1b4b] flex items-center justify-center text-white font-bold text-2xl sm:text-3xl">
-                                                    {member.photoURL ? (
-                                                        <img src={member.photoURL} alt={t("common.userProfile")} className="w-full h-full object-cover" />
+                                                    {(member.imageUrl || member.photoURL) ? (
+                                                        <img src={member.imageUrl || member.photoURL} alt={t("common.userProfile")} className="w-full h-full object-cover" />
                                                     ) : (
                                                         member.name?.[0]
                                                     )}

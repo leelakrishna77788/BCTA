@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db, storage } from "../../firebase/firebaseConfig";
-import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import { db } from "../../firebase/firebaseConfig";
+import { uploadImage, deleteImage, ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES } from "../../utils/cloudinary";
 import {
   AlertCircle,
   BadgeCheck,
@@ -59,7 +59,7 @@ const buildProfileEditForm = (userProfile: any): ProfileEditForm => ({
 
 const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d+$/;
 
-const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
+  const MAX_UPLOAD_SIZE_BYTES = 2 * 1024 * 1024; // enforce 2MB for members per requirement
 
 const optimizeImageForUpload = async (file: File): Promise<File> => {
   if (!file.type.startsWith("image/") || file.size < 300 * 1024) return file;
@@ -150,8 +150,9 @@ const MyProfile: React.FC = () => {
   ).toUpperCase();
   const activePhotoURL =
     (isEditing ? photoPreview : "") ||
-    userProfile?.photoURL ||
     uploadedPhotoURL ||
+    userProfile?.imageUrl ||
+    (currentUser?.photoURL as string) ||
     "";
   const paymentTone =
     userProfile?.paymentStatus === "paid"
@@ -182,7 +183,7 @@ const MyProfile: React.FC = () => {
     const nextForm = buildProfileEditForm(userProfile);
     setEditForm(nextForm);
     setOriginalForm(nextForm);
-    setPhotoPreview(userProfile.photoURL || "");
+    setPhotoPreview(userProfile.imageUrl || (currentUser?.photoURL as string) || "");
     setPhotoFile(null);
     setUploadedPhotoURL("");
     setIsPhotoUploading(false);
@@ -211,13 +212,13 @@ const MyProfile: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error(t("profile.toast.invalidImage"));
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast.error("Only JPG, PNG, and WEBP images are allowed");
       return;
     }
 
-    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-      toast.error(t("profile.toast.imageTooLarge"));
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error("Image size must be less than 2MB");
       return;
     }
 
@@ -238,41 +239,22 @@ const MyProfile: React.FC = () => {
     setUploadProgress(0);
     try {
       const optimizedPhoto = await optimizeImageForUpload(file);
-      const photoRef = ref(
-        storage,
-        `member-photos/${currentUser.uid}/${Date.now()}-${optimizedPhoto.name}`,
-      );
 
-      await new Promise<void>((resolve, reject) => {
-        const task = uploadBytesResumable(photoRef, optimizedPhoto, {
-          contentType: optimizedPhoto.type,
-          cacheControl: "public,max-age=3600",
-        });
+      // delete old image first if present (requirement)
+      const prevPublicId = userProfile?.imagePublicId || "";
+      if (prevPublicId) {
+        try { await deleteImage(prevPublicId); } catch (e) { console.warn("Failed to delete previous image", e); }
+      }
 
-        task.on(
-          "state_changed",
-          (snapshot) => {
-            const progress = Math.round(
-              (snapshot.bytesTransferred / snapshot.totalBytes) * 100,
-            );
-            setUploadProgress(progress);
-          },
-          (error) => reject(error),
-          () => resolve(),
-        );
-      });
-
-      const url = await getDownloadURL(photoRef);
-      await updateMember(currentUser.uid, { photoURL: url });
+      const { url, publicId } = await uploadImage(optimizedPhoto, "members");
+      await updateMember(currentUser.uid, { imageUrl: url, imagePublicId: publicId });
       setUploadedPhotoURL(url);
       await refreshProfile();
       toast.success(t("profile.toast.imageSaved"));
     } catch (error: any) {
       console.error("Photo upload failed:", error);
       setUploadedPhotoURL("");
-      toast.error(
-        error?.message || t("profile.toast.imageFailed"),
-      );
+      toast.error(error?.message || t("profile.toast.imageFailed"));
     } finally {
       setIsPhotoUploading(false);
     }
@@ -292,7 +274,7 @@ const MyProfile: React.FC = () => {
       URL.revokeObjectURL(photoPreview);
     }
     setPhotoFile(null);
-    setPhotoPreview(userProfile.photoURL || "");
+    setPhotoPreview(userProfile.imageUrl || userProfile.photoURL || "");
     setUploadedPhotoURL("");
     setIsPhotoUploading(false);
     setUploadProgress(null);
@@ -327,7 +309,7 @@ const MyProfile: React.FC = () => {
         toast(t("profile.toast.uploadInProgress"));
       }
 
-      const nextPhotoURL = uploadedPhotoURL || userProfile?.photoURL || "";
+      const nextPhotoURL = uploadedPhotoURL || userProfile?.imageUrl || userProfile?.photoURL || "";
 
       await updateMember(currentUser.uid, {
         name: editForm.name.trim(),
@@ -343,7 +325,7 @@ const MyProfile: React.FC = () => {
           relation: editForm.nomineeRelation.trim(),
           phone: editForm.nomineePhone.trim(),
         },
-        photoURL: nextPhotoURL,
+        imageUrl: nextPhotoURL,
       });
 
       await refreshProfile();

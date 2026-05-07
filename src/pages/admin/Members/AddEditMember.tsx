@@ -17,8 +17,8 @@ import {
     EyeOff
 } from "lucide-react";
 import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../../../firebase/firebaseConfig";
+import { db } from "../../../firebase/firebaseConfig";
+import { uploadImage, ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, deleteImage } from "../../../utils/cloudinary";
 import { generateSequentialMemberId, membersApi } from "../../../services/membersService";
 import type { Gender, BloodGroup } from "../../../types/member.types";
 import LoadingSkeleton, { CardSkeleton } from "../../../components/shared/LoadingSkeleton";
@@ -193,7 +193,7 @@ const AddEditMember: React.FC = () => {
             const fetchMember = async () => {
                 try {
                     const snap = await getDoc(doc(db, "users", id));
-                    if (snap.exists()) {
+                        if (snap.exists()) {
                         const d = snap.data();
                         setForm({
                             name: d.name || "",
@@ -211,7 +211,7 @@ const AddEditMember: React.FC = () => {
                             nomineePhone: d.nomineeDetails?.phone || "",
                             memberId: d.memberId
                         });
-                        if (d.photoURL) setPhotoPreview(d.photoURL);
+                        if (d.imageUrl || d.photoURL) setPhotoPreview(d.imageUrl || d.photoURL);
                     } else {
                         toast.error(t("addEditMember.errors.notFound"));
                         navigate("/admin/members");
@@ -318,29 +318,58 @@ const AddEditMember: React.FC = () => {
                 });
                 
                 // Photo upload for edit
-                if (photoFile) {
-                    const storageRef = ref(storage, `member-photos/${id}`);
-                    await uploadBytes(storageRef, photoFile);
-                    const photoURL = await getDownloadURL(storageRef);
-                    await updateDoc(doc(db, "users", id), { photoURL });
-                }
+                        if (photoFile) {
+                            // validate
+                            if (!ALLOWED_IMAGE_TYPES.includes(photoFile.type)) throw new Error("Only JPG, PNG, and WEBP images are allowed");
+                            if (photoFile.size > MAX_IMAGE_BYTES) throw new Error("Image size must be less than 2MB");
+
+                            // delete old image if exists
+                            const existing = (await getDoc(doc(db, "users", id))).data() as any;
+                            if (existing?.imagePublicId) {
+                                try { await deleteImage(existing.imagePublicId); } catch (e) { console.warn("Failed to delete existing member image", e); }
+                            }
+
+                            const { url, publicId } = await uploadImage(photoFile, "members");
+                            await updateDoc(doc(db, "users", id), { imageUrl: url, imagePublicId: publicId });
+                        }
                 
                 toast.success(t("addEditMember.success.updated"));
                 navigate(`/admin/members/${id}`);
             } else {
+                // If a photo is provided, attempt upload first so we can include image data in the
+                // server-side create. If upload fails, fall back to creating the user without image
+                // and then attempt upload+update after creation.
+                let uploaded: { url: string; publicId: string } | null = null;
+                if (photoFile) {
+                    if (!ALLOWED_IMAGE_TYPES.includes(photoFile.type)) throw new Error("Only JPG, PNG, and WEBP images are allowed");
+                    if (photoFile.size > MAX_IMAGE_BYTES) throw new Error("Image size must be less than 2MB");
+                    try {
+                        uploaded = await uploadImage(photoFile, "members");
+                    } catch (uploadErr) {
+                        console.warn("Initial image upload failed, will create user without image and retry:", uploadErr);
+                        uploaded = null;
+                        toast.success(t("addEditMember.createdWithoutImage"));
+                    }
+                }
+
                 const response = await membersApi.create({
                     ...commonData,
                     memberId: resolvedMemberId,
-                    password: form.password || "password123"
+                    password: form.password || "password123",
+                    imageUrl: uploaded?.url,
+                    imagePublicId: uploaded?.publicId,
                 });
+
                 const newUid = response.member?.uid;
-                
-                // Photo upload for create
-                if (photoFile && newUid) {
-                    const storageRef = ref(storage, `member-photos/${newUid}`);
-                    await uploadBytes(storageRef, photoFile);
-                    const photoURL = await getDownloadURL(storageRef);
-                    await updateDoc(doc(db, "users", newUid), { photoURL });
+
+                // If initial upload failed but we have a photoFile, attempt upload after creation and write to the user doc.
+                if (!uploaded && photoFile && newUid) {
+                    try {
+                        const { url, publicId } = await uploadImage(photoFile, "members");
+                        await updateDoc(doc(db, "users", newUid), { imageUrl: url, imagePublicId: publicId });
+                    } catch (retryErr) {
+                        console.warn("Post-create image upload failed:", retryErr);
+                    }
                 }
                 
                 toast.success(t("addEditMember.success.created"));
