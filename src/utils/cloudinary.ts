@@ -30,7 +30,7 @@ export async function uploadImage(file: File, folder = "members") {
 
 export async function deleteImage(publicId: string) {
   try {
-    const res = await fetch("http://localhost:5000/api/delete-image", {
+    const res = await fetch("/api/delete-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ publicId }),

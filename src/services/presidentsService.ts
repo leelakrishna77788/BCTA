@@ -139,18 +139,13 @@ export async function deletePresident(
 
   if (imagePublicId) {
     try {
-      const res = await fetch(
-        "http://localhost:5000/api/delete-image",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            publicId: imagePublicId,
-          }),
-        }
-      );
+      const res = await fetch("/api/delete-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ publicId: imagePublicId }),
+      });
 
       const data = await res.json();
 
