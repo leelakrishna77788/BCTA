@@ -339,12 +339,21 @@ export const membersApi = {
         const snap = await getDoc(doc(db, "users", uid));
         if (snap.exists()) {
           const data = snap.data() as any;
+          // Debug: verify the public id before attempting deletion
+          console.log("Deleting member image:", data?.imagePublicId);
+
           if (data?.imagePublicId) {
-            try { await deleteImage(data.imagePublicId); } catch (e) { console.warn("Failed to delete cloudinary image during member delete", e); }
+            // Fail fast: ensure Cloudinary image is removed before deleting Firestore doc
+            await deleteImage(data.imagePublicId);
+            console.log("[membersApi.delete] Cloudinary image deleted:", data.imagePublicId);
           }
+        } else {
+          console.log("[membersApi.delete] Member doc not found for uid:", uid);
         }
       } catch (innerErr) {
-        console.warn("Could not fetch member doc for image deletion:", innerErr);
+        console.error("[membersApi.delete] Failed to fetch member doc or delete image:", innerErr);
+        // Abort so we don't delete the Firestore doc while the image still exists
+        throw innerErr;
       }
 
       await deleteDoc(doc(db, "users", uid));
