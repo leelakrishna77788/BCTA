@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import {
   Crown,
   Plus,
@@ -44,6 +45,17 @@ const PresidentsList: React.FC = () => {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (deletingPresident) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [deletingPresident]);
 
   const handleDelete = async () => {
     if (!deletingPresident) return;
@@ -163,85 +175,88 @@ const PresidentsList: React.FC = () => {
       )}
 
       {/* ── Delete Modal ── */}
-      {deletingPresident && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-8 text-center relative">
-
-            {/* Close */}
-            <button
-              onClick={() =>
-                setDeletingPresident(null)
-              }
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
+      {deletingPresident &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/70 backdrop-blur-md"
+            onClick={() => setDeletingPresident(null)}
+          >
+            <div
+              className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 sm:p-8 text-center relative"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X size={16} />
-            </button>
 
-            {/* Preview */}
-            <img
-              src={deletingPresident.imageUrl}
-              alt={deletingPresident.name}
-              className="w-20 h-20 rounded-2xl object-cover mx-auto mb-4 border-2 border-red-100 shadow-md"
-            />
-
-            {/* Warning Icon */}
-            <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
-              <AlertTriangle size={24} />
-            </div>
-
-            {/* Title */}
-            <h2 className="text-xl font-black text-slate-900 mb-1">
-              Delete President
-            </h2>
-
-            {/* Description */}
-            <p className="text-sm text-slate-500 mb-6">
-              Remove{" "}
-              <strong className="text-slate-700">
-                {deletingPresident.name}
-              </strong>{" "}
-              permanently?
-              <br />
-
-              <span className="text-xs text-red-400">
-                This also deletes the image from
-                Cloudinary.
-              </span>
-            </p>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-
-              {/* Cancel */}
+              {/* Close */}
               <button
-                onClick={() =>
-                  setDeletingPresident(null)
-                }
-                className="flex-1 h-11 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
+                onClick={() => setDeletingPresident(null)}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors"
               >
-                Cancel
+                <X size={16} />
               </button>
 
-              {/* Delete */}
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 h-11 rounded-xl bg-red-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-md shadow-red-200 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {deleting ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete"
-                )}
-              </button>
+              {/* Preview */}
+              <img
+                src={deletingPresident.imageUrl}
+                alt={deletingPresident.name}
+                className="w-20 h-20 rounded-2xl object-cover mx-auto mb-4 border-2 border-red-100 shadow-md"
+              />
 
+              {/* Warning Icon */}
+              <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                <AlertTriangle size={24} />
+              </div>
+
+              {/* Title */}
+              <h2 className="text-xl font-black text-slate-900 mb-1">
+                Delete President
+              </h2>
+
+              {/* Description */}
+              <p className="text-sm text-slate-500 mb-6">
+                Remove{" "}
+                <strong className="text-slate-700">
+                  {deletingPresident.name}
+                </strong>{" "}
+                permanently?
+                <br />
+                <span className="text-xs text-red-400">
+                  This also deletes the image from
+                  Cloudinary.
+                </span>
+              </p>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+
+                {/* Cancel */}
+                <button
+                  onClick={() => setDeletingPresident(null)}
+                  className="flex-1 h-11 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
+                >
+                  Cancel
+                </button>
+
+                {/* Delete */}
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 h-11 rounded-xl bg-red-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-md shadow-red-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete"
+                  )}
+                </button>
+
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
