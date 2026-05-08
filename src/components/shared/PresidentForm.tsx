@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { User, Calendar, FileText, ImageIcon, Loader2, Upload, Crown } from "lucide-react";
 import { uploadPresidentImage } from "../../services/presidentsService";
 import type { CreatePresidentInput } from "../../types/president.types";
@@ -13,6 +14,7 @@ interface PresidentFormProps {
 const EMPTY: CreatePresidentInput = { name: "", year: "", description: "", imageUrl: "", imagePublicId: "" };
 
 const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, submitLabel, onCancel }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState<CreatePresidentInput>({ ...EMPTY, ...initialValues });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>(initialValues?.imageUrl ?? "");
@@ -30,12 +32,12 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
     const maxBytes = 2 * 1024 * 1024;
     const newErrors: Record<string, string> = { ...errors };
     if (!file.type.startsWith("image/")) {
-      newErrors.image = "Only image files are allowed.";
+      newErrors.image = t("adminPresidents.validation.imageOnly");
       setErrors(newErrors);
       return;
     }
     if (file.size > maxBytes) {
-      newErrors.image = "Image must be smaller than 2 MB.";
+      newErrors.image = t("adminPresidents.validation.imageSize");
       setErrors(newErrors);
       return;
     }
@@ -75,36 +77,36 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
   };
 
   function validateYear(value: string) {
-    if (!value || !value.trim()) return "Year is required.";
+    if (!value || !value.trim()) return t("adminPresidents.validation.yearRequired");
     // Accept formats like "2022 - 2024", "2022–2024", "2022 – 2024" or single year "2022"
     const cleaned = value.replace(/[–—]/g, "-").replace(/\s+/g, "");
     const parts = cleaned.split("-");
     const isValidYear = (y: string) => /^\d{4}$/.test(y) && Number(y) >= 1900 && Number(y) <= 2100;
     if (parts.length === 1) {
-      if (!isValidYear(parts[0])) return "Enter a valid 4-digit year (e.g. 2022).";
+      if (!isValidYear(parts[0])) return t("adminPresidents.validation.validYear");
       return "";
     }
     if (parts.length === 2) {
-      if (!isValidYear(parts[0]) || !isValidYear(parts[1])) return "Enter valid 4-digit years (e.g. 2022 - 2024).";
-      if (Number(parts[0]) > Number(parts[1])) return "Start year must be less than or equal to end year.";
+      if (!isValidYear(parts[0]) || !isValidYear(parts[1])) return t("adminPresidents.validation.validYears");
+      if (Number(parts[0]) > Number(parts[1])) return t("adminPresidents.validation.startYearLess");
       return "";
     }
-    return "Enter a valid year or year-range (e.g. 2022 - 2024).";
+    return t("adminPresidents.validation.validRange");
   }
 
   function validateAll() {
     const next: Record<string, string> = {};
-    if (!form.name || !form.name.trim()) next.name = "Name is required.";
+    if (!form.name || !form.name.trim()) next.name = t("adminPresidents.validation.nameRequired");
     const yErr = validateYear(form.year);
     if (yErr) next.year = yErr;
-    if (!form.description || form.description.trim().length < 10) next.description = "Description must be at least 10 characters.";
+    if (!form.description || form.description.trim().length < 10) next.description = t("adminPresidents.validation.descLength");
     if (imageFile) {
       const maxBytes = 2 * 1024 * 1024;
-      if (!imageFile.type.startsWith("image/")) next.image = "Only image files are allowed.";
-      else if (imageFile.size > maxBytes) next.image = "Image must be smaller than 2 MB.";
+      if (!imageFile.type.startsWith("image/")) next.image = t("adminPresidents.validation.imageOnly");
+      else if (imageFile.size > maxBytes) next.image = t("adminPresidents.validation.imageSize");
     } else if (!form.imageUrl) {
       // if no new file and no existing url, require an image
-      next.image = "Please upload a photo.";
+      next.image = t("adminPresidents.validation.uploadRequired");
     }
 
     setErrors(next);
@@ -136,7 +138,7 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
             )}
           </div>
           <label className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-[#000080] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#000066] transition-colors shadow-sm w-auto whitespace-nowrap">
-            <Upload size={14} /> {preview ? "Replace Photo" : "Upload Photo"}
+            <Upload size={14} /> {preview ? t("adminPresidents.form.replacePhoto") : t("adminPresidents.form.uploadPhoto")}
             <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) applyFile(f); }} className="hidden" />
           </label>
           {errors.image && <p className="text-rose-500 text-xs mt-1">{errors.image}</p>}
@@ -145,25 +147,25 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
         {/* Form Fields - Right Side on Desktop */}
         <div className="flex-1 space-y-4 w-full text-left">
           <div className="group">
-            <label className={labelCls}>Name <span className="text-rose-500">*</span></label>
-            <input value={form.name} onChange={set("name")} required placeholder="Enter full name" className={inputCls} />
+            <label className={labelCls}>{t("adminPresidents.form.name")} <span className="text-rose-500">*</span></label>
+            <input value={form.name} onChange={set("name")} required placeholder={t("adminPresidents.form.namePlaceholder")} className={inputCls} />
             {errors.name && <p className="text-rose-500 text-xs mt-1">{errors.name}</p>}
           </div>
 
           <div className="group">
-            <label className={labelCls}>Year / Term <span className="text-rose-500">*</span></label>
-            <input value={form.year} onChange={set("year")} required placeholder="e.g. 2022 – 2024" className={inputCls} />
+            <label className={labelCls}>{t("adminPresidents.form.year")} <span className="text-rose-500">*</span></label>
+            <input value={form.year} onChange={set("year")} required placeholder={t("adminPresidents.form.yearPlaceholder")} className={inputCls} />
             {errors.year && <p className="text-rose-500 text-xs mt-1">{errors.year}</p>}
           </div>
 
           <div className="group">
-            <label className={labelCls}>Description <span className="text-rose-500">*</span></label>
+            <label className={labelCls}>{t("adminPresidents.form.description")} <span className="text-rose-500">*</span></label>
             <textarea
               value={form.description}
               onChange={set("description")}
               required
               rows={5}
-              placeholder="Brief description of their tenure and achievements..."
+              placeholder={t("adminPresidents.form.descPlaceholder")}
               className={`${inputCls} resize-none py-3`}
             />
             {errors.description && <p className="text-rose-500 text-xs mt-1">{errors.description}</p>}
@@ -177,7 +179,7 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
               className="w-full h-12 rounded-xl bg-[#000080] text-white font-bold text-sm shadow-sm hover:bg-[#000066] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {(submitting || uploading) ? (
-                <><Loader2 size={16} className="animate-spin" />{uploading ? "Processing..." : "Saving..."}</>
+                <><Loader2 size={16} className="animate-spin" />{uploading ? t("adminPresidents.form.processing") : t("adminPresidents.form.saving")}</>
               ) : submitLabel}
             </button>
 
@@ -186,7 +188,7 @@ const PresidentForm: React.FC<PresidentFormProps> = ({ initialValues, onSubmit, 
               onClick={onCancel}
               className="w-full h-12 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-sm hover:bg-slate-50 transition-all"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>

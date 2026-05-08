@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Calendar, Pencil, Trash2 } from "lucide-react";
 import type { President } from "../../types/president.types";
 
@@ -17,6 +18,7 @@ const COLORS = [
 ];
 
 const PresidentCard: React.FC<PresidentCardProps> = ({ president, index, onEdit, onDelete }) => {
+  const { t } = useTranslation();
   const color = COLORS[index % COLORS.length];
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group">
@@ -55,14 +57,14 @@ const PresidentCard: React.FC<PresidentCardProps> = ({ president, index, onEdit,
           <button
             onClick={() => onEdit(president.id)}
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center transition-all hover:scale-110"
-            title="Edit"
+            title={t("common.edit")}
           >
             <Pencil size={13} />
           </button>
           <button
             onClick={() => onDelete(president)}
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-red-50 border border-red-100 text-red-400 hover:bg-red-100 flex items-center justify-center transition-all hover:scale-110"
-            title="Delete"
+            title={t("common.delete")}
           >
             <Trash2 size={13} />
           </button>

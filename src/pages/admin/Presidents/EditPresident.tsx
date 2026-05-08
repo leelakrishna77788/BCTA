@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Crown } from "lucide-react";
 import toast from "react-hot-toast";
@@ -7,6 +8,7 @@ import PresidentForm from "../../../components/shared/PresidentForm";
 import type { CreatePresidentInput } from "../../../types/president.types";
 
 const EditPresident: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [initial, setInitial] = useState<CreatePresidentInput | null>(null);
@@ -16,12 +18,16 @@ const EditPresident: React.FC = () => {
     if (!id) return;
     getPresidentById(id)
       .then((p) => {
-        if (!p) { toast.error("President not found."); navigate("/admin/presidents"); return; }
+        if (!p) {
+          toast.error(t("adminPresidents.toast.notFound"));
+          navigate("/admin/presidents");
+          return;
+        }
         setOldPublicId(p.imagePublicId);
         setInitial({ name: p.name, year: p.year, description: p.description, imageUrl: p.imageUrl, imagePublicId: p.imagePublicId });
       })
-      .catch(() => toast.error("Failed to load president."));
-  }, [id, navigate]);
+      .catch(() => toast.error(t("adminPresidents.toast.loadError")));
+  }, [id, navigate, t]);
 
   const handleSubmit = async (data: CreatePresidentInput) => {
     if (!id) return;
@@ -30,10 +36,10 @@ const EditPresident: React.FC = () => {
         await deletePresidentImage(oldPublicId);
       }
       await updatePresident(id, data);
-      toast.success("President updated!");
+      toast.success(t("adminPresidents.toast.updateSuccess"));
       navigate("/admin/presidents");
     } catch {
-      toast.error("Failed to update president.");
+      toast.error(t("adminPresidents.toast.updateError"));
     }
   };
 
@@ -42,7 +48,7 @@ const EditPresident: React.FC = () => {
       <div className="flex items-center justify-center py-24">
         <div className="flex flex-col items-center gap-3">
           <div className="w-9 h-9 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm font-medium">Loading...</p>
+          <p className="text-slate-400 text-sm font-medium">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -55,7 +61,7 @@ const EditPresident: React.FC = () => {
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 text-slate-400 hover:text-[#000080] font-semibold mb-6 transition-colors text-sm w-fit"
       >
-        <ArrowLeft size={16} /> Back
+        <ArrowLeft size={16} /> {t("adminPresidents.back")}
       </button>
 
       <div className="max-w-4xl mx-auto w-full px-3 sm:px-6">
@@ -74,7 +80,7 @@ const EditPresident: React.FC = () => {
                 </div>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-900 tracking-tight">Edit President</h1>
+                <h1 className="text-lg font-bold text-slate-900 tracking-tight">{t("adminPresidents.editPresident")}</h1>
                 <p className="text-slate-500 text-xs mt-0.5 truncate max-w-[200px]">{initial.name}</p>
               </div>
             </div>
@@ -85,7 +91,7 @@ const EditPresident: React.FC = () => {
             <PresidentForm
               initialValues={initial}
               onSubmit={handleSubmit}
-              submitLabel="Save Changes"
+              submitLabel={t("adminPresidents.saveChanges")}
               onCancel={() => navigate(-1)}
             />
           </div>
@@ -95,4 +101,4 @@ const EditPresident: React.FC = () => {
   );
 };
 
-export default EditPresident;
+export default EditPresident;

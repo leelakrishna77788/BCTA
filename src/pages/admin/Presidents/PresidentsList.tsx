@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
@@ -20,6 +21,7 @@ import PresidentCard from "../../../components/shared/PresidentCard";
 import type { President } from "../../../types/president.types";
 
 const PresidentsList: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [presidents, setPresidents] = useState<President[]>([]);
@@ -36,7 +38,7 @@ const PresidentsList: React.FC = () => {
 
       setPresidents([...data].reverse());
     } catch {
-      toast.error("Failed to load presidents.");
+      toast.error(t("adminPresidents.toast.loadError"));
     } finally {
       setLoading(false);
     }
@@ -68,13 +70,13 @@ const PresidentsList: React.FC = () => {
         deletingPresident.imagePublicId
       );
 
-      toast.success("President deleted.");
+      toast.success(t("adminPresidents.toast.deleteSuccess"));
 
       setDeletingPresident(null);
 
       load();
     } catch {
-      toast.error("Failed to delete president.");
+      toast.error(t("adminPresidents.toast.deleteError"));
     } finally {
       setDeleting(false);
     }
@@ -94,7 +96,7 @@ const PresidentsList: React.FC = () => {
 
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-              Presidents
+              {t("adminPresidents.title")}
             </h1>
 
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -104,8 +106,7 @@ const PresidentsList: React.FC = () => {
               />
 
               <p className="text-slate-400 font-semibold text-sm">
-                {presidents.length} record
-                {presidents.length !== 1 ? "s" : ""}
+                {t("adminPresidents.records", { count: presidents.length })}
               </p>
             </div>
           </div>
@@ -117,7 +118,7 @@ const PresidentsList: React.FC = () => {
           className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-sm shadow-lg shadow-indigo-200 hover:scale-[1.02] hover:shadow-indigo-300 transition-all duration-200"
         >
           <Plus size={18} />
-          Add President
+          {t("adminPresidents.addPresident")}
         </button>
       </div>
 
@@ -141,11 +142,11 @@ const PresidentsList: React.FC = () => {
           </div>
 
           <p className="font-black text-slate-700 text-lg">
-            No presidents yet
+            {t("adminPresidents.noPresidents")}
           </p>
 
           <p className="text-slate-400 text-sm mt-1 mb-6">
-            Add the first president to get started
+            {t("adminPresidents.addFirst")}
           </p>
 
           <button
@@ -155,7 +156,7 @@ const PresidentsList: React.FC = () => {
             className="inline-flex items-center gap-2 h-11 px-6 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200"
           >
             <Plus size={16} />
-            Add President
+            {t("adminPresidents.addPresident")}
           </button>
         </div>
       ) : (
@@ -208,20 +209,15 @@ const PresidentsList: React.FC = () => {
 
               {/* Title */}
               <h2 className="text-xl font-black text-slate-900 mb-1">
-                Delete President
+                {t("adminPresidents.deleteTitle")}
               </h2>
 
               {/* Description */}
               <p className="text-sm text-slate-500 mb-6">
-                Remove{" "}
-                <strong className="text-slate-700">
-                  {deletingPresident.name}
-                </strong>{" "}
-                permanently?
+                {t("adminPresidents.deleteConfirm", { name: deletingPresident.name })}
                 <br />
                 <span className="text-xs text-red-400">
-                  This also deletes the image from
-                  Cloudinary.
+                  {t("adminPresidents.deleteWarning")}
                 </span>
               </p>
 
@@ -233,7 +229,7 @@ const PresidentsList: React.FC = () => {
                   onClick={() => setDeletingPresident(null)}
                   className="flex-1 h-11 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
 
                 {/* Delete */}
@@ -245,10 +241,10 @@ const PresidentsList: React.FC = () => {
                   {deleting ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Deleting...
+                      {t("adminPresidents.deleting")}
                     </>
                   ) : (
-                    "Delete"
+                    t("common.delete")
                   )}
                 </button>
 

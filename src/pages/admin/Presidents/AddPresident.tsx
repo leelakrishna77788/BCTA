@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Crown } from "lucide-react";
 import toast from "react-hot-toast";
@@ -7,15 +8,16 @@ import PresidentForm from "../../../components/shared/PresidentForm";
 import type { CreatePresidentInput } from "../../../types/president.types";
 
 const AddPresident: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleSubmit = async (data: CreatePresidentInput) => {
     try {
       await addPresident(data);
-      toast.success("President added successfully!");
+      toast.success(t("adminPresidents.toast.addSuccess"));
       navigate("/admin/presidents");
     } catch {
-      toast.error("Failed to add president.");
+      toast.error(t("adminPresidents.toast.addError"));
     }
   };
 
@@ -26,7 +28,7 @@ const AddPresident: React.FC = () => {
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 text-slate-400 hover:text-[#000080] font-semibold mb-6 transition-colors text-sm w-fit"
       >
-        <ArrowLeft size={16} /> Back
+        <ArrowLeft size={16} /> {t("adminPresidents.back")}
       </button>
 
       <div className="max-w-4xl mx-auto w-full px-3 sm:px-6">
@@ -38,8 +40,8 @@ const AddPresident: React.FC = () => {
                 <Crown size={22} className="text-[#000080]" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-900 tracking-tight">Add President</h1>
-                <p className="text-slate-500 text-xs mt-0.5">Add a new president to BCTA records</p>
+                <h1 className="text-lg font-bold text-slate-900 tracking-tight">{t("adminPresidents.addPresident")}</h1>
+                <p className="text-slate-500 text-xs mt-0.5">{t("adminPresidents.addHeaderDesc")}</p>
               </div>
             </div>
           </div>
@@ -48,7 +50,7 @@ const AddPresident: React.FC = () => {
           <div className="p-5 sm:p-8">
             <PresidentForm
               onSubmit={handleSubmit}
-              submitLabel="Add President"
+              submitLabel={t("adminPresidents.addPresident")}
               onCancel={() => navigate(-1)}
             />
           </div>
@@ -58,4 +60,4 @@ const AddPresident: React.FC = () => {
   );
 };
 
-export default AddPresident;
+export default AddPresident;

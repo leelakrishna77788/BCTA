@@ -384,7 +384,10 @@
     "members1": "50+ Members",
     "members2": "120+ Members",
     "members3": "200+ Members",
-    "members4": "260+ Members"
+    "members4": "260+ Members",
+    "bctaLeadership": "BCTA Leadership",
+    "readMore": "Read more",
+    "less": "Less"
   },
   "memberTools": {
     "forMembers": "For Members",
@@ -1398,6 +1401,56 @@
       "resolveError": "Failed to resolve complaint: {{error}}",
       "deleteSuccess": "Deleted successfully",
       "deleteError": "Failed to delete complaint: {{error}}"
+    }
+  },
+  "adminPresidents": {
+    "title": "Presidents",
+    "records": "{{count}} record",
+    "records_plural": "{{count}} records",
+    "addPresident": "Add President",
+    "editPresident": "Edit President",
+    "noPresidents": "No presidents yet",
+    "addFirst": "Add the first president to get started",
+    "deleteTitle": "Delete President",
+    "deleteConfirm": "Remove {{name}} permanently?",
+    "deleteWarning": "This also deletes the image from Cloudinary.",
+    "deleting": "Deleting...",
+    "addHeaderDesc": "Add a new president to BCTA records",
+    "back": "Back",
+    "saveChanges": "Save Changes",
+    "form": {
+      "name": "Name",
+      "year": "Year / Term",
+      "description": "Description",
+      "namePlaceholder": "Enter full name",
+      "yearPlaceholder": "e.g. 2022 – 2024",
+      "descPlaceholder": "Brief description of their tenure and achievements...",
+      "uploadPhoto": "Upload Photo",
+      "replacePhoto": "Replace Photo",
+      "processing": "Processing...",
+      "saving": "Saving..."
+    },
+    "validation": {
+      "imageOnly": "Only image files are allowed.",
+      "imageSize": "Image must be smaller than 2 MB.",
+      "nameRequired": "Name is required.",
+      "yearRequired": "Year is required.",
+      "validYear": "Enter a valid 4-digit year (e.g. 2022).",
+      "validYears": "Enter valid 4-digit years (e.g. 2022 - 2024).",
+      "startYearLess": "Start year must be less than or equal to end year.",
+      "validRange": "Enter a valid year or year-range (e.g. 2022 - 2024).",
+      "descLength": "Description must be at least 10 characters.",
+      "uploadRequired": "Please upload a photo."
+    },
+    "toast": {
+      "addSuccess": "President added successfully!",
+      "addError": "Failed to add president.",
+      "updateSuccess": "President updated!",
+      "updateError": "Failed to update president.",
+      "deleteSuccess": "President deleted.",
+      "deleteError": "Failed to delete president.",
+      "loadError": "Failed to load presidents.",
+      "notFound": "President not found."
     }
   }
 }

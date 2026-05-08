@@ -14,12 +14,12 @@ const ERA_COLORS = [
 ];
 
 const PresidentsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [presidents, setPresidents] = useState<President[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useEffect(() => subscribePresidents(setPresidents), []);
+  useEffect(() => subscribePresidents(setPresidents), [i18n.language]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -72,7 +72,7 @@ const PresidentsPage: React.FC = () => {
           {/* Pill label */}
           <div className="inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-4 py-1.5 mb-5 shadow-sm">
             <Crown size={12} className="text-indigo-500" />
-            <span className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.16em]">BCTA Leadership</span>
+            <span className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.16em]">{t("presidents.bctaLeadership")}</span>
           </div>
 
           <div className="flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-16">
@@ -151,7 +151,7 @@ const PresidentsPage: React.FC = () => {
                   {t("presidents.presidentBCTA")}
                 </span>
                 <div className="flex items-center gap-1.5 text-slate-400">
-                  <span className="text-[11px] font-semibold">{isOpen ? "Less" : "Read more"}</span>
+                  <span className="text-[11px] font-semibold">{isOpen ? t("presidents.less") : t("presidents.readMore")}</span>
                   {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </div>
               </button>
