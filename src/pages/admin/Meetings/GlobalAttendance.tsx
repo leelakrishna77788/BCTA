@@ -115,7 +115,7 @@ const GlobalAttendance: React.FC = () => {
 
         // 3. Get Attendance
         const aSnap = await getDocs(collection(db, "attendance"));
-        const aMap: Record<string, Record<string, boolean>> = {};
+        const aMap: Record<string, Record<string, { present: boolean; attendanceDate?: string; attendanceTime?: string }>> = {};
         let totalPresentCount = 0;
         const memberPresences: Record<string, number> = {};
 
@@ -123,12 +123,30 @@ const GlobalAttendance: React.FC = () => {
           const data = doc.data();
           const uid = data?.memberUID || data?.memberId;
           const mapId = data?.meetingId;
-          
+
           if (uid && mapId) {
             if (!aMap[uid]) aMap[uid] = {};
             // Make sure we only increment logic ONCE per member/meeting combo
             if (!aMap[uid][mapId]) {
-               aMap[uid][mapId] = true;
+               // derive date/time from scannedAt timestamp
+               let attendanceDate: string | null = null;
+               let attendanceTime: string | null = null;
+               try {
+                 const scanned = data?.scannedAt;
+                 if (scanned && typeof scanned.toDate === 'function') {
+                   const d = scanned.toDate();
+                   attendanceDate = d.toLocaleDateString('en-GB');
+                   attendanceTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                 }
+               } catch (e) {
+                 // ignore
+               }
+
+               aMap[uid][mapId] = {
+                 present: true,
+                 attendanceDate: attendanceDate,
+                 attendanceTime: attendanceTime,
+               };
                totalPresentCount++;
                memberPresences[uid] = (memberPresences[uid] || 0) + 1;
             }
@@ -513,26 +531,35 @@ const GlobalAttendance: React.FC = () => {
                       </div>
                     </td>
                     {meetings.map((m) => {
-                      const isPresent = attendanceMap[member.id]?.[m.id];
-                      return (
-                        <td
-                          key={m.id}
-                          className="p-4 text-center border-r border-slate-50/50 last:border-r-0"
-                        >
-                          <div className="flex justify-center transition-all duration-300 group-hover:scale-105">
-                            {isPresent ? (
-                              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-[1.25rem] flex items-center justify-center shadow-inner border border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                                <Check size={22} strokeWidth={3} />
+                          const att = attendanceMap[member.id]?.[m.id];
+                          const isPresent = !!att?.present;
+                          const dateText = att?.attendanceDate || "N/A";
+                          const timeText = att?.attendanceTime || "N/A";
+                          return (
+                            <td
+                              key={m.id}
+                              className="p-4 text-center border-r border-slate-50/50 last:border-r-0"
+                            >
+                              <div className="flex flex-col items-center transition-all duration-300 group-hover:scale-105">
+                                {isPresent ? (
+                                  <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-[1.25rem] flex items-center justify-center shadow-inner border border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                                    <Check size={22} strokeWidth={3} />
+                                  </div>
+                                ) : (
+                                  <div className="w-10 h-10 bg-red-100 text-red-700 rounded-[1.25rem] flex items-center justify-center border border-red-200 group-hover:bg-red-200 group-hover:text-red-800 transition-all">
+                                    <X size={16} />
+                                  </div>
+                                )}
+                                {isPresent && (
+                                  <div className="text-[10px] text-slate-500 mt-1">
+                                    <div>{dateText}</div>
+                                    <div>{timeText}</div>
+                                  </div>
+                                )}
                               </div>
-                            ) : (
-                              <div className="w-10 h-10 bg-red-100 text-red-700 rounded-[1.25rem] flex items-center justify-center border border-red-200 group-hover:bg-red-200 group-hover:text-red-800 transition-all">
-                                <X size={16} />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
+                            </td>
+                          );
+                        })}
                   </tr>
                 );
               })}
@@ -583,30 +610,35 @@ const GlobalAttendance: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {meetings.slice(0, 5).map((m) => (
+                  {meetings.slice(0, 5).map((m) => {
+                    const att = attendanceMap[member.id]?.[m.id];
+                    const isP = !!att?.present;
+                    const dateText = att?.attendanceDate || "N/A";
+                    const timeText = att?.attendanceTime || "N/A";
+                    return (
                     <div
                       key={m.id}
                       className="flex flex-col items-center gap-1"
                     >
                       <div
                         className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
-                          attendanceMap[member.id]?.[m.id]
+                          isP
                             ? "bg-emerald-50 border-emerald-100 text-emerald-600"
                             : "bg-red-50 border-red-100 text-red-500"
                         }`}
                       >
-                        {attendanceMap[member.id]?.[m.id] ? (
+                        {isP ? (
                           <Check size={14} strokeWidth={3} />
                         ) : (
                           <X size={12} />
                         )}
                       </div>
-                      <span className="text-[8px] font-bold text-slate-400 uppercase">
-                        {m.displayDate?.split("/")[0]}/
-                        {m.displayDate?.split("/")[1]}
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        {isP ? `${dateText} ${timeText}` : (m.displayDate?.split("/")[0] + "/" + m.displayDate?.split("/")[1])}
                       </span>
                     </div>
-                  ))}
+                    );
+                  })}
                   {meetings.length > 5 && (
                     <div className="flex flex-col items-center gap-1 opacity-50">
                       <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">

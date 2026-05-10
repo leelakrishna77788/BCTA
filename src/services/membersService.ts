@@ -23,44 +23,42 @@ import { deleteImage } from "../utils/cloudinary";
 import type { Member, CreateMemberInput, MemberStats } from "../types/member.types";
 
 const MEMBERS_PER_PAGE = 20;
-const MEMBER_ID_PATTERN = /^BCTA-(\d{4})-(\d+)$/;
-const MAX_TOTAL_MEMBERS = 999;
-const START_MEMBER_SEQUENCE = 1;
+const MEMBER_ID_PATTERN_OLD = /^BCTA-(\d{4})-(\d+)$/;
 
+/**
+ * Generate a plain numeric memberId without leading zeros.
+ * Keeps compatibility with older `BCTA-YYYY-NNN` IDs by parsing them,
+ * and assigns the lowest unused positive integer as a string.
+ */
 export async function generateSequentialMemberId(): Promise<string> {
-  const currentYear = new Date().getFullYear();
   const membersSnap = await getDocs(
-    query(collection(db, "users"), where("role", "==", "member"), limit(MAX_TOTAL_MEMBERS + 1))
+    query(collection(db, "users"), where("role", "==", "member"))
   );
 
-  if (membersSnap.size >= MAX_TOTAL_MEMBERS) {
-    throw new Error(`Member limit reached. Only ${MAX_TOTAL_MEMBERS} members are allowed.`);
-  }
-
-  const usedSequences = new Set<number>();
+  const used = new Set<number>();
   membersSnap.forEach((memberDoc) => {
     const memberId = String(memberDoc.data().memberId || "").trim();
-    const match = memberId.match(MEMBER_ID_PATTERN);
-    if (!match) return;
+    if (!memberId) return;
 
-    const year = Number(match[1]);
-    const sequence = Number(match[2]);
-    if (year === currentYear && !Number.isNaN(sequence) && sequence >= START_MEMBER_SEQUENCE) {
-      usedSequences.add(sequence);
+    // If it's just numeric, parse it
+    if (/^\d+$/.test(memberId)) {
+      const n = Number(memberId);
+      if (!Number.isNaN(n) && n > 0) used.add(n);
+      return;
+    }
+
+    // If it's old pattern BCTA-YYYY-XXX, extract sequence
+    const m = memberId.match(MEMBER_ID_PATTERN_OLD);
+    if (m) {
+      const seq = Number(m[2]);
+      if (!Number.isNaN(seq) && seq > 0) used.add(seq);
     }
   });
 
-  for (let nextSequence = START_MEMBER_SEQUENCE; nextSequence <= MAX_TOTAL_MEMBERS; nextSequence += 1) {
-    if (usedSequences.has(nextSequence)) continue;
-
-    const candidateId = `BCTA-${currentYear}-${String(nextSequence).padStart(3, "0")}`;
-    const existingSnap = await getDocs(
-      query(collection(db, "users"), where("memberId", "==", candidateId), limit(1))
-    );
-    if (existingSnap.empty) return candidateId;
-  }
-
-  throw new Error("No member IDs available in the configured range.");
+  // Find smallest unused positive integer
+  let candidate = 1;
+  while (used.has(candidate)) candidate += 1;
+  return String(candidate);
 }
 
 /** Fetch paginated list of members (role == "member") */
@@ -233,19 +231,21 @@ export const membersApi = {
 
     if (import.meta.env.VITE_USE_SERVER_API && auth.currentUser) {
       const idToken = await auth.currentUser.getIdToken();
+      const payload = {
+        action: "createUser",
+        email: input.email.trim(),
+        password: input.password,
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+        profile: profileData,
+      };
+      console.log("[membersApi.create] ADMIN PAYLOAD", payload);
       const res = await fetch("/api/admin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({
-          action: "createUser",
-          email: input.email.trim(),
-          password: input.password,
-          apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-          profile: profileData,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -294,13 +294,15 @@ export const membersApi = {
     // Use serverless API if deployed (FIREBASE_SERVICE_ACCOUNT set means we're in Vercel env)
     if (import.meta.env.VITE_USE_SERVER_API && auth.currentUser) {
       const idToken = await auth.currentUser.getIdToken();
+      const payload = { action: "deleteUser", uid };
+      console.log("[membersApi.delete] ADMIN PAYLOAD", payload);
       const res = await fetch("/api/admin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ action: "deleteUser", uid }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -411,13 +413,15 @@ export const membersApi = {
       
       for (let i = 0; i < uids.length; i += CHUNK_SIZE) {
         const chunk = uids.slice(i, i + CHUNK_SIZE);
+        const payload = { action: "bulkDeleteUsers", uids: chunk };
+        console.log("[membersApi.bulkDelete] ADMIN PAYLOAD chunk", i / CHUNK_SIZE + 1, payload);
         const res = await fetch("/api/admin", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${idToken}`,
           },
-          body: JSON.stringify({ action: "bulkDeleteUsers", uids: chunk }),
+          body: JSON.stringify(payload),
         });
 
         if (!res.ok) {

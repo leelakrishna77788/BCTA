@@ -61,11 +61,26 @@ export default async function handler(
       saRaw = saRaw.slice(1, -1);
     }
 
-    const serviceAccount = JSON.parse(saRaw);
+    // Attempt to parse service account JSON. If parsing fails due to unescaped
+    // newlines or other escape issues, try a safe fallback by normalizing
+    // literal newline characters to escaped "\\n" sequences and parse again.
+    let serviceAccount: any = null;
+    try {
+      serviceAccount = JSON.parse(saRaw);
+    } catch (parseErr) {
+      console.warn("[admin] FIREBASE_SERVICE_ACCOUNT JSON.parse failed, attempting fallback fix", parseErr?.message);
+      try {
+        const repaired = saRaw.replace(/\r?\n/g, "\\n");
+        serviceAccount = JSON.parse(repaired);
+        console.info("[admin] Repaired FIREBASE_SERVICE_ACCOUNT by escaping newlines.");
+      } catch (secondErr) {
+        console.error("[admin] Failed to parse FIREBASE_SERVICE_ACCOUNT after repair. Raw value (truncated):", saRaw.slice(0, 200));
+        throw secondErr;
+      }
+    }
 
     if (serviceAccount.private_key) {
-      serviceAccount.private_key =
-        serviceAccount.private_key.replace(/\\n/g, "\n");
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
     }
 
     const projectId = serviceAccount.project_id;
@@ -91,6 +106,7 @@ export default async function handler(
       return res.status(403).json({ error: "Forbidden" });
     }
 
+    console.log("[admin] API BODY:", req.body);
     const { action, uid } = req.body as {
       action: AdminAction;
       uid?: string;

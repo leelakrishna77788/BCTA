@@ -155,11 +155,92 @@ interface ScanResult {
                     switch (status) {
                         case "SUCCESS":
                             toast.success(t("scanQR.toastAttendanceSuccess"));
-                            setResult({ type: "meeting", success: true, alreadyScanned: false, topic: data.topic || "Meeting" });
+                            // fetch attendance record to show date/time
+                            try {
+                                // Try UID-based doc id first, then memberId-based id for compatibility
+                                let attData: any = null;
+                                try {
+                                    const attendanceDocIdUID = `${data.meetingId}_${userProfile?.uid}`;
+                                    const attSnapUID = await getDoc(doc(db, "attendance", attendanceDocIdUID));
+                                    if (attSnapUID.exists()) attData = attSnapUID.data();
+                                    else if (userProfile?.memberId) {
+                                        const attendanceDocIdMid = `${data.meetingId}_${userProfile.memberId}`;
+                                        const attSnapMid = await getDoc(doc(db, "attendance", attendanceDocIdMid));
+                                        if (attSnapMid.exists()) attData = attSnapMid.data();
+                                    }
+                                } catch (e) {
+                                    console.warn("Failed to fetch attendance doc:", e);
+                                }
+                                // derive date/time from scannedAt timestamp when available
+                                let attendanceDate = undefined;
+                                let attendanceTime = undefined;
+                                try {
+                                    const scanned = attData?.scannedAt;
+                                    if (scanned && typeof scanned.toDate === 'function') {
+                                        const d = scanned.toDate();
+                                        attendanceDate = d.toLocaleDateString('en-GB');
+                                        attendanceTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    }
+                                } catch (e) {
+                                    // ignore
+                                }
+
+                                setResult({
+                                    type: "meeting",
+                                    success: true,
+                                    alreadyScanned: false,
+                                    topic: data.topic || "Meeting",
+                                    memberId: userProfile?.memberId,
+                                    memberName: `${userProfile?.name || ""} ${userProfile?.surname || ""}`.trim(),
+                                    scannedAt: attData?.scannedAt,
+                                });
+                            } catch (e) {
+                                setResult({ type: "meeting", success: true, alreadyScanned: false, topic: data.topic || "Meeting" });
+                            }
                             break;
                         case "ALREADY_MARKED":
                             toast(t("scanQR.toastAlreadyMarked"), { icon: "👍" });
-                            setResult({ type: "meeting", success: true, alreadyScanned: true, topic: data.topic || "Meeting" });
+                            try {
+                                // Try UID-based doc id first, then memberId-based id for compatibility
+                                let attData: any = null;
+                                try {
+                                    const attendanceDocIdUID = `${data.meetingId}_${userProfile?.uid}`;
+                                    const attSnapUID = await getDoc(doc(db, "attendance", attendanceDocIdUID));
+                                    if (attSnapUID.exists()) attData = attSnapUID.data();
+                                    else if (userProfile?.memberId) {
+                                        const attendanceDocIdMid = `${data.meetingId}_${userProfile.memberId}`;
+                                        const attSnapMid = await getDoc(doc(db, "attendance", attendanceDocIdMid));
+                                        if (attSnapMid.exists()) attData = attSnapMid.data();
+                                    }
+                                } catch (e) {
+                                    console.warn("Failed to fetch attendance doc:", e);
+                                }
+                                // derive date/time from scannedAt timestamp when available
+                                let attendanceDate2 = undefined;
+                                let attendanceTime2 = undefined;
+                                try {
+                                    const scanned = attData?.scannedAt;
+                                    if (scanned && typeof scanned.toDate === 'function') {
+                                        const d = scanned.toDate();
+                                        attendanceDate2 = d.toLocaleDateString('en-GB');
+                                        attendanceTime2 = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    }
+                                } catch (e) {
+                                    // ignore
+                                }
+
+                                setResult({
+                                    type: "meeting",
+                                    success: true,
+                                    alreadyScanned: true,
+                                    topic: data.topic || "Meeting",
+                                    memberId: userProfile?.memberId,
+                                    memberName: `${userProfile?.name || ""} ${userProfile?.surname || ""}`.trim(),
+                                    scannedAt: attData?.scannedAt,
+                                });
+                            } catch (e) {
+                                setResult({ type: "meeting", success: true, alreadyScanned: true, topic: data.topic || "Meeting" });
+                            }
                             break;
                         case "EXPIRED":
                             toast.error(t("scanQR.toastQRExpired"));
@@ -441,6 +522,9 @@ interface ScanResult {
                                         {result.alreadyScanned ? t("scanQR.alreadyScanned") : t("scanQR.attendanceMarked")}
                                     </p>
                                     <p className="text-slate-600 text-sm mt-1">{result.topic}</p>
+                                    <p className="text-slate-700 text-sm mt-2 font-medium">{`Meeting: ${result.topic}`}</p>
+                                    <p className="text-slate-500 text-sm">{`Date: ${result.scannedAt && typeof (result.scannedAt as any).toDate === 'function' ? (result.scannedAt as any).toDate().toLocaleDateString('en-GB') : "N/A"}`}</p>
+                                    <p className="text-slate-500 text-sm">{`Time: ${result.scannedAt && typeof (result.scannedAt as any).toDate === 'function' ? (result.scannedAt as any).toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A"}`}</p>
                                     {result.location && <p className="text-slate-400 text-xs mt-0.5">📍 {result.location}</p>}
                                 </>
                             )}

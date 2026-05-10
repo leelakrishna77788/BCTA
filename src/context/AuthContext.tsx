@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase/firebaseConfig";
+import { generateSequentialMemberId } from "../services/membersService";
 import type { AuthContextValue } from "../types/auth.types";
 import type { Member, UserRole } from "../types/member.types";
 
@@ -174,7 +175,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         role,
         status: "active",
         ...(role === "member" && {
-          memberId: `BCTA-${new Date().getFullYear()}-${Math.floor(Math.random() * 900) + 100}`,
+          memberId: await generateSequentialMemberId(),
           attendanceCount: 0,
           paymentStatus: "unpaid",
         }),

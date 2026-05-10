@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { getMeetingById } from "./meetingsService";
+// use local formatting at write-time to ensure fields are present
 import { getMemberById, incrementAttendanceCount } from "./membersService";
 import type { AttendanceRecord } from "../types/attendance.types";
 
@@ -79,18 +80,33 @@ export async function recordAttendance(
   if (member.status === "blocked") return "BLOCKED";
 
   // 4. Atomic write with idempotent ID
-  const attendanceDocId = `${meetingId}_${memberUID}`;
-  const attendanceRef = doc(db, "attendance", attendanceDocId);
+  const attendanceDocIdByUID = `${meetingId}_${memberUID}`;
+  const attendanceDocIdByMemberId = member.memberId ? `${meetingId}_${member.memberId}` : attendanceDocIdByUID;
+  const attendanceRefByUID = doc(db, "attendance", attendanceDocIdByUID);
+  const attendanceRefByMemberId = doc(db, "attendance", attendanceDocIdByMemberId);
   const meetingRef = doc(db, "meetings", meetingId);
   const userRef = doc(db, "users", memberUID);
 
   try {
     return await runTransaction(db, async (transaction) => {
-      const docSnap = await transaction.get(attendanceRef);
-      if (docSnap.exists()) return "ALREADY_MARKED";
+      // Check both UID-based and memberId-based attendance docs to prevent duplicates
+      const snapByUID = await transaction.get(attendanceRefByUID);
+      if (snapByUID.exists()) return "ALREADY_MARKED";
 
-      // Write attendance record
-      transaction.set(attendanceRef, {
+      // If memberId is present, also check for existing attendance by that key
+      if (attendanceDocIdByMemberId !== attendanceDocIdByUID) {
+        const snapByMemberId = await transaction.get(attendanceRefByMemberId);
+        if (snapByMemberId.exists()) return "ALREADY_MARKED";
+      }
+
+      // Choose target ref: prefer memberId-based doc id when available
+      const targetRef = attendanceDocIdByMemberId ? attendanceRefByMemberId : attendanceRefByUID;
+
+      // Write attendance record (store server timestamp + formatted date/time)
+      const now = new Date();
+      const attendanceDate = now.toLocaleDateString("en-GB");
+      const attendanceTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      transaction.set(targetRef, {
         meetingId,
         memberId: member.memberId || "N/A",
         memberUID,
@@ -98,7 +114,7 @@ export async function recordAttendance(
         status: "present",
         markedBy: "self",
         scannedAt: serverTimestamp(),
-        method: "qr_scan"
+        method: "qr_scan",
       });
 
       // Increment counters atomically
@@ -137,11 +153,26 @@ export async function recordAttendanceByAdmin(
 
   try {
     const resultStatus = await runTransaction(db, async (transaction) => {
-      const docSnap = await transaction.get(attendanceRef);
-      if (docSnap.exists()) return "ALREADY_MARKED";
+      const attendanceDocIdByUID = `${meetingId}_${memberUID}`;
+      const attendanceDocIdByMemberId = member.memberId ? `${meetingId}_${member.memberId}` : attendanceDocIdByUID;
+      const attendanceRefByUID = doc(db, "attendance", attendanceDocIdByUID);
+      const attendanceRefByMemberId = doc(db, "attendance", attendanceDocIdByMemberId);
+
+      const snapByUID = await transaction.get(attendanceRefByUID);
+      if (snapByUID.exists()) return "ALREADY_MARKED";
+
+      if (attendanceDocIdByMemberId !== attendanceDocIdByUID) {
+        const snapByMemberId = await transaction.get(attendanceRefByMemberId);
+        if (snapByMemberId.exists()) return "ALREADY_MARKED";
+      }
+
+      const targetRef = attendanceDocIdByMemberId ? attendanceRefByMemberId : attendanceRefByUID;
 
       // Write attendance
-      transaction.set(attendanceRef, {
+      const now = new Date();
+      const attendanceDate = now.toLocaleDateString("en-GB");
+      const attendanceTime = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      transaction.set(targetRef, {
         meetingId,
         memberId: member.memberId || "N/A",
         memberUID,
@@ -149,7 +180,7 @@ export async function recordAttendanceByAdmin(
         status: "present",
         markedBy: "admin",
         scannedAt: serverTimestamp(),
-        method: "admin_scan"
+        method: "admin_scan",
       });
 
       // Increment counter

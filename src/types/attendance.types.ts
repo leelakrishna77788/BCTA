@@ -9,4 +9,7 @@ export interface AttendanceRecord {
   status: "present";
   markedBy: AttendanceMarker;
   scannedAt?: Date | { toDate(): Date };
+  attendedAt?: Date | { toDate(): Date };
+  attendanceDate?: string;
+  attendanceTime?: string;
 }

@@ -11,7 +11,7 @@ import {
     BadgeCheck, CheckCircle2, CalendarDays
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { membersApi } from "../../../services/membersService";
+import { membersApi, generateSequentialMemberId } from "../../../services/membersService";
 import LoadingSkeleton, { CardSkeleton } from "../../../components/shared/LoadingSkeleton";
 import { useTranslation } from "react-i18next";
 import { assets } from "../../../assets/assets";
@@ -46,7 +46,7 @@ interface ProductDoc extends DocumentData {
     distributedAt?: Timestamp;
 }
 
-const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d+$/;
+const MEMBER_ID_PATTERN = /^(\d+|BCTA-\d{4}-\d+)$/;
 
 const escapeHtml = (value: string) => value
     .replace(/&/g, "&amp;")
@@ -163,7 +163,7 @@ const MemberDetail: React.FC = () => {
         };
     }, [showID, showDeleteConfirm]);
 
-    const toggleBlock = () => {
+    const toggleBlock = async () => {
         if (!member) return;
         const previousStatus = member.status;
         const newStatus = previousStatus === "active" ? "blocked" : "active";
@@ -172,9 +172,8 @@ const MemberDetail: React.FC = () => {
         let actionText = newStatus === "active" ? "unblocked" : "blocked";
 
         if (previousStatus === "pending" && newStatus === "active") {
-            const year = new Date().getFullYear();
-            const num = Math.floor(Math.random() * 900) + 100;
-            updatePayload.memberId = `BCTA-${year}-${num}`;
+            // assign plain numeric memberId when approving
+            updatePayload.memberId = await generateSequentialMemberId();
             actionText = "approved";
         }
 

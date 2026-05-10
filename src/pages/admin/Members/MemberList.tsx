@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { collection, query, where, doc, updateDoc, Timestamp, DocumentData, onSnapshot } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
-import { membersApi } from "../../../services/membersService";
+import { membersApi, generateSequentialMemberId } from "../../../services/membersService";
 import { TableSkeleton } from "../../../components/shared/LoadingSkeleton";
 
 interface MemberDoc extends DocumentData {
@@ -207,9 +207,7 @@ const MemberList: React.FC = () => {
         let actionText = newStatus === "active" ? "unblocked" : "blocked";
 
         if (previousStatus === "pending" && newStatus === "active") {
-            const year = new Date().getFullYear();
-            const num = Math.floor(Math.random() * 900) + 100;
-            updatePayload.memberId = `BCTA-${year}-${num}`;
+            updatePayload.memberId = await generateSequentialMemberId();
             actionText = "approved";
         }
 

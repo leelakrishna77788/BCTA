@@ -24,7 +24,7 @@ const AttendanceDashboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [meeting, setMeeting] = useState<Meeting | null>(null);
-    const [attended, setAttended] = useState<Member[]>([]);
+    const [attended, setAttended] = useState<any[]>([]);
     const [allMembers, setAllMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -47,8 +47,36 @@ const AttendanceDashboard: React.FC = () => {
                 // 3. Listen for Attendance Real-time
                 const q = query(collection(db, "attendance"), where("meetingId", "==", id));
                 const unsub = onSnapshot(q, (snap) => {
-                    const attendedUIDs = snap.docs.map(d => d.data().memberUID);
-                    setAttended(membersList.filter(m => attendedUIDs.includes(m.id)));
+                    const attendedRecords = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+                    // merge attendance metadata with member profile
+                    const merged = attendedRecords.map((rec) => {
+                        const member = membersList.find(m => m.id === rec.memberUID) || { id: rec.memberUID };
+                        // derive date/time from scannedAt timestamp (single source of truth)
+                        let attendanceDate: string | null = null;
+                        let attendanceTime: string | null = null;
+                        try {
+                            const scanned = (rec as any).scannedAt;
+                            if (scanned && typeof scanned.toDate === 'function') {
+                                const d = scanned.toDate();
+                                attendanceDate = d.toLocaleDateString('en-GB');
+                                attendanceTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                        } catch (e) {
+                            // ignore and fallback to null
+                        }
+
+                        return {
+                            uid: rec.memberUID,
+                            id: rec.id,
+                            memberName: rec.memberName || `${member.name || ''} ${member.surname || ''}`.trim(),
+                            memberId: rec.memberId || member.memberId,
+                            attendanceDate,
+                            attendanceTime,
+                            markedBy: rec.markedBy,
+                        };
+                    });
+
+                    setAttended(merged);
                     setLoading(false);
                 });
 
@@ -61,7 +89,8 @@ const AttendanceDashboard: React.FC = () => {
         fetchData();
     }, [id]);
 
-    const notAttended = allMembers.filter(m => !attended.find(a => a.id === m.id));
+    const attendedUIDs = attended.map(a => a.uid);
+    const notAttended = allMembers.filter(m => !attendedUIDs.includes(m.id));
     const rate = allMembers.length > 0 ? Math.round((attended.length / allMembers.length) * 100) : 0;
 
     if (loading || !meeting) return (
@@ -120,16 +149,20 @@ const AttendanceDashboard: React.FC = () => {
                         <UserCheck size={16} /> {t("meetings.statsDashboard.attended")} ({attended.length})
                     </h3>
                     <div className="space-y-2 max-h-80 overflow-y-auto">
-                        {attended.map(m => (
-                            <div key={m.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-emerald-50">
+                        {attended.map((a) => (
+                            <div key={a.uid} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-emerald-50">
                                 <div className="w-7 h-7 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 text-xs font-bold">
-                                    {m.name?.[0] || "?"}
+                                    {(a.memberName || "?")?.[0] || "?"}
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-slate-800">{m.name} {m.surname}</p>
-                                    <p className="text-xs text-slate-400 font-mono">{m.memberId}</p>
+                                    <p className="text-sm font-medium text-slate-800">{a.memberName}</p>
+                                    <p className="text-xs text-slate-400 font-mono">{a.memberId}</p>
                                 </div>
-                                <span className="ml-auto badge-active text-xs">✓ {t("meetings.statsDashboard.present")}</span>
+                                <div className="ml-auto text-right">
+                                    <div className="text-xs text-slate-500">{a.attendanceDate ?? "N/A"}</div>
+                                        <div className="text-xs text-slate-400 font-mono">{a.attendanceTime ?? "N/A"}</div>
+                                </div>
+                                <span className="ml-4 badge-active text-xs">✓ {t("meetings.statsDashboard.present")}</span>
                             </div>
                         ))}
                         {attended.length === 0 && <p className="text-slate-400 text-sm text-center py-8">{t("meetings.statsDashboard.noScans")}</p>}

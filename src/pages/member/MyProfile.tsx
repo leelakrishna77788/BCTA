@@ -57,7 +57,7 @@ const buildProfileEditForm = (userProfile: any): ProfileEditForm => ({
   nomineePhone: userProfile?.nomineeDetails?.phone || "",
 });
 
-const MEMBER_ID_PATTERN = /^BCTA-\d{4}-\d+$/;
+const MEMBER_ID_PATTERN = /^(\d+|BCTA-\d{4}-\d+)$/;
 
   const MAX_UPLOAD_SIZE_BYTES = 2 * 1024 * 1024; // enforce 2MB for members per requirement
 
