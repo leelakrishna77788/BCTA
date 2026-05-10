@@ -294,7 +294,44 @@ export const membersApi = {
     // Use serverless API if deployed (FIREBASE_SERVICE_ACCOUNT set means we're in Vercel env)
     if (import.meta.env.VITE_USE_SERVER_API && auth.currentUser) {
       const idToken = await auth.currentUser.getIdToken();
-      const payload = { action: "deleteUser", uid };
+      // Fetch member doc to obtain Cloudinary public id before requesting deletion
+      let imagePublicId: string | undefined = undefined;
+      try {
+        const snap = await getDoc(doc(db, "users", uid));
+        if (snap.exists()) {
+          const data = snap.data() as any;
+          imagePublicId = data?.imagePublicId;
+          console.log("Deleting member image:", imagePublicId);
+        }
+      } catch (err) {
+        console.warn("[membersApi.delete] Failed to read member doc:", err);
+      }
+
+      // If we have an imagePublicId, attempt to delete via serverless endpoint first
+      if (imagePublicId) {
+        try {
+          const deletePayload = { publicId: imagePublicId };
+          console.log("[membersApi.delete] DELETE-IMAGE PAYLOAD", deletePayload);
+          const deleteRes = await fetch("/api/delete-image", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify(deletePayload),
+          });
+          if (!deleteRes.ok) {
+            const txt = await deleteRes.text();
+            console.warn("[membersApi.delete] delete-image failed:", deleteRes.status, txt.slice(0, 200));
+          } else {
+            console.log("[membersApi.delete] delete-image succeeded for:", imagePublicId);
+          }
+        } catch (err) {
+          console.warn("[membersApi.delete] delete-image request failed:", err);
+        }
+      }
+
+      const payload = { action: "deleteUser", uid, imagePublicId };
       console.log("[membersApi.delete] ADMIN PAYLOAD", payload);
       const res = await fetch("/api/admin", {
         method: "POST",
