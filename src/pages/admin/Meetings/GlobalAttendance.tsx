@@ -336,6 +336,43 @@ const GlobalAttendance: React.FC = () => {
 
       XLSX.utils.book_append_sheet(wb, ws, "Attendance Matrix");
 
+      // Also add a detailed Attendance sheet with date/time derived from scannedAt
+      try {
+        const attSnap = await getDocs(collection(db, "attendance"));
+        const detailRows = attSnap.docs.map((d) => {
+          const data = d.data();
+          const scanned = data?.scannedAt;
+          let attendanceDate = "N/A";
+          let attendanceTime = "N/A";
+          try {
+            if (scanned && typeof scanned.toDate === "function") {
+              const dt = scanned.toDate();
+              attendanceDate = dt.toLocaleDateString("en-GB");
+              attendanceTime = dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            }
+          } catch (e) {
+            /* ignore */
+          }
+
+          const member = members.find((m) => m.id === (data?.memberUID || data?.memberId)) || { name: data?.memberName || "Unknown", memberId: data?.memberId || "" };
+          const meeting = meetings.find((m) => m.id === data?.meetingId) || { topic: data?.meetingId || "" };
+
+          return {
+            MemberName: member.name || data?.memberName || "Unknown",
+            MemberId: member.memberId || data?.memberId || "",
+            Meeting: meeting.topic || data?.meetingId || "",
+            Status: data?.status || "",
+            AttendanceDate: attendanceDate,
+            AttendanceTime: attendanceTime,
+          };
+        });
+
+        const detailsWs = XLSX.utils.json_to_sheet(detailRows);
+        XLSX.utils.book_append_sheet(wb, detailsWs, "Attendance Details");
+      } catch (err) {
+        console.warn("Could not build detailed attendance sheet:", err);
+      }
+
       // Write and download
       const wbArray = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       const blob = new Blob([wbArray], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
