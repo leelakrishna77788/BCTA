@@ -68,14 +68,16 @@ export default async function handler(
     try {
       serviceAccount = JSON.parse(saRaw);
     } catch (parseErr) {
-      console.warn("[admin] FIREBASE_SERVICE_ACCOUNT JSON.parse failed, attempting fallback fix", parseErr?.message);
+      const parseMessage = parseErr instanceof Error ? parseErr.message : String(parseErr);
+      console.warn("[admin] FIREBASE_SERVICE_ACCOUNT JSON.parse failed, attempting fallback fix", parseMessage);
       try {
         const repaired = saRaw.replace(/\r?\n/g, "\\n");
         serviceAccount = JSON.parse(repaired);
         console.info("[admin] Repaired FIREBASE_SERVICE_ACCOUNT by escaping newlines.");
       } catch (secondErr) {
+        const secondMessage = secondErr instanceof Error ? secondErr.message : String(secondErr);
         console.error("[admin] Failed to parse FIREBASE_SERVICE_ACCOUNT after repair. Raw value (truncated):", saRaw.slice(0, 200));
-        throw secondErr;
+        throw new Error(secondMessage);
       }
     }
 
@@ -179,8 +181,9 @@ export default async function handler(
       default:
         return res.status(400).json({ error: "Invalid action" });
     }
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
     console.error(err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: message });
   }
 }
