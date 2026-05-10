@@ -295,12 +295,12 @@ export const membersApi = {
     if (import.meta.env.VITE_USE_SERVER_API && auth.currentUser) {
       const idToken = await auth.currentUser.getIdToken();
       // Fetch member doc to obtain Cloudinary public id before requesting deletion
-      let imagePublicId: string | undefined = undefined;
+      let imagePublicId: string | null = null;
       try {
         const snap = await getDoc(doc(db, "users", uid));
         if (snap.exists()) {
           const data = snap.data() as any;
-          imagePublicId = data?.imagePublicId;
+          imagePublicId = data?.imagePublicId ?? null;
           console.log("Deleting member image:", imagePublicId);
         }
       } catch (err) {
@@ -332,7 +332,7 @@ export const membersApi = {
       }
 
       const payload = { action: "deleteUser", uid, imagePublicId };
-      console.log("[membersApi.delete] ADMIN PAYLOAD", payload);
+      console.log("NEW DELETE FLOW 999", payload);
       const res = await fetch("/api/admin", {
         method: "POST",
         headers: {

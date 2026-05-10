@@ -1,7 +1,7 @@
 import { auth } from "../firebase/firebaseConfig";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
 export interface CreateAdminInput {
   name: string;
@@ -101,13 +101,29 @@ export const adminApi = {
     if (!auth.currentUser) throw new Error("Authentication required");
     
     const idToken = await auth.currentUser.getIdToken();
+    // Read member doc to include imagePublicId (or null)
+    let imagePublicId: string | null = null;
+    try {
+      const snap = await getDoc(doc(getFirestore(), "users", uid));
+      if (snap.exists()) {
+        const data = snap.data() as any;
+        imagePublicId = data?.imagePublicId ?? null;
+        console.log("Deleting member image:", imagePublicId);
+      }
+    } catch (err) {
+      console.warn("[adminService.deleteUser] Failed to read member doc:", err);
+    }
+
+    const payload = { action: "deleteUser", uid, imagePublicId };
+    console.log("NEW DELETE FLOW 999", payload);
+
     const response = await fetch("/api/admin", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${idToken}`,
       },
-      body: JSON.stringify({ action: "deleteUser", uid }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
