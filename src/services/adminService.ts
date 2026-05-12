@@ -7,6 +7,8 @@ export interface CreateAdminInput {
   name: string;
   email: string;
   password?: string;
+  imageUrl?: string;
+  imagePublicId?: string;
 }
 
 /**
@@ -31,6 +33,8 @@ export const adminApi = {
       email: input.email.trim(),
       role: "admin",
       status: "active",
+      imageUrl: input.imageUrl || null,
+      imagePublicId: input.imagePublicId || null,
       createdAt: new Date().toISOString(),
     };
 

@@ -11,10 +11,12 @@ import {
   ShieldCheck,
   Mail,
   Lock,
+  Upload,
 } from "lucide-react";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../../../firebase/firebaseConfig";
 import { adminApi } from "../../../services/adminService";
+import { uploadImage, ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES } from "../../../utils/cloudinary";
 
 const AddAdmin: React.FC = () => {
   const { t } = useTranslation();
@@ -27,6 +29,10 @@ const AddAdmin: React.FC = () => {
     password: "",
     confirmPassword: "",
   });
+
+  // Photo state
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -54,6 +60,23 @@ const AddAdmin: React.FC = () => {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+  const handlePhoto = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      toast.error("Only JPG, PNG, and WEBP images are allowed");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error("Image size must be less than 2MB");
+      return;
+    }
+
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
 
   const [provisionStage, setProvisionStage] = useState<string>("");
 
@@ -86,6 +109,21 @@ const AddAdmin: React.FC = () => {
 
     const attempt = async (retryCount = 0): Promise<void> => {
       try {
+        let imageUrl = undefined;
+        let imagePublicId = undefined;
+
+        if (photoFile) {
+          setProvisionStage(t("addAdmin.uploadingPhoto") || "Uploading photo...");
+          try {
+            const uploaded = await uploadImage(photoFile, "admins");
+            imageUrl = uploaded.url;
+            imagePublicId = uploaded.publicId;
+          } catch (uploadErr) {
+            console.error("[AddAdmin] Photo upload failed:", uploadErr);
+            throw new Error("Photo upload failed. Please try again.");
+          }
+        }
+
         setProvisionStage(
           retryCount > 0
             ? t("addAdmin.retrying", { count: retryCount + 1 })
@@ -96,6 +134,8 @@ const AddAdmin: React.FC = () => {
           name: form.name.trim(),
           email: form.email.trim(),
           password: form.password,
+          imageUrl,
+          imagePublicId,
         });
 
         if (auth.currentUser?.uid !== originalUid) {
@@ -113,6 +153,8 @@ const AddAdmin: React.FC = () => {
         );
 
         setForm({ name: "", email: "", password: "", confirmPassword: "" });
+        setPhotoFile(null);
+        setPhotoPreview(null);
         console.log(
           "[AddAdmin] Account created. Session preserved — UID:",
           auth.currentUser?.uid,
@@ -187,6 +229,25 @@ const AddAdmin: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-5 flex flex-col gap-4">
+            {/* Photo Upload */}
+            <div className="flex items-center gap-4 pb-2 border-b border-slate-100 mb-2">
+              <div className="h-20 w-20 overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50 flex-shrink-0">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-slate-300">
+                    <Upload size={22} />
+                  </div>
+                )}
+              </div>
+              <label className="w-auto whitespace-nowrap inline-flex cursor-pointer items-center justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl bg-indigo-600 px-2.5 py-1.5 sm:px-4 sm:py-2.5 text-[10px] sm:text-[11px] font-bold sm:font-black uppercase tracking-widest text-white shadow-md shadow-indigo-100 active:scale-95 transition-all">
+                <Upload size={12} className="sm:hidden" />
+                <Upload size={14} className="hidden sm:block" />
+                {photoPreview ? "Replace Photo" : "Upload Photo"}
+                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+              </label>
+            </div>
+
             {/* Full Name */}
             <div className="space-y-1">
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
@@ -218,6 +279,7 @@ const AddAdmin: React.FC = () => {
                   onChange={handleChange}
                   placeholder={t("addAdmin.emailPlaceholder")}
                   required
+                  autoComplete="new-email"
                   className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                 />
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
@@ -313,6 +375,28 @@ const AddAdmin: React.FC = () => {
               {t("addAdmin.sectionTitleDesktop")}
             </h2>
 
+            {/* Photo Upload Section */}
+            <div className="mb-8 flex items-center gap-6 p-4 rounded-2xl bg-slate-50/50 border border-slate-100">
+              <div className="h-20 w-20 overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-white shadow-inner flex-shrink-0">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-slate-300">
+                    <Upload size={24} />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Profile Identity Photo
+                </p>
+                <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-700 hover:-translate-y-0.5 transition-all active:scale-95 shadow-lg shadow-indigo-100">
+                  <Upload size={16} /> {photoPreview ? "Replace Photo" : "Upload Photo"}
+                  <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+                </label>
+              </div>
+            </div>
+
             <div className="space-y-5">
               <div className="space-y-1.5 group">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
@@ -344,6 +428,7 @@ const AddAdmin: React.FC = () => {
                     onChange={handleChange}
                     placeholder={t("addAdmin.emailPlaceholder")}
                     required
+                    autoComplete="new-email"
                     className="w-full py-3 px-5 pl-12 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                   />
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
