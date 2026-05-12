@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { assets } from "../../../assets/assets";
 import {
@@ -443,9 +444,9 @@ const ShopList: React.FC = () => {
       </div>
 
       {/* ── Edit Shop Modal ── */}
-      {editingId && (
+      {editingId && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/80 backdrop-blur-md animate-fade-in"
           style={{ padding: '70px 16px' }}
           onClick={cancelEdit}
         >
@@ -546,13 +547,14 @@ const ShopList: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Delete Confirmation Modal ── */}
-      {deletingId && (
+      {deletingId && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-lg animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-white/80 backdrop-blur-lg animate-fade-in"
           onClick={cancelDelete}
         >
           <div
@@ -581,13 +583,14 @@ const ShopList: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Delete All Confirmation Modal ── */}
-      {deletingAll && (
+      {deletingAll && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 backdrop-blur-lg animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-white/80 backdrop-blur-lg animate-fade-in"
           onClick={cancelDeleteAll}
         >
           <div
@@ -616,7 +619,8 @@ const ShopList: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
