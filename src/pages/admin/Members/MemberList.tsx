@@ -298,7 +298,7 @@ const MemberList: React.FC = () => {
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && memberToDelete && createPortal(
                 <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-lg animate-fade-in p-4"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/80 backdrop-blur-lg animate-fade-in p-4"
                     onClick={() => {
                         setShowDeleteConfirm(false);
                         setMemberToDelete(null);
@@ -341,10 +341,15 @@ const MemberList: React.FC = () => {
             )}
 
             {/* Bulk Deletion Modal */}
-            {showBulkConfirm && (
-                <div className="fixed inset-0 z-100 backdrop-blur-md animate-fade-in">
-                    <div className="absolute inset-0 flex items-start justify-center p-4 pt-8 sm:pt-12">
-                        <div className="bg-white rounded-4xl shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative">
+            {showBulkConfirm && createPortal(
+                <div 
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-white/80 backdrop-blur-md animate-fade-in"
+                    onClick={() => setShowBulkConfirm(false)}
+                >
+                    <div 
+                        className="bg-white rounded-4xl shadow-2xl border border-slate-200 p-6 sm:p-12 max-w-lg w-full relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <button
                             onClick={() => setShowBulkConfirm(false)}
                             className="absolute top-4 sm:top-8 right-4 sm:right-8 text-slate-400 hover:text-slate-600 transition-colors z-50 p-2"
@@ -396,8 +401,8 @@ const MemberList: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                    </div>
-                </div>
+                </div>,
+                document.body
             )}
 
         <div className={`space-y-6 animate-fade-in pb-8 ${showBulkConfirm ? 'blur-sm' : ''}`}>
