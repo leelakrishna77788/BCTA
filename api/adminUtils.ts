@@ -189,10 +189,33 @@ export async function getFirestoreDocREST(projectId: string, accessToken: string
   const data = await response.json();
   // Map Firestore REST format to simple object
   const fields = data.fields || {};
+  
+  function unwrapRestValue(val: any): any {
+    if (!val) return val;
+    if ('stringValue' in val) return val.stringValue;
+    if ('integerValue' in val) return Number(val.integerValue);
+    if ('doubleValue' in val) return Number(val.doubleValue);
+    if ('booleanValue' in val) return val.booleanValue;
+    if ('nullValue' in val) return null;
+    if ('timestampValue' in val) return val.timestampValue;
+    if ('mapValue' in val) {
+      const result: any = {};
+      const mapFields = val.mapValue.fields || {};
+      for (const [k, v] of Object.entries(mapFields)) {
+        result[k] = unwrapRestValue(v);
+      }
+      return result;
+    }
+    if ('arrayValue' in val) {
+      const values = val.arrayValue.values || [];
+      return values.map(unwrapRestValue);
+    }
+    return val;
+  }
+
   const result: any = { uid: docId };
   for (const [key, value] of Object.entries(fields)) {
-    const val = value as any;
-    result[key] = val.stringValue || val.integerValue || val.booleanValue || val.doubleValue || val.timestampValue || val;
+    result[key] = unwrapRestValue(value);
   }
   return result;
 }
@@ -230,16 +253,31 @@ export async function createAuthUserREST(projectId: string, accessToken: string,
  * Creates or overwrites a document in Firestore via REST API
  */
 export async function setFirestoreDocREST(projectId: string, accessToken: string, collection: string, docId: string, fieldsObj: any) {
+  function buildRestValue(v: any): any {
+    if (v === null) return { nullValue: null };
+    if (typeof v === 'string') return { stringValue: v };
+    if (typeof v === 'boolean') return { booleanValue: v };
+    if (typeof v === 'number') {
+      return Number.isInteger(v) ? { integerValue: v.toString() } : { doubleValue: v };
+    }
+    if (Array.isArray(v)) {
+      return { arrayValue: { values: v.filter(item => item !== undefined).map(buildRestValue) } };
+    }
+    if (typeof v === 'object') {
+      const mapFields: Record<string, any> = {};
+      for (const [mk, mv] of Object.entries(v)) {
+        if (mv !== undefined) mapFields[mk] = buildRestValue(mv);
+      }
+      return { mapValue: { fields: mapFields } };
+    }
+    return undefined;
+  }
+
   const fields: Record<string, any> = {};
   for (const [k, v] of Object.entries(fieldsObj)) {
     if (v === undefined) continue;
-    if (typeof v === 'string') fields[k] = { stringValue: v };
-    else if (typeof v === 'number') {
-      if (Number.isInteger(v)) fields[k] = { integerValue: v.toString() };
-      else fields[k] = { doubleValue: v };
-    }
-    else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
-    else if (v === null) fields[k] = { nullValue: null };
+    const restVal = buildRestValue(v);
+    if (restVal !== undefined) fields[k] = restVal;
   }
 
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collection}/${docId}`;

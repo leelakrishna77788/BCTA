@@ -871,7 +871,21 @@ const MyProfile: React.FC = () => {
                   {t("profile.shopAndNomineeDesc")}
                 </p>
               </div>
-              <MapPin className="text-[#000080]" size={20} />
+              <div className="flex items-center gap-2">
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(true);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    <Edit3 size={13} /> {t("profile.editDetails")}
+                  </button>
+                )}
+                <MapPin className="text-[#000080]" size={20} />
+              </div>
             </div>
 
             <div className="space-y-4">
