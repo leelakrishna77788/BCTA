@@ -1,6 +1,6 @@
 # BCTA
 
-Bhimavaram Cell Phone Technicians Association - Management Portal
+Bhimavaram Cell Phone Technicians Association - Management Portal (LIVE LINK: https://www.bcta.online/)
 
 ## Features
 
@@ -30,4 +30,4 @@ npm run dev
 ```bash
 npm run build
 
-LIVE LINK: https://www.bcta.online/
+
