@@ -198,7 +198,7 @@
   },
   "landing": {
     "heroTitle1": "The digital platform for",
-    "heroTitle2": "Bhimavaram Cellphones",
+    "heroTitle2": "Bhimavaram Cellphone",
     "heroTitle3": "Technicians",
     "heroSubtitle": "A unified association portal designed for professional unity, instant communication, and association management.",
     "portal": "Portal",
@@ -478,7 +478,6 @@
     "reloadNow": "Reload Now"
   },
   "language": {
-
     "title": "Language",
     "english": "English",
     "telugu": "తెలుగు"
@@ -486,7 +485,7 @@
   "adminDashboard": {
     "welcomeAdmin": "Welcome, Admin 👋",
     "manageEfficiently": "Manage your dashboard efficiently",
-    "monthlyDeadline": "Monthly Deadline",
+    "monthlyDue": "Monthly Due",
     "dueBy": "Due by",
     "amount": "Amount",
     "daysLeft": "{{count}} days left",
@@ -513,7 +512,7 @@
     "goodMorning": "Good morning",
     "goodAfternoon": "Good afternoon",
     "goodEvening": "Good evening",
-    "monthlyDeadline": "Monthly Deadline",
+    "monthlyDue": "Monthly Due",
     "dueBy": "Due by",
     "amount": "Amount",
     "daysLeft": "{{count}} days left",
@@ -681,7 +680,7 @@
     "unknownDate": "Unknown date"
   },
   "memberList": {
-    "phone":"Phone",
+    "phone": "Phone",
     "title": "Members",
     "directory": "Directory",
     "subtitle": "Manage all BCTA members",
@@ -732,7 +731,7 @@
     }
   },
   "memberDetail": {
-    "relationship":"Relationship",
+    "relationship": "Relationship",
     "deleteWarning": "Delete Warning",
     "backToMembers": "Back to Members",
     "profileTitle": "Member Profile",
@@ -1178,29 +1177,38 @@
         "markFailed": "Failed to mark payment. Please try again.",
         "removeFailed": "Failed to remove payment. Please try again."
       }
+    },
+    "history": {
+      "title": "Payments History",
+      "subtitle": "Complete monthly payment records",
+      "backToPayments": "Back to Payments",
+      "searchPlaceholder": "Search by member name or member ID...",
+      "allMonths": "All Months",
+      "allYears": "All Years",
+      "noHistory": "No payment history found.",
+      "table": {
+        "month": "Month",
+        "year": "Year",
+        "amount": "Amount",
+        "collectedAt": "Collected At"
       },
-      "history": {
-        "title": "Payments History",
-        "subtitle": "Complete monthly payment records",
-        "backToPayments": "Back to Payments",
-        "searchPlaceholder": "Search by member name or member ID...",
-        "allMonths": "All Months",
-        "allYears": "All Years",
-        "noHistory": "No payment history found.",
-        "table": {
-          "month": "Month",
-          "year": "Year",
-          "amount": "Amount",
-          "collectedAt": "Collected At"
-        },
-        "toasts": {
-          "loadFailed": "Failed to load payment history"
-        }
+      "toasts": {
+        "loadFailed": "Failed to load payment history"
+      }
     },
     "months": {
-      "1": "January", "2": "February", "3": "March", "4": "April",
-      "5": "May", "6": "June", "7": "July", "8": "August",
-      "9": "September", "10": "October", "11": "November", "12": "December"
+      "1": "January",
+      "2": "February",
+      "3": "March",
+      "4": "April",
+      "5": "May",
+      "6": "June",
+      "7": "July",
+      "8": "August",
+      "9": "September",
+      "10": "October",
+      "11": "November",
+      "12": "December"
     },
     "recordPayment": "Record Payment",
     "selectMember": "Select Member *",
@@ -1306,7 +1314,7 @@
       "identifier": "Fixed Identifier",
       "verified": "Verified Merchant Key",
       "downloadQR": "Download QR",
-       "owner": "Owner"
+      "owner": "Owner"
     },
     "empty": {
       "title": "No Shops Registered",

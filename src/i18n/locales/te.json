@@ -215,7 +215,7 @@
   "landing": {
     "heroTitle1": "డిజిటల్ ప్లాట్‌ఫారం",
     "heroTitle2": "భీమవరం సెల్‌ఫోన్ ",
-    "heroTitle3":"టెక్నీషియన్లు",
+    "heroTitle3": "టెక్నీషియన్లు",
     "heroSubtitle": "వృత్తిపరమైన ఐక్యత, తక్షణ సమాచారం మరియు అసోసియేషన్ నిర్వహణ కోసం రూహొందించిన ఏకీకృత పోర్టల్.",
     "portal": "పోర్టల్",
     "services": "సేవలు",
@@ -549,7 +549,7 @@
   "adminDashboard": {
     "welcomeAdmin": "స్వాగతం, అడ్మిన్ 👋",
     "manageEfficiently": "మీ డాష్‌బోర్డ్‌ను సమర్థవంతంగా నిర్వహించండి",
-    "monthlyDeadline": "నెలవారీ గడువు",
+    "monthlyDue": "నెలవారీ గడువు",
     "dueBy": "గడువు తేదీ",
     "amount": "మొత్తం",
     "daysLeft": "{{count}} రోజులు మిగిలి ఉన్నాయి",
@@ -576,7 +576,7 @@
     "goodMorning": "శుభోదయం",
     "goodAfternoon": "శుభ మధ్యాహ్నం",
     "goodEvening": "శుభ సాయంత్రం",
-    "monthlyDeadline": "నెలవారీ గడువు",
+    "monthlyDue": "నెలవారీ గడువు",
     "dueBy": "గడువు తేదీ",
     "amount": "మొత్తం",
     "daysLeft": "{{count}} రోజులు మిగిలి ఉన్నాయి",
@@ -807,7 +807,7 @@
     }
   },
   "memberDetail": {
-    "relationship":"సంబంధం",
+    "relationship": "సంబంధం",
     "deleteWarning": "హెచ్చరిక",
     "backToMembers": "సభ్యులకు తిరిగి",
     "profileTitle": "సభ్యుని ప్రొఫైల్",
@@ -887,7 +887,6 @@
     "closeDigitalId": "డిజిటల్ ఐడిని మూసివేయి"
   },
   "meetings": {
-
     "title": "సమావేశాలు & సెషన్‌లు",
     "adminSubtitle": "కమిటీ సమావేశాలను నిర్వహించండి మరియు సృష్టించండి",
     "memberSubtitle": "మీ రాబోయే BCTA సమావేశాలను చూడండి",
@@ -1383,9 +1382,7 @@
       "deleteAllFailed": "అన్ని షాపులను తొలగించడం విఫలమైంది.",
       "noShopsToDelete": "తొలగించడానికి షాపులు లేవు."
     }
-  }
-,
-    
+  },
   "myProfile": {
     "title": "నా ప్రొఫైల్",
     "personalInfo": "వ్యక్తిగత సమాచారం",
@@ -1456,8 +1453,8 @@
     }
   },
   "memberList": {
-    "phone":"ఫోన్",
-    "shopAddress":"షాపు చిరునామా",
+    "phone": "ఫోన్",
+    "shopAddress": "షాపు చిరునామా",
     "title": "సభ్యులు",
     "directory": "డైరెక్టరీ",
     "subtitle": "అన్ని BCTA సభ్యులను నిర్వహించండి",

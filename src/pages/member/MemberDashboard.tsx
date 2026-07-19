@@ -222,7 +222,7 @@ const MemberDashboard: React.FC = () => {
           {/* Left Content */}
           <div>
             <p className="font-semibold text-base sm:text-3xl">
-              {t("memberDashboard.monthlyDeadline")}
+              {t("memberDashboard.monthlyDue")}
             </p>
 
             <p className="text-xs sm:text-sm">

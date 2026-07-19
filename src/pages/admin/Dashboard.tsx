@@ -320,7 +320,7 @@ const AdminDashboard: React.FC = () => {
         {/* Left Content */}
         <div>
           <p className="font-semibold text-base sm:text-3xl">
-            {t("adminDashboard.monthlyDeadline")}
+            {t("adminDashboard.monthlyDue")}
           </p>
 
           <p className="text-xs sm:text-sm">
