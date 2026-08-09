@@ -28,6 +28,7 @@ interface MemberDoc extends DocumentData {
     bloodGroup?: string;
     age?: number | string;
     paymentStatus?: string;
+    shopName?: string;
     shopAddress?: string;
     createdAt?: Timestamp;
     nomineeDetails?: {
@@ -838,6 +839,18 @@ const MemberDetail: React.FC = () => {
                         </div>
 
                         <div className="space-y-2.5">
+                            <div className="rounded-xl border border-slate-200 bg-white p-3">
+                                <div className="flex items-start gap-2.5">
+                                    <div className="mt-0.5 rounded-lg bg-[#000080]/10 p-2 text-[#000080]">
+                                        <Package size={14} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 mb-1.5">{t("memberDetail.shopName")}</p>
+                                        <p className="text-xs font-medium text-slate-800 leading-5 line-clamp-2">{member.shopName || t("common.pending")}</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="rounded-xl border border-slate-200 bg-white p-3">
                                 <div className="flex items-start gap-2.5">
                                     <div className="mt-0.5 rounded-lg bg-[#000080]/10 p-2 text-[#000080]">

@@ -21,6 +21,7 @@ export interface Member {
   gender?: Gender;
   bloodGroup?: BloodGroup;
   aadhaarLast4?: string;
+  shopName?: string;
   shopAddress?: string;
   photoURL?: string;
   imageUrl?: string;
@@ -43,6 +44,7 @@ export interface CreateMemberInput {
   gender?: Gender;
   bloodGroup?: BloodGroup;
   aadhaarLast4?: string;
+  shopName?: string;
   shopAddress?: string;
   nomineeDetails?: NomineeDetails;
   memberId?: string;

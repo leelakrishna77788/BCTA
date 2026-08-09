@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation, Trans } from "react-i18next";
-import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw } from "lucide-react";
+import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw, Store, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { collection, query, where, doc, updateDoc, Timestamp, DocumentData, onSnapshot } from "firebase/firestore";
@@ -23,6 +23,8 @@ interface MemberDoc extends DocumentData {
     memberId?: string;
     email?: string;
     bloodGroup?: string;
+    shopName?: string;
+    shopAddress?: string;
     attendanceCount?: number;
 }
 
@@ -164,12 +166,14 @@ const MemberList: React.FC = () => {
                 const fullName = `${m.name || ""} ${m.surname || ""}`.trim().toLowerCase();
                 const memberId = String(m.memberId || "").toLowerCase();
                 const email = String(m.email || "").toLowerCase();
+                const shopName = String(m.shopName || "").toLowerCase();
                 const bloodGroup = String(m.bloodGroup || "").toLowerCase();
                 const status = String(m.status || "").toLowerCase();
                 return (
                     fullName.includes(term) ||
                     memberId.includes(term) ||
                     email.includes(term) ||
+                    shopName.includes(term) ||
                     bloodGroup.includes(term) ||
                     status.includes(term)
                 );
@@ -525,7 +529,16 @@ const MemberList: React.FC = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-black text-slate-900 text-base sm:text-lg tracking-tight truncate">{m.name} {m.surname}</h3>
-                                        <p className="text-xs text-slate-500 font-semibold truncate">{m.email}</p>
+                                        <p className="text-xs text-slate-500 font-semibold truncate flex items-center gap-1">
+                                            <Store size={12} className="shrink-0" />
+                                            {m.shopName || m.email || t("memberList.newReg")}
+                                        </p>
+                                        {m.shopAddress ? (
+                                            <p className="text-xs text-slate-400 font-medium truncate flex items-center gap-1">
+                                                <MapPin size={12} className="shrink-0" />
+                                                {m.shopAddress}
+                                            </p>
+                                        ) : null}
                                         <span className="inline-block mt-1 font-mono text-[10px] uppercase font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm">{m.memberId || t("memberList.newReg")}</span>
                                     </div>
                                 </div>

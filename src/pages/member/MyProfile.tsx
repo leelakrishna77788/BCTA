@@ -17,6 +17,7 @@ import {
   Phone,
   Save,
   ShieldCheck,
+  Store,
   User,
 } from "lucide-react";
 import LoadingSkeleton, {
@@ -37,6 +38,7 @@ interface ProfileEditForm {
   gender: string;
   bloodGroup: string;
   aadhaarLast4: string;
+  shopName: string;
   shopAddress: string;
   nomineeName: string;
   nomineeRelation: string;
@@ -51,6 +53,7 @@ const buildProfileEditForm = (userProfile: any): ProfileEditForm => ({
   gender: userProfile?.gender || "",
   bloodGroup: userProfile?.bloodGroup || "",
   aadhaarLast4: userProfile?.aadhaarLast4 || "",
+  shopName: userProfile?.shopName || "",
   shopAddress: userProfile?.shopAddress || "",
   nomineeName: userProfile?.nomineeDetails?.name || "",
   nomineeRelation: userProfile?.nomineeDetails?.relation || "",
@@ -105,6 +108,7 @@ const MyProfile: React.FC = () => {
   const { userProfile, currentUser, refreshProfile } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isEditingShop, setIsEditingShop] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isPhotoUploading, setIsPhotoUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -122,6 +126,7 @@ const MyProfile: React.FC = () => {
     gender: "",
     bloodGroup: "",
     aadhaarLast4: "",
+    shopName: "",
     shopAddress: "",
     nomineeName: "",
     nomineeRelation: "",
@@ -208,6 +213,18 @@ const MyProfile: React.FC = () => {
         : "border-slate-200"
     }`;
 
+  const SHOP_EDIT_FIELDS: Array<keyof ProfileEditForm> = [
+    "shopName",
+    "shopAddress",
+    "nomineeName",
+    "nomineeRelation",
+    "nomineePhone",
+  ];
+
+  const changedShopFields = SHOP_EDIT_FIELDS.filter((field) =>
+    isFieldChanged(field),
+  );
+
   const onPickPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -280,6 +297,47 @@ const MyProfile: React.FC = () => {
     setUploadProgress(null);
   };
 
+  const onCancelShopEdit = () => {
+    if (!userProfile) return;
+    setIsEditingShop(false);
+    const resetForm = buildProfileEditForm(userProfile);
+    setEditForm(resetForm);
+    setOriginalForm(resetForm);
+  };
+
+  const onSaveShopNominee = async () => {
+    if (!currentUser) {
+      toast.error(t("profile.toast.loginRetry"));
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await updateMember(currentUser.uid, {
+        shopName: editForm.shopName.trim(),
+        shopAddress: editForm.shopAddress.trim(),
+        nomineeDetails: {
+          name: editForm.nomineeName.trim(),
+          relation: editForm.nomineeRelation.trim(),
+          phone: editForm.nomineePhone.trim(),
+        },
+      });
+
+      await refreshProfile();
+      setIsEditingShop(false);
+      toast.success(t("profile.toast.profileUpdated"));
+    } catch (error: any) {
+      console.error("Shop & nominee update failed:", error);
+      if (error?.code === "permission-denied") {
+        toast.error(t("profile.toast.updateBlocked"));
+      } else {
+        toast.error(error?.message || t("profile.toast.updateFailed"));
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const onSaveProfile = async () => {
     if (!currentUser) {
       toast.error(t("profile.toast.loginRetry"));
@@ -319,6 +377,7 @@ const MyProfile: React.FC = () => {
         gender: (editForm.gender as any) || "",
         bloodGroup: (editForm.bloodGroup as any) || "",
         aadhaarLast4: editForm.aadhaarLast4.trim(),
+        shopName: editForm.shopName.trim(),
         shopAddress: editForm.shopAddress.trim(),
         nomineeDetails: {
           name: editForm.nomineeName.trim(),
@@ -524,9 +583,10 @@ const MyProfile: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    isEditing ? onCancelEdit() : setIsEditing(true)
-                  }
+                  onClick={() => {
+                    setIsEditingShop(false);
+                    isEditing ? onCancelEdit() : setIsEditing(true);
+                  }}
                   className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   <Edit3 size={13} /> {isEditing ? t("profile.cancel") : t("profile.editDetails")}
@@ -712,7 +772,20 @@ const MyProfile: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Row 4: Aadhaar & Shop Address */}
+                  {/* Row 4: Shop Name */}
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                      {t("profile.shopName")}
+                    </label>
+                    <input
+                      value={editForm.shopName}
+                      onChange={(e) => onFormChange("shopName", e.target.value)}
+                      placeholder={t("profile.shopName")}
+                      className={`w-full ${changedInputClass("shopName")}`}
+                    />
+                  </div>
+
+                  {/* Row 5: Aadhaar & Shop Address */}
                   <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
@@ -875,20 +948,151 @@ const MyProfile: React.FC = () => {
                 {!isEditing && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsEditing(true);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
+                    onClick={() =>
+                      isEditingShop
+                        ? onCancelShopEdit()
+                        : setIsEditingShop(true)
+                    }
                     className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                   >
-                    <Edit3 size={13} /> {t("profile.editDetails")}
+                    <Edit3 size={13} /> {isEditingShop ? t("profile.cancel") : t("profile.editDetails")}
                   </button>
                 )}
                 <MapPin className="text-[#000080]" size={20} />
               </div>
             </div>
 
+            {isEditingShop && (
+              <div className="mb-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 sm:p-6">
+                <h3 className="text-base font-bold text-slate-900">
+                  {t("profile.editShopNominee")}
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-600">
+                  {t("profile.editShopNomineeDesc")}
+                </p>
+
+                {changedShopFields.length > 0 && (
+                  <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5">
+                    <p className="text-xs font-bold text-blue-800">
+                      {changedShopFields.length === 1
+                        ? `1 ${t("profile.fieldChanged")}`
+                        : `${changedShopFields.length} ${t("profile.fieldsChanged")}`}
+                      : {changedShopFields.join(", ")}
+                    </p>
+                  </div>
+                )}
+
+                <div className="mt-5 space-y-3">
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                        {t("profile.shopName")}
+                      </label>
+                      <input
+                        value={editForm.shopName}
+                        onChange={(e) =>
+                          onFormChange("shopName", e.target.value)
+                        }
+                        placeholder={t("profile.shopName")}
+                        className={`w-full ${changedInputClass("shopName")}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                        {t("profile.shopAddress")}
+                      </label>
+                      <input
+                        value={editForm.shopAddress}
+                        onChange={(e) =>
+                          onFormChange("shopAddress", e.target.value)
+                        }
+                        placeholder={t("profile.shopAddress")}
+                        className={`w-full ${changedInputClass("shopAddress")}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                        {t("profile.nomineeName")}
+                      </label>
+                      <input
+                        value={editForm.nomineeName}
+                        onChange={(e) =>
+                          onFormChange("nomineeName", e.target.value)
+                        }
+                        placeholder={t("profile.nomineeName")}
+                        className={`w-full ${changedInputClass("nomineeName")}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                        {t("profile.nomineeRelation")}
+                      </label>
+                      <input
+                        value={editForm.nomineeRelation}
+                        onChange={(e) =>
+                          onFormChange("nomineeRelation", e.target.value)
+                        }
+                        placeholder={t("profile.nomineeRelation")}
+                        className={`w-full ${changedInputClass("nomineeRelation")}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                      {t("profile.nomineePhone")}
+                    </label>
+                    <input
+                      value={editForm.nomineePhone}
+                      onChange={(e) =>
+                        onFormChange("nomineePhone", e.target.value)
+                      }
+                      placeholder={t("profile.nomineePhone")}
+                      className={`w-full ${changedInputClass("nomineePhone")}`}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:items-center sm:justify-start">
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={onSaveShopNominee}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#000080] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#000066] disabled:cursor-not-allowed disabled:opacity-60 transition shadow-md hover:shadow-lg"
+                  >
+                    <Save size={14} /> {isSaving ? t("profile.saving") : t("profile.saveChanges")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onCancelShopEdit}
+                    className="rounded-lg border-2 border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+                  >
+                    {t("profile.cancel")}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-xl bg-[#000080]/10 p-2 text-[#000080]">
+                    <Store size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      {t("profile.shopName")}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-slate-800 leading-6">
+                      {userProfile.shopName || "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="rounded-2xl border border-slate-200 bg-white p-4">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 rounded-xl bg-[#000080]/10 p-2 text-[#000080]">

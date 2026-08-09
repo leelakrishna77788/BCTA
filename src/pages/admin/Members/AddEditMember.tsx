@@ -31,6 +31,7 @@ interface FormState {
     age: string;
     gender: Gender;
     bloodGroup: BloodGroup;
+    shopName: string;
     shopAddress: string;
     aadhaarFull: string;
     aadhaarLast4: string;
@@ -158,6 +159,7 @@ const AddEditMember: React.FC = () => {
         age: "",
         gender: "",
         bloodGroup: "",
+        shopName: "",
         shopAddress: "",
         aadhaarFull: "",
         aadhaarLast4: "",
@@ -203,6 +205,7 @@ const AddEditMember: React.FC = () => {
                             age: String(d.age || ""),
                             gender: d.gender || "",
                             bloodGroup: d.bloodGroup || "",
+                            shopName: d.shopName || "",
                             shopAddress: d.shopAddress || "",
                             aadhaarFull: "",
                             aadhaarLast4: d.aadhaarLast4 || "",
@@ -301,6 +304,7 @@ const AddEditMember: React.FC = () => {
                 age: Number(form.age),
                 gender: form.gender,
                 bloodGroup: form.bloodGroup,
+                shopName: form.shopName.trim(),
                 shopAddress: form.shopAddress.trim(),
                 aadhaarLast4: resolvedAadhaarLast4,
                 memberId: resolvedMemberId,
@@ -507,7 +511,15 @@ const AddEditMember: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mt-4">
+                        <div className="mt-4 space-y-4">
+                            <Field
+                                label={t("addEditMember.shopName")}
+                                name="shopName"
+                                value={form.shopName}
+                                onChange={handleChange}
+                                placeholder={t("addEditMember.shopNamePlaceholder")}
+                                required
+                            />
                             <Field
                                 label={t("addEditMember.shopAddress")}
                                 name="shopAddress"
