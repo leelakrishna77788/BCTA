@@ -1,7 +1,8 @@
 import { auth } from "../firebase/firebaseConfig";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { membersApi } from "./membersService";
 
 export interface CreateAdminInput {
   name: string;
@@ -137,4 +138,40 @@ export const adminApi = {
 
     return await response.json();
   }
+};
+
+export interface AdminDoc {
+  id?: string;
+  uid?: string;
+  name?: string;
+  surname?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  status?: string;
+  imageUrl?: string;
+  imagePublicId?: string;
+  createdAt?: any;
+  [key: string]: any;
+}
+
+/**
+ * Service for managing existing administrator accounts
+ * (list, block/unblock, delete). Reuses the privileged serverless
+ * delete/revoke flows already implemented for members.
+ */
+export const adminsApi = {
+  /** Update an admin's status. Firestore rules restrict updates to admins only. */
+  updateStatus: async (uid: string, status: "active" | "blocked"): Promise<void> => {
+    await updateDoc(doc(getFirestore(), "users", uid), {
+      status,
+      updatedAt: serverTimestamp(),
+    });
+  },
+
+  /** Delete an admin from Auth + Firestore via the privileged serverless API. */
+  delete: async (uid: string) => membersApi.delete(uid),
+
+  /** Revoke an admin's active sessions (used when blocking). */
+  revokeTokens: async (uid: string) => membersApi.revokeTokens(uid),
 };

@@ -18,6 +18,7 @@ import {
   Stethoscope,
   User,
   ShieldPlus,
+  ShieldCheck,
   Crown,
 } from "lucide-react";
 import type { Member, UserRole } from "../../types/member.types";
@@ -45,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const adminLinks = [
     { to: "/admin/dashboard", icon: LayoutDashboard, label: t("sidebar.dashboard") },
     { to: "/admin/members", icon: Users, label: t("sidebar.members") },
+    { to: "/admin/admins", icon: ShieldCheck, label: t("sidebar.admins") },
     { to: "/admin/admins/add", icon: ShieldPlus, label: t("sidebar.addAdmin") },
     { to: "/admin/meetings", icon: CalendarDays, label: t("sidebar.meetings") },
     { to: "/admin/shops", icon: Store, label: t("sidebar.shopsProducts") },

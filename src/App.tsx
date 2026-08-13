@@ -54,6 +54,8 @@ const MemberList = lazyWithRetry(() => import("./pages/admin/Members/MemberList"
 const MemberDetail = lazyWithRetry(() => import("./pages/admin/Members/MemberDetail"));
 const AddEditMember = lazyWithRetry(() => import("./pages/admin/Members/AddEditMember"));
 const AddAdmin = lazyWithRetry(() => import("./pages/admin/Members/AddAdmin"));
+const AdminList = lazyWithRetry(() => import("./pages/admin/Admins/AdminList"));
+const AdminDetail = lazyWithRetry(() => import("./pages/admin/Admins/AdminDetail"));
 const MeetingList = lazyWithRetry(() => import("./pages/admin/Meetings/MeetingList"));
 const MeetingQR = lazyWithRetry(() => import("./pages/admin/Meetings/MeetingQR"));
 const AttendanceDashboard = lazyWithRetry(() => import("./pages/admin/Meetings/AttendanceDashboard"));
@@ -228,7 +230,11 @@ function App() {
               <Route path="members/add" element={<AddEditMember />} />
               <Route path="members/:id" element={<MemberDetail />} />
               <Route path="members/:id/edit" element={<AddEditMember />} />
+
+              {/* Admins */}
+              <Route path="admins" element={<AdminList />} />
               <Route path="admins/add" element={<AddAdmin />} />
+              <Route path="admins/:id" element={<AdminDetail />} />
 
               {/* Meetings */}
               <Route path="meetings" element={<MeetingList />} />
