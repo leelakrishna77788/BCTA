@@ -12,6 +12,7 @@ import {
   Mail,
   Lock,
   Upload,
+  Phone,
 } from "lucide-react";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../../../firebase/firebaseConfig";
@@ -26,6 +27,7 @@ const AddAdmin: React.FC = () => {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   });
@@ -93,6 +95,13 @@ const AddAdmin: React.FC = () => {
       toast.error(t("addAdmin.emailRequired"));
       return;
     }
+
+    const phoneDigits = form.phone.replace(/\D/g, "");
+    if (phoneDigits.length !== 10) {
+      toast.error(t("addAdmin.phoneLength"));
+      return;
+    }
+
     if (form.password.length < 6) {
       toast.error(t("addAdmin.passwordMinLength"));
       return;
@@ -133,6 +142,7 @@ const AddAdmin: React.FC = () => {
         await adminApi.createAdmin({
           name: form.name.trim(),
           email: form.email.trim(),
+          phone: form.phone.trim(),
           password: form.password,
           imageUrl,
           imagePublicId,
@@ -152,7 +162,7 @@ const AddAdmin: React.FC = () => {
           { duration: 5000, icon: "🛡️" },
         );
 
-        setForm({ name: "", email: "", password: "", confirmPassword: "" });
+        setForm({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
         setPhotoFile(null);
         setPhotoPreview(null);
         console.log(
@@ -283,6 +293,26 @@ const AddAdmin: React.FC = () => {
                   className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
                 />
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+              </div>
+            </div>
+            {/* Phone Number */}
+            <div className="space-y-1">
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.18em] pl-0.5">
+                {t("addAdmin.phone")}
+              </label>
+              <div className="relative">
+                <input
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder={t("addAdmin.phonePlaceholder")}
+                  required
+                  autoComplete="new-phone"
+                  inputMode="numeric"
+                  className="w-full py-3 px-4 pl-10 bg-white border border-slate-200 focus:border-indigo-500 rounded-xl font-semibold text-[13px] text-slate-700 transition-all outline-none placeholder:text-slate-300"
+                />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
               </div>
             </div>
             {/* Password */}
@@ -432,6 +462,26 @@ const AddAdmin: React.FC = () => {
                     className="w-full py-3 px-5 pl-12 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
                   />
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
+                </div>
+              </div>
+
+              <div className="space-y-1.5 group">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1 group-focus-within:text-indigo-600 transition-colors">
+                  {t("addAdmin.phone")}
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    placeholder={t("addAdmin.phonePlaceholder")}
+                    required
+                    autoComplete="new-phone"
+                    inputMode="numeric"
+                    className="w-full py-3 px-5 pl-12 bg-slate-50/50 border border-slate-200/60 focus:bg-white focus:border-indigo-600 rounded-2xl font-bold text-slate-700 transition-all outline-none"
+                  />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
                 </div>
               </div>
 

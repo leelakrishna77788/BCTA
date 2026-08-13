@@ -48,6 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { to: "/admin/members", icon: Users, label: t("sidebar.members") },
     { to: "/admin/admins", icon: ShieldCheck, label: t("sidebar.admins") },
     { to: "/admin/admins/add", icon: ShieldPlus, label: t("sidebar.addAdmin") },
+    { to: "/admin/profile", icon: User, label: t("sidebar.myProfile") },
     { to: "/admin/meetings", icon: CalendarDays, label: t("sidebar.meetings") },
     { to: "/admin/shops", icon: Store, label: t("sidebar.shopsProducts") },
     { to: "/admin/payments", icon: CreditCard, label: t("sidebar.payments") },

@@ -7,6 +7,7 @@ import { membersApi } from "./membersService";
 export interface CreateAdminInput {
   name: string;
   email: string;
+  phone?: string;
   password?: string;
   imageUrl?: string;
   imagePublicId?: string;
@@ -32,6 +33,7 @@ export const adminApi = {
     const profileData = {
       name: input.name,
       email: input.email.trim(),
+      phone: input.phone || null,
       role: "admin",
       status: "active",
       imageUrl: input.imageUrl || null,
@@ -167,6 +169,44 @@ export const adminsApi = {
       status,
       updatedAt: serverTimestamp(),
     });
+  },
+
+  /**
+   * Update the currently authenticated admin's own profile.
+   * The uid is always derived from the authenticated session (never from
+   * the frontend), and only safe fields (name, phone) can be changed.
+   */
+  updateMyProfile: async (data: {
+    name: string;
+    phone: string;
+    imageUrl?: string | null;
+    imagePublicId?: string | null;
+  }): Promise<void> => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      throw new Error("You must be logged in to update your profile.");
+    }
+
+    const snap = await getDoc(doc(getFirestore(), "users", uid));
+    const current = snap.exists() ? (snap.data() as AdminDoc) : null;
+    const role = String(current?.role || "").toLowerCase();
+    if (role !== "admin" && role !== "superadmin") {
+      throw new Error("Only administrators can update this profile.");
+    }
+
+    const updates: Record<string, any> = {
+      name: data.name.trim(),
+      phone: data.phone.trim(),
+      updatedAt: serverTimestamp(),
+    };
+    if (data.imageUrl !== undefined) {
+      updates.imageUrl = data.imageUrl || null;
+    }
+    if (data.imagePublicId !== undefined) {
+      updates.imagePublicId = data.imagePublicId || null;
+    }
+
+    await updateDoc(doc(getFirestore(), "users", uid), updates);
   },
 
   /** Delete an admin from Auth + Firestore via the privileged serverless API. */

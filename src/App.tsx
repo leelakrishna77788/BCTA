@@ -56,6 +56,7 @@ const AddEditMember = lazyWithRetry(() => import("./pages/admin/Members/AddEditM
 const AddAdmin = lazyWithRetry(() => import("./pages/admin/Members/AddAdmin"));
 const AdminList = lazyWithRetry(() => import("./pages/admin/Admins/AdminList"));
 const AdminDetail = lazyWithRetry(() => import("./pages/admin/Admins/AdminDetail"));
+const AdminProfile = lazyWithRetry(() => import("./pages/admin/Admins/AdminProfile"));
 const MeetingList = lazyWithRetry(() => import("./pages/admin/Meetings/MeetingList"));
 const MeetingQR = lazyWithRetry(() => import("./pages/admin/Meetings/MeetingQR"));
 const AttendanceDashboard = lazyWithRetry(() => import("./pages/admin/Meetings/AttendanceDashboard"));
@@ -235,6 +236,7 @@ function App() {
               <Route path="admins" element={<AdminList />} />
               <Route path="admins/add" element={<AddAdmin />} />
               <Route path="admins/:id" element={<AdminDetail />} />
+              <Route path="profile" element={<AdminProfile />} />
 
               {/* Meetings */}
               <Route path="meetings" element={<MeetingList />} />

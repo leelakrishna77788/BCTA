@@ -109,7 +109,8 @@ const AdminList: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let result = [...admins];
+    const uid = currentUser?.uid;
+    let result = admins.filter((a) => a.id !== uid && a.uid !== uid);
     const term = searchTerm.trim().toLowerCase();
 
     if (term) {
@@ -133,7 +134,7 @@ const AdminList: React.FC = () => {
       result = result.filter((a) => a.status === statusFilter);
     }
     setFiltered(result);
-  }, [searchTerm, statusFilter, admins, i18n.language]);
+  }, [searchTerm, statusFilter, admins, i18n.language, currentUser?.uid]);
 
   const clearFilters = () => {
     setSearchTerm("");
