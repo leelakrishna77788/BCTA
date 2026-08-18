@@ -2,7 +2,7 @@ import { auth } from "../firebase/firebaseConfig";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { membersApi } from "./membersService";
+import { membersApi, generateSequentialMemberId } from "./membersService";
 
 export interface CreateAdminInput {
   name: string;
@@ -207,6 +207,26 @@ export const adminsApi = {
     }
 
     await updateDoc(doc(getFirestore(), "users", uid), updates);
+  },
+
+  /** Convert an admin to a member by changing their role and assigning a memberId. */
+  convertToMember: async (uid: string): Promise<void> => {
+    const memberId = await generateSequentialMemberId();
+    await updateDoc(doc(getFirestore(), "users", uid), {
+      role: "member",
+      memberId,
+      attendanceCount: 0,
+      paymentStatus: "unpaid",
+      updatedAt: serverTimestamp(),
+    });
+  },
+
+  /** Convert a member to an admin by changing their role. */
+  convertToAdmin: async (uid: string): Promise<void> => {
+    await updateDoc(doc(getFirestore(), "users", uid), {
+      role: "admin",
+      updatedAt: serverTimestamp(),
+    });
   },
 
   /** Delete an admin from Auth + Firestore via the privileged serverless API. */

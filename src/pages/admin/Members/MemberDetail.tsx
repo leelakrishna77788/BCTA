@@ -8,10 +8,11 @@ import {
     ArrowLeft, Edit, UserX, UserCheck, Phone, MapPin,
     Droplet, CreditCard, Activity,
     ShieldCheck, Mail, AlertTriangle, Package, Trash2, X, QrCode, Download,
-    BadgeCheck, CheckCircle2, CalendarDays
+    BadgeCheck, CheckCircle2, CalendarDays, ArrowUpFromLine
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { membersApi, generateSequentialMemberId } from "../../../services/membersService";
+import { adminsApi } from "../../../services/adminService";
 import LoadingSkeleton, { CardSkeleton } from "../../../components/shared/LoadingSkeleton";
 import { useTranslation } from "react-i18next";
 import { assets } from "../../../assets/assets";
@@ -69,6 +70,7 @@ const MemberDetail: React.FC = () => {
     const [showID, setShowID] = useState<boolean>(false);
     const [isDownloadingID, setIsDownloadingID] = useState<boolean>(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
+    const [showConvertConfirm, setShowConvertConfirm] = useState<boolean>(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -162,7 +164,7 @@ const MemberDetail: React.FC = () => {
             document.body.style.overflow = "";
             document.documentElement.style.overflow = "";
         };
-    }, [showID, showDeleteConfirm]);
+    }, [showID, showDeleteConfirm, showConvertConfirm]);
 
     const toggleBlock = async () => {
         if (!member) return;
@@ -218,6 +220,19 @@ const MemberDetail: React.FC = () => {
             console.error("Deletion failed:", err);
             toast.error(err.message || t("memberDetail.toastDeleteFailed"));
         });
+    };
+
+    const confirmConvertToAdmin = async () => {
+        if (!member) return;
+        setShowConvertConfirm(false);
+        try {
+            await adminsApi.convertToAdmin(member.id);
+            toast.success(t("memberDetail.memberConvertedToAdmin"));
+            navigate("/admin/admins");
+        } catch (err) {
+            console.error("Convert to admin failed:", err);
+            toast.error(t("memberDetail.convertToAdminFailed"));
+        }
     };
 
     const handlePrintID = () => {
@@ -709,6 +724,18 @@ const MemberDetail: React.FC = () => {
                             {member.status === "active" ? <><UserX size={14} /> {t("memberDetail.blockMember")}</> : <><UserCheck size={14} /> {t("memberDetail.unblockMember")}</>}
                         </button>
                     )}
+                    <div
+                        onClick={() => setShowConvertConfirm(true)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 cursor-pointer hover:bg-amber-50 transition-colors select-none"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setShowConvertConfirm(true); }}
+                    >
+                        <span className="text-xs font-semibold text-amber-700">{t("memberDetail.convertToAdmin")}</span>
+                        <div className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-slate-300 shadow-inner transition-colors">
+                            <span className="inline-block h-3.5 w-3.5 translate-x-[3px] rounded-full bg-white shadow transition-transform" />
+                        </div>
+                    </div>
                     <button
                         onClick={handleDelete}
                         className="h-9 w-9 flex items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50"
@@ -988,6 +1015,41 @@ const MemberDetail: React.FC = () => {
                                 className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
                             >
                                 {t("common.delete") || "Delete"}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {showConvertConfirm && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-lg animate-fade-in p-4" onClick={() => setShowConvertConfirm(false)}>
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-scale-up relative"
+                        style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-amber-100">
+                            <ArrowUpFromLine className="text-amber-600" size={32} />
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
+                            {t("memberDetail.convertToAdminConfirmTitle")}
+                        </h2>
+                        <p className="text-sm text-slate-600 text-center mb-6">
+                            {t("memberDetail.convertToAdminConfirmMessage")}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowConvertConfirm(false)}
+                                className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                            >
+                                {t("common.cancel") || "Cancel"}
+                            </button>
+                            <button
+                                onClick={confirmConvertToAdmin}
+                                className="flex-1 px-4 py-3 rounded-xl bg-amber-600 text-white font-semibold hover:bg-amber-700 transition-colors"
+                            >
+                                {t("memberDetail.convertToAdmin")}
                             </button>
                         </div>
                     </div>

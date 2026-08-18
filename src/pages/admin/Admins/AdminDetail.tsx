@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   CalendarDays,
   UserRound,
+  ArrowDownToLine,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../context/AuthContext";
@@ -39,13 +40,13 @@ interface AdminDoc extends DocumentData {
   createdAt?: Timestamp | string | any;
 }
 
-type ConfirmType = "block" | "unblock" | "delete";
+type ConfirmType = "block" | "unblock" | "delete" | "convertToMember";
 
 const AdminDetail: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, refreshProfile } = useAuth();
   const [admin, setAdmin] = useState<AdminDoc | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [confirmType, setConfirmType] = useState<ConfirmType | null>(null);
@@ -175,6 +176,13 @@ const AdminDetail: React.FC = () => {
           confirmLabel: t("adminList.unblock"),
           tone: "emerald" as const,
         };
+      case "convertToMember":
+        return {
+          title: t("adminDetail.convertToMemberConfirmTitle"),
+          message: t("adminDetail.convertToMemberConfirmMessage"),
+          confirmLabel: t("adminDetail.convertToMember"),
+          tone: "amber" as const,
+        };
       default:
         return {
           title: t("adminList.deleteConfirmTitle"),
@@ -194,6 +202,15 @@ const AdminDetail: React.FC = () => {
         await adminsApi.delete(admin.id);
         toast.success(t("adminList.adminDeleted"));
         navigate("/admin/admins");
+      } else if (confirmType === "convertToMember") {
+        await adminsApi.convertToMember(admin.id);
+        toast.success(t("adminDetail.adminConvertedToMember"));
+        if (isSelf) {
+          await refreshProfile();
+          navigate("/member/dashboard", { replace: true });
+        } else {
+          navigate("/admin/admins");
+        }
       } else {
         const newStatus = confirmType === "block" ? "blocked" : "active";
         await adminsApi.updateStatus(admin.id, newStatus);
@@ -214,7 +231,9 @@ const AdminDetail: React.FC = () => {
       toast.error(
         confirmType === "delete"
           ? t("adminList.deleteFailed")
-          : t("adminList.updateFailed"),
+          : confirmType === "convertToMember"
+            ? t("adminDetail.convertFailed")
+            : t("adminList.updateFailed"),
       );
     } finally {
       setConfirmType(null);
@@ -248,13 +267,16 @@ const AdminDetail: React.FC = () => {
             {(() => {
               const copy = getConfirmCopy(confirmType);
               const isRed = copy.tone === "red";
+              const isAmber = copy.tone === "amber";
               return (
                 <>
                   <div
-                    className={`flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full ${isRed ? "bg-red-100" : "bg-emerald-100"}`}
+                    className={`flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full ${isRed ? "bg-red-100" : isAmber ? "bg-amber-100" : "bg-emerald-100"}`}
                   >
                     {confirmType === "unblock" ? (
                       <UserCheck className="text-emerald-600" size={32} />
+                    ) : confirmType === "convertToMember" ? (
+                      <ArrowDownToLine className="text-amber-600" size={32} />
                     ) : (
                       <AlertTriangle
                         className={isRed ? "text-red-600" : "text-amber-600"}
@@ -282,7 +304,9 @@ const AdminDetail: React.FC = () => {
                       className={`flex-1 px-4 py-3 rounded-xl text-white font-semibold transition-colors flex items-center justify-center gap-2 ${
                         isRed
                           ? "bg-red-600 hover:bg-red-700"
-                          : "bg-emerald-600 hover:bg-emerald-700"
+                          : isAmber
+                            ? "bg-amber-600 hover:bg-amber-700"
+                            : "bg-emerald-600 hover:bg-emerald-700"
                       } disabled:opacity-70 disabled:cursor-not-allowed`}
                     >
                       {isWorking && (
@@ -336,6 +360,18 @@ const AdminDetail: React.FC = () => {
                     <UserCheck size={14} /> {t("adminDetail.unblockAdmin")}
                   </button>
                 )}
+                <div
+                  onClick={() => setConfirmType("convertToMember")}
+                  className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 cursor-pointer hover:bg-amber-50 transition-colors select-none"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setConfirmType("convertToMember"); }}
+                >
+                  <span className="text-xs font-semibold text-amber-700">{t("adminDetail.convertToMember")}</span>
+                  <div className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-amber-500 shadow-inner transition-colors">
+                    <span className="inline-block h-3.5 w-3.5 translate-x-4 rounded-full bg-white shadow transition-transform" />
+                  </div>
+                </div>
                 <button
                   onClick={() => setConfirmType("delete")}
                   className="h-9 w-9 flex items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50"

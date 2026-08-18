@@ -813,7 +813,12 @@
     "quickContact": "Quick contact",
     "rs": "Rs.",
     "memberIdStatus": "Member ID pending",
-    "closeDigitalId": "Close Digital ID"
+    "closeDigitalId": "Close Digital ID",
+    "convertToAdmin": "Convert to Admin",
+    "convertToAdminConfirmTitle": "Convert Member to Admin?",
+    "convertToAdminConfirmMessage": "This will change their role from member to admin. They will gain admin privileges and see the admin dashboard.",
+    "memberConvertedToAdmin": "Member has been converted to admin successfully",
+    "convertToAdminFailed": "Failed to convert member to admin"
   },
   "adminList": {
     "title": "Admin",
@@ -869,7 +874,12 @@
     "recordNotFoundDesc": "The admin record you are trying to access does not exist or has been removed.",
     "backToDirectory": "Back to Directory",
     "noPhone": "No phone on file",
-    "unknownDate": "Unknown date"
+    "unknownDate": "Unknown date",
+    "convertToMember": "Convert to Member",
+    "convertToMemberConfirmTitle": "Convert Admin to Member?",
+    "convertToMemberConfirmMessage": "This will change their role from admin to member. They will lose admin privileges and see the member dashboard instead.",
+    "adminConvertedToMember": "Admin has been converted to member successfully",
+    "convertFailed": "Failed to convert admin to member"
   },
   "meetings": {
     "title": "Meetings & Sessions",
