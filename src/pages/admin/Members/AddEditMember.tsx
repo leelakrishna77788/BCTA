@@ -20,7 +20,7 @@ import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { uploadImage, ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, deleteImage } from "../../../utils/cloudinary";
 import { generateSequentialMemberId, isMemberIdTaken, membersApi } from "../../../services/membersService";
-import type { Gender, BloodGroup } from "../../../types/member.types";
+import type { Gender, BloodGroup, Location } from "../../../types/member.types";
 import LoadingSkeleton, { CardSkeleton } from "../../../components/shared/LoadingSkeleton";
 
 interface FormState {
@@ -33,6 +33,8 @@ interface FormState {
     bloodGroup: BloodGroup;
     shopName: string;
     shopAddress: string;
+    location: Location;
+    place: string;
     aadhaarFull: string;
     aadhaarLast4: string;
     nomineeName: string;
@@ -57,6 +59,12 @@ const GENDERS: { value: Gender; label: string }[] = [
     { value: "male", label: "Male" },
     { value: "female", label: "Female" },
     { value: "other", label: "Other" }
+];
+
+const LOCATIONS: { value: Location; label: string }[] = [
+    { value: "town1", label: "Town 1" },
+    { value: "town2", label: "Town 2" },
+    { value: "rural", label: "Rural" }
 ];
 
 const Field: React.FC<{
@@ -161,6 +169,8 @@ const AddEditMember: React.FC = () => {
         bloodGroup: "",
         shopName: "",
         shopAddress: "",
+        location: "town1",
+        place: "",
         aadhaarFull: "",
         aadhaarLast4: "",
         nomineeName: "",
@@ -206,6 +216,8 @@ const AddEditMember: React.FC = () => {
                             bloodGroup: d.bloodGroup || "",
                             shopName: d.shopName || "",
                             shopAddress: d.shopAddress || "",
+                            location: d.location || "",
+                            place: d.place || "",
                             aadhaarFull: "",
                             aadhaarLast4: d.aadhaarLast4 || "",
                             nomineeName: d.nomineeDetails?.name || "",
@@ -283,6 +295,16 @@ const AddEditMember: React.FC = () => {
             return;
         }
 
+        if (!form.location) {
+            toast.error(t("addEditMember.errors.locationRequired"));
+            return;
+        }
+
+        if (form.location === "rural" && (!form.place || !form.place.trim())) {
+            toast.error(t("addEditMember.errors.placeRequired"));
+            return;
+        }
+
         setLoading(true);
         try {
             const resolvedMemberId = isEdit ? form.memberId : (form.memberId || await generateSequentialMemberId());
@@ -319,6 +341,8 @@ const AddEditMember: React.FC = () => {
                 bloodGroup: form.bloodGroup,
                 shopName: form.shopName.trim(),
                 shopAddress: form.shopAddress.trim(),
+                location: form.location,
+                place: form.location === "rural" ? form.place.trim() : "",
                 aadhaarLast4: resolvedAadhaarLast4,
                 memberId: resolvedMemberId,
                 nomineeDetails: {
@@ -542,6 +566,37 @@ const AddEditMember: React.FC = () => {
                                 placeholder={t("addEditMember.shopAddressPlaceholder")}
                                 required
                             />
+                        </div>
+
+                        <div className="mt-4 space-y-4">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field
+                                    label={t("addEditMember.location")}
+                                    name="location"
+                                    value={form.location}
+                                    onChange={(e) => {
+                                        const val = e.target.value as Location;
+                                        setForm(p => ({
+                                            ...p,
+                                            location: val,
+                                            place: val !== "rural" ? "" : p.place
+                                        }));
+                                    }}
+                                    type="select"
+                                    required
+                                    options={LOCATIONS}
+                                />
+                                {form.location === "rural" && (
+                                    <Field
+                                        label={t("addEditMember.place")}
+                                        name="place"
+                                        value={form.place}
+                                        onChange={handleChange}
+                                        placeholder={t("addEditMember.placePlaceholder")}
+                                        required
+                                    />
+                                )}
+                            </div>
                         </div>
                     </div>
 

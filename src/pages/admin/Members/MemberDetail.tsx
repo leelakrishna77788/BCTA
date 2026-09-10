@@ -31,6 +31,8 @@ interface MemberDoc extends DocumentData {
     paymentStatus?: string;
     shopName?: string;
     shopAddress?: string;
+    location?: string;
+    place?: string;
     createdAt?: Timestamp;
     nomineeDetails?: {
         name: string;
@@ -841,6 +843,7 @@ const MemberDetail: React.FC = () => {
                                 { label: t("memberDetail.aadhaarNumber"), value: member.aadhaarLast4 ? `XXXXXXXX${member.aadhaarLast4}` : "-", icon: ShieldCheck },
                                 { label: t("memberDetail.attendanceInfo"), value: `${attendance.length} / ${meetings.length || 0} ${t("memberList.meetings")}` },
                                 { label: t("memberDetail.balanceDue"), value: `${t("memberDetail.rs")} ${totalDue.toLocaleString()}`, icon: CreditCard },
+                                { label: t("addEditMember.location"), value: member.location ? (member.location === "rural" && member.place ? `${t("locations.rural")} – ${member.place}` : t(`locations.${member.location}`)) : t("locations.town1"), icon: MapPin },
                             ].map((item) => {
                                 const Icon = item.icon;
                                 return (

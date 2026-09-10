@@ -56,6 +56,13 @@
     "total": "మొత్తం",
     "recent": "ఇటీవల"
   },
+  "locations": {
+    "town1": "టౌన్ 1",
+    "town2": "టౌన్ 2",
+    "rural": "గ్రామీణ",
+    "notAssigned": "ప్రదేశం కేటాయించబడలేదు",
+    "unassigned": "కేటాయించబడలేదు"
+  },
   "profile": {
     "personalDetails": "వ్యక్తిగత వివరాలు",
     "personalDetailsDesc": "ముఖ్య గుర్తింపు, సభ్యుల ID మరియు సంప్రదింపు సమాచారం.",
@@ -574,7 +581,11 @@
     "thName": "పేరు",
     "thStatus": "స్థితి",
     "thPayment": "చెల్లింపు",
-    "memberId": "సభ్య ID"
+    "memberId": "సభ్య ID",
+    "memberLocations": "సభ్యుల ప్రదేశాలు",
+    "viewMembers": "సభ్యులను చూడండి",
+    "memberSingular": "సభ్యుడు",
+    "memberPlural": "సభ్యులు"
   },
   "memberDashboard": {
     "goodMorning": "శుభోదయం",
@@ -788,6 +799,9 @@
     "assignIdLabel": "ID కార్డ్ సంఖ్య",
     "assignIdPlaceholder": "ఉదా. 101",
     "assignIdHint": "ఈ సభ్యుని ID కార్డ్ కోసం ఒక ప్రత్యేక సంఖ్యను నమోదు చేయండి. ఇది వారి డిజిటల్ ID లో కనిపిస్తుంది.",
+    "location": "ప్రదేశం",
+    "place": "స్థలం",
+    "placePlaceholder": "గ్రామీణ స్థలం పేరు నమోదు చేయండి",
     "initialPassword": "ప్రారంభ పాస్‌వర్డ్",
     "passwordPlaceholder": "••••••••",
     "photoNominee": "ఫోటో & నామినీ",
@@ -812,7 +826,9 @@
       "aadhaarUpdateLength": "అప్‌డేట్ ఆధార్ ఖచ్చితంగా 12 అంకెలు ఉండాలి",
       "aadhaarInvalid": "చెల్లని ఆధార్ ధృవీకరణ",
       "memberIdRequired": "ID కార్డ్ సంఖ్య అవసరం",
-      "memberIdTaken": "ID కార్డ్ సంఖ్య \"{{id}}\" ఇప్పటికే మరొక సభ్యునికి కేటాయించబడింది"
+      "memberIdTaken": "ID కార్డ్ సంఖ్య \"{{id}}\" ఇప్పటికే మరొక సభ్యునికి కేటాయించబడింది",
+      "locationRequired": "ప్రదేశం అవసరం",
+      "placeRequired": "గ్రామీణం ఎంచుకున్నప్పుడు స్థలం పేరు అవసరం"
     },
     "success": {
       "idGenerated": "కొత్త ID సృష్టించబడింది: {{id}}",
@@ -1593,6 +1609,7 @@
     "unpaid": "చెల్లించలేదు",
     "partialPayment": "పాక్షిక చెల్లింపు",
     "reset": "రీసెట్",
+    "clearLocation": "ప్రదేశం క్లియర్ చేయండి",
     "noMembersFound": "సభ్యులు కనుగొనబడలేదు",
     "adjustFilters": "మీ ఫిల్టర్‌లను సర్దుబాటు చేయడానికి ప్రయత్నించండి.",
     "blood": "రక్తం",

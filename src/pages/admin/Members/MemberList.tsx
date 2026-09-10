@@ -1,9 +1,9 @@
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation, Trans } from "react-i18next";
-import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw, Store, MapPin } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw, Store, MapPin, Building2, Wheat, ChevronRight } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { collection, query, where, doc, updateDoc, Timestamp, DocumentData, onSnapshot } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
@@ -25,11 +25,14 @@ interface MemberDoc extends DocumentData {
     bloodGroup?: string;
     shopName?: string;
     shopAddress?: string;
+    location?: string;
+    place?: string;
     attendanceCount?: number;
 }
 
 const MemberList: React.FC = () => {
     const { t, i18n } = useTranslation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [members, setMembers] = useState<MemberDoc[]>([]);
     const [filtered, setFiltered] = useState<MemberDoc[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -45,6 +48,10 @@ const MemberList: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState<string>("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [paymentFilter, setPaymentFilter] = useState<string>("all");
+
+    // Location filter from URL params
+    const urlLocation = searchParams.get("location") || "";
+    const urlPlace = searchParams.get("place") || "";
 
     // Lock ALL scroll when modal is open
     useEffect(() => {
@@ -182,14 +189,115 @@ const MemberList: React.FC = () => {
 
         if (statusFilter !== "all") result = result.filter(m => m.status === statusFilter);
         if (paymentFilter !== "all") result = result.filter(m => m.paymentStatus === paymentFilter);
+
+        // Location filtering from URL params
+        if (urlLocation) {
+            if (urlLocation === "town1") {
+                result = result.filter(m => (m.location || "town1") === "town1");
+            } else if (urlLocation === "rural") {
+                result = result.filter(m => m.location === "rural" && (urlPlace ? m.place === urlPlace : true));
+            } else {
+                result = result.filter(m => m.location === urlLocation);
+            }
+        }
+
         setFiltered(result);
-    }, [searchTerm, statusFilter, paymentFilter, members, i18n.language]);
+    }, [searchTerm, statusFilter, paymentFilter, members, i18n.language, urlLocation, urlPlace]);
 
     const clearFilters = () => {
         setSearchTerm("");
         setStatusFilter("all");
         setPaymentFilter("all");
+        setSearchParams({});
     };
+
+    interface LocationBlock {
+        key: string;
+        label: string;
+        count: number;
+        icon: React.ReactNode;
+        color: string;
+        bg: string;
+        borderColor: string;
+        linkTo: string;
+    }
+
+    const locationBlocks = useMemo<LocationBlock[]>(() => {
+        const town1Count = members.filter(m => (m.location || "town1") === "town1").length;
+        const town2Count = members.filter(m => m.location === "town2").length;
+
+        const ruralByPlace: Record<string, number> = {};
+        let ruralNoPlace = 0;
+
+        members.forEach(m => {
+            const loc = m.location || "town1";
+            if (loc === "rural") {
+                const place = (m.place || "").trim();
+                if (place) {
+                    ruralByPlace[place] = (ruralByPlace[place] || 0) + 1;
+                } else {
+                    ruralNoPlace++;
+                }
+            }
+        });
+
+        const blocks: LocationBlock[] = [];
+
+        if (town1Count > 0) {
+            blocks.push({
+                key: "town1",
+                label: t("locations.town1"),
+                count: town1Count,
+                icon: <Building2 size={20} />,
+                color: "text-blue-600",
+                bg: "bg-blue-50",
+                borderColor: "border-blue-200",
+                linkTo: "/admin/members?location=town1",
+            });
+        }
+
+        if (town2Count > 0) {
+            blocks.push({
+                key: "town2",
+                label: t("locations.town2"),
+                count: town2Count,
+                icon: <Building2 size={20} />,
+                color: "text-violet-600",
+                bg: "bg-violet-50",
+                borderColor: "border-violet-200",
+                linkTo: "/admin/members?location=town2",
+            });
+        }
+
+        const sortedPlaces = Object.keys(ruralByPlace).sort();
+        sortedPlaces.forEach(place => {
+            blocks.push({
+                key: `rural-${place}`,
+                label: `${t("locations.rural")} – ${place}`,
+                count: ruralByPlace[place],
+                icon: <Wheat size={20} />,
+                color: "text-emerald-600",
+                bg: "bg-emerald-50",
+                borderColor: "border-emerald-200",
+                linkTo: `/admin/members?location=rural&place=${encodeURIComponent(place)}`,
+            });
+        });
+
+        if (ruralNoPlace > 0) {
+            blocks.push({
+                key: "rural-noplace",
+                label: `${t("locations.rural")} (${t("locations.unassigned")})`,
+                count: ruralNoPlace,
+                icon: <Wheat size={20} />,
+                color: "text-amber-600",
+                bg: "bg-amber-50",
+                borderColor: "border-amber-200",
+                linkTo: "/admin/members?location=rural&place=",
+            });
+        }
+
+        return blocks;
+    }, [members, t, i18n.language]);
 
     /** Optimistically update a member in local state without re-fetching */
     const updateMemberLocally = useCallback((docId: string, updates: Partial<MemberDoc>) => {
@@ -416,15 +524,36 @@ const MemberList: React.FC = () => {
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-2">
                         {t("memberList.title")} <span className="text-indigo-600">{t("memberList.directory")}</span>
                     </h1>
+                    {urlLocation && (
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 text-indigo-700 px-3 py-1 text-xs font-bold">
+                                <MapPin size={12} />
+                                {urlLocation === "none"
+                                    ? t("locations.notAssigned")
+                                    : urlLocation === "rural"
+                                        ? urlPlace ? `${t("locations.rural")} – ${urlPlace}` : t("locations.rural")
+                                        : t(`locations.${urlLocation}`)
+                                }
+                            </span>
+                            <button
+                                onClick={() => setSearchParams({})}
+                                className="text-xs font-bold text-slate-400 hover:text-red-500 transition-colors"
+                            >
+                                {t("memberList.clearLocation")}
+                            </button>
+                        </div>
+                    )}
                 </div>
                 <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:items-center">
-                    <button
-                        onClick={() => setShowBulkConfirm(true)}
-                        className="group h-12 w-full justify-center px-5 rounded-2xl glass-card border border-red-200/50 text-red-600 hover:bg-red-50 transition-all flex items-center gap-2 shadow-sm font-bold text-sm sm:w-auto"
-                    >
-                         <Trash2 size={18} className="transition-transform group-hover:scale-110" />
-                        <span>{t("memberList.bulkCleanup")}</span>
-                    </button>
+                    {urlLocation && (
+                        <button
+                            onClick={() => setShowBulkConfirm(true)}
+                            className="group h-12 w-full justify-center px-5 rounded-2xl glass-card border border-red-200/50 text-red-600 hover:bg-red-50 transition-all flex items-center gap-2 shadow-sm font-bold text-sm sm:w-auto"
+                        >
+                             <Trash2 size={18} className="transition-transform group-hover:scale-110" />
+                            <span>{t("memberList.bulkCleanup")}</span>
+                        </button>
+                    )}
                     <Link to="/admin/members/add" className="h-12 w-full justify-center px-6 rounded-2xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 sm:w-auto">
                         <Plus size={20} strokeWidth={2.5} />
                         <span>{t("memberList.addMember")}</span>
@@ -432,6 +561,59 @@ const MemberList: React.FC = () => {
                 </div>
             </div>
 
+            {!urlLocation && (
+                <>
+                    {!loading && locationBlocks.length > 0 && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <MapPin size={16} className="text-indigo-600" />
+                                <h2 className="text-xs sm:text-sm font-black uppercase tracking-widest text-slate-500">
+                                    {t("adminDashboard.memberLocations")}
+                                </h2>
+                            </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {locationBlocks.map((block) => (
+                            <Link
+                                key={block.key}
+                                to={block.linkTo}
+                                className={`relative overflow-hidden rounded-2xl border ${block.borderColor} ${block.bg} p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group`}
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div>
+                                        <p className={`text-xs font-black uppercase tracking-wider ${block.color}`}>
+                                            {block.label}
+                                        </p>
+                                        <p className="mt-2 text-3xl font-black text-slate-900 tracking-tight">
+                                            {block.count}
+                                        </p>
+                                        <p className="text-[11px] font-bold text-slate-400 mt-1">
+                                            {block.count === 1 ? t("adminDashboard.memberSingular") : t("adminDashboard.memberPlural")}
+                                        </p>
+                                    </div>
+                                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${block.color} bg-white/70`}>
+                                        {block.icon}
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex items-center gap-1 text-xs font-black text-slate-400 group-hover:text-indigo-600 transition-colors">
+                                    {t("adminDashboard.viewMembers")} <ChevronRight size={14} className="transition-transform group-hover:translate-x-1" />
+                                </div>
+                            </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {loading && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 animate-pulse h-28" />
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+
+            {urlLocation && (
+                <>
             <div className="glass-card rounded-2xl sm:rounded-3xl border border-white/15 p-3.5 sm:p-4"
                 style={{ background: "rgba(255, 255, 255, 0.18)" }}
             >
@@ -633,6 +815,8 @@ const MemberList: React.FC = () => {
                 )}
             </div>
             </div>
+                </>
+            )}
         </div>
         </>
     );

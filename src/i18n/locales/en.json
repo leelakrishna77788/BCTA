@@ -28,17 +28,24 @@
     "viewAll": "View all",
     "search": "Search",
     "filter": "Filter",
+    "clear": "Clear",
+    "bctaMember": "BCTA MEMBER",
+    "unknown": "Unknown",
     "export": "Export",
     "refresh": "Refresh",
     "status": "Status",
     "actions": "Actions",
     "name": "Name",
-    "unknown": "Unknown",
     "qr": "QR",
-    "clear": "Clear",
-    "bctaMember": "BCTA MEMBER",
     "u": "U",
     "noDate": "No Date"
+  },
+  "locations": {
+    "town1": "Town 1",
+    "town2": "Town 2",
+    "rural": "Rural",
+    "notAssigned": "Location Not Assigned",
+    "unassigned": "Unassigned"
   },
   "profile": {
     "personalDetails": "Personal Details",
@@ -510,7 +517,11 @@
     "thName": "Name",
     "thStatus": "Status",
     "thPayment": "Payment",
-    "memberId": "Member ID"
+    "memberId": "Member ID",
+    "memberLocations": "Member Locations",
+    "viewMembers": "View Members",
+    "memberSingular": "Member",
+    "memberPlural": "Members"
   },
   "memberDashboard": {
     "goodMorning": "Good morning",
@@ -703,6 +714,7 @@
     "unpaid": "Unpaid",
     "partialPayment": "Partial Payment",
     "reset": "Reset",
+    "clearLocation": "Clear Location",
     "noMembersFound": "No members found",
     "adjustFilters": "Try adjusting your filters.",
     "blood": "Blood",
@@ -1065,6 +1077,9 @@
     "assignIdLabel": "ID Card Number",
     "assignIdPlaceholder": "e.g. 101",
     "assignIdHint": "Enter a unique number for this member's ID card. This will appear on their digital ID.",
+    "location": "Location",
+    "place": "Place",
+    "placePlaceholder": "Enter rural place name",
     "initialPassword": "Initial Password",
     "passwordPlaceholder": "••••••••",
     "photoNominee": "Photo & Nominee",
@@ -1089,7 +1104,9 @@
       "aadhaarUpdateLength": "Update Aadhaar must be exactly 12 digits",
       "aadhaarInvalid": "Invalid Aadhaar verification",
       "memberIdRequired": "ID card number is required",
-      "memberIdTaken": "ID card number \"{{id}}\" is already assigned to another member"
+      "memberIdTaken": "ID card number \"{{id}}\" is already assigned to another member",
+      "locationRequired": "Location is required",
+      "placeRequired": "Place name is required when Rural is selected"
     },
     "success": {
       "idGenerated": "New ID generated: {{id}}",

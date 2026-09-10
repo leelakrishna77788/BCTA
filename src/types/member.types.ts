@@ -3,6 +3,7 @@ export type UserStatus = "active" | "blocked" | "pending";
 export type PaymentStatus = "paid" | "unpaid";
 export type BloodGroup = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | "";
 export type Gender = "male" | "female" | "other" | "";
+export type Location = "town1" | "town2" | "rural" | "";
 
 export interface NomineeDetails {
   name: string;
@@ -23,6 +24,8 @@ export interface Member {
   aadhaarLast4?: string;
   shopName?: string;
   shopAddress?: string;
+  location?: Location;
+  place?: string;
   photoURL?: string;
   imageUrl?: string;
   imagePublicId?: string;
@@ -46,6 +49,8 @@ export interface CreateMemberInput {
   aadhaarLast4?: string;
   shopName?: string;
   shopAddress?: string;
+  location?: Location;
+  place?: string;
   nomineeDetails?: NomineeDetails;
   memberId?: string;
   phone?: string;

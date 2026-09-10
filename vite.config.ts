@@ -21,7 +21,18 @@ export default defineConfig(({ mode }) => {
           if (req.url && req.url.startsWith('/api/admin')) {
             console.log(`[Vite API Proxy] ${req.method} ${req.url}`);
             
-            process.env.FIREBASE_SERVICE_ACCOUNT = env.FIREBASE_SERVICE_ACCOUNT;
+            if (env.FIREBASE_SERVICE_ACCOUNT) {
+              process.env.FIREBASE_SERVICE_ACCOUNT = env.FIREBASE_SERVICE_ACCOUNT;
+            } else {
+              try {
+                const fs = await import('fs');
+                const saPath = path.resolve(__dirname, 'server/config/serviceAccountKey.json');
+                if (fs.existsSync(saPath)) {
+                  process.env.FIREBASE_SERVICE_ACCOUNT = fs.readFileSync(saPath, 'utf-8');
+                  console.log('[Vite API Proxy] Loaded service account from file');
+                }
+              } catch {}
+            }
             try {
               const { default: handler } = await server.ssrLoadModule('./api/admin.ts');
               
