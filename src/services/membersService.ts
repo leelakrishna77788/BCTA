@@ -61,6 +61,20 @@ export async function generateSequentialMemberId(): Promise<string> {
   return String(candidate);
 }
 
+/**
+ * Check whether a given memberId is already in use by any member.
+ */
+export async function isMemberIdTaken(memberId: string, excludeUid?: string): Promise<boolean> {
+  const snap = await getDocs(
+    query(collection(db, "users"), where("memberId", "==", memberId.trim()))
+  );
+  if (snap.empty) return false;
+  if (excludeUid) {
+    return snap.docs.some((d) => d.id !== excludeUid);
+  }
+  return true;
+}
+
 /** Fetch paginated list of members (role == "member") */
 export async function getMembers(lastDoc?: DocumentSnapshot): Promise<{ members: Member[]; lastVisible: DocumentSnapshot | null }> {
   let q = query(

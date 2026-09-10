@@ -754,6 +754,8 @@
     "createDesc": "BCTA వ్యవస్థలోకి కొత్త సభ్యుడిని నమోదు చేయండి.",
     "updateDesc": "నిలిచి ఉన్న సభ్యుని వివరాలు మరియు ఖాతా స్థితిని సవరించండి.",
     "generatedId": "సృష్టించబడిన ID",
+    "assignedId": "కేటాయించిన ID",
+    "assignedIdLabel": "ID కార్డ్ సంఖ్య",
     "modeLabel": "ఖాతా మోడ్",
     "editMode": "సవరణ మోడ్",
     "newReg": "కొత్త రిజిస్ట్రేషన్",
@@ -782,6 +784,10 @@
     "accountSetup": "ఖాతా సెటప్",
     "accountDesc": "సభ్యుని ఆధారాలు మరియు ID సృష్టి.",
     "regenerateId": "IDని మళ్ళీ సృష్టించు",
+    "suggestId": "ID సూచించు",
+    "assignIdLabel": "ID కార్డ్ సంఖ్య",
+    "assignIdPlaceholder": "ఉదా. 101",
+    "assignIdHint": "ఈ సభ్యుని ID కార్డ్ కోసం ఒక ప్రత్యేక సంఖ్యను నమోదు చేయండి. ఇది వారి డిజిటల్ ID లో కనిపిస్తుంది.",
     "initialPassword": "ప్రారంభ పాస్‌వర్డ్",
     "passwordPlaceholder": "••••••••",
     "photoNominee": "ఫోటో & నామినీ",
@@ -804,7 +810,9 @@
       "passLength": "పాస్‌వర్డ్ కనీసం 8 అక్షరాలు ఉండాలి",
       "aadhaarLength": "ఆధార్ 12 అంకెలు ఉండాలి",
       "aadhaarUpdateLength": "అప్‌డేట్ ఆధార్ ఖచ్చితంగా 12 అంకెలు ఉండాలి",
-      "aadhaarInvalid": "చెల్లని ఆధార్ ధృవీకరణ"
+      "aadhaarInvalid": "చెల్లని ఆధార్ ధృవీకరణ",
+      "memberIdRequired": "ID కార్డ్ సంఖ్య అవసరం",
+      "memberIdTaken": "ID కార్డ్ సంఖ్య \"{{id}}\" ఇప్పటికే మరొక సభ్యునికి కేటాయించబడింది"
     },
     "success": {
       "idGenerated": "కొత్త ID సృష్టించబడింది: {{id}}",

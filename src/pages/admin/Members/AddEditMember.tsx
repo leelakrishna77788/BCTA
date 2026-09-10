@@ -19,7 +19,7 @@ import {
 import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { uploadImage, ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, deleteImage } from "../../../utils/cloudinary";
-import { generateSequentialMemberId, membersApi } from "../../../services/membersService";
+import { generateSequentialMemberId, isMemberIdTaken, membersApi } from "../../../services/membersService";
 import type { Gender, BloodGroup } from "../../../types/member.types";
 import LoadingSkeleton, { CardSkeleton } from "../../../components/shared/LoadingSkeleton";
 
@@ -172,13 +172,12 @@ const AddEditMember: React.FC = () => {
 
     const profileTitle = isEdit ? t("addEditMember.updateTitle") : t("addEditMember.createTitle");
 
-    const assignNextMemberId = async (showToast = false) => {
-        if (isEdit) return;
+    const suggestMemberId = async () => {
         setMemberIdLoading(true);
         try {
             const nextId = await generateSequentialMemberId();
             setForm((prev) => ({ ...prev, memberId: nextId }));
-            if (showToast) toast.success(t("addEditMember.success.idGenerated", { id: nextId }));
+            toast.success(t("addEditMember.success.idGenerated", { id: nextId }));
         } catch (error) {
             console.error("Member ID generation error:", error);
             const message = error instanceof Error
@@ -232,7 +231,7 @@ const AddEditMember: React.FC = () => {
 
     useEffect(() => {
         if (!isEdit) {
-            assignNextMemberId();
+            suggestMemberId();
         }
     }, [isEdit]);
 
@@ -287,6 +286,20 @@ const AddEditMember: React.FC = () => {
         setLoading(true);
         try {
             const resolvedMemberId = isEdit ? form.memberId : (form.memberId || await generateSequentialMemberId());
+
+            if (!resolvedMemberId || !resolvedMemberId.trim()) {
+                toast.error(t("addEditMember.errors.memberIdRequired"));
+                setLoading(false);
+                return;
+            }
+
+            const idTaken = await isMemberIdTaken(resolvedMemberId.trim(), isEdit ? id : undefined);
+            if (idTaken) {
+                toast.error(t("addEditMember.errors.memberIdTaken", { id: resolvedMemberId.trim() }));
+                setLoading(false);
+                return;
+            }
+
             const resolvedAadhaarLast4 = aadhaarDigits.length === 12
                 ? aadhaarDigits.slice(-4)
                 : form.aadhaarLast4.trim();
@@ -428,8 +441,8 @@ const AddEditMember: React.FC = () => {
 
                     <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur">
-                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">{t("addEditMember.generatedId")}</p>
-                            <p className="mt-1 font-semibold text-white break-all">{form.memberId || (memberIdLoading ? t("common.loading") : t("common.pending"))}</p>
+                            <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">{t("addEditMember.assignedId")}</p>
+                            <p className="mt-1 font-semibold text-white break-all">{form.memberId || t("common.pending")}</p>
                         </div>
                         <div className="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur">
                             <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">{t("addEditMember.modeLabel")}</p>
@@ -541,19 +554,30 @@ const AddEditMember: React.FC = () => {
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => assignNextMemberId(true)}
+                                    onClick={suggestMemberId}
                                     disabled={memberIdLoading || loading}
                                     className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {memberIdLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
-                                    {t("addEditMember.regenerateId")}
+                                    {t("addEditMember.suggestId")}
                                 </button>
                             </div>
 
                             <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{t("addEditMember.generatedId")}</p>
-                                    <p className="mt-2 text-base font-semibold text-slate-900">{form.memberId || t("common.loading")}</p>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">
+                                        {t("addEditMember.assignIdLabel")} <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="memberId"
+                                        value={form.memberId || ""}
+                                        onChange={handleChange}
+                                        placeholder={t("addEditMember.assignIdPlaceholder")}
+                                        required
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none ring-[#000080] focus:ring-1"
+                                    />
+                                    <p className="text-[11px] text-slate-500">{t("addEditMember.assignIdHint")}</p>
                                 </div>
                                 <Field
                                     label={t("addEditMember.initialPassword")}
@@ -616,7 +640,7 @@ const AddEditMember: React.FC = () => {
                         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                             <div className="flex items-center gap-2 font-semibold text-slate-700">
                                 <BadgeCheck size={14} className="text-[#000080]" />
-                                {t("addEditMember.autoIdLabel")}
+                                {t("addEditMember.assignedIdLabel")}
                             </div>
                             <p className="mt-1 break-all">{form.memberId || t("addEditMember.autoIdPending")}</p>
                         </div>

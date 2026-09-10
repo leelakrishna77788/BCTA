@@ -1031,6 +1031,8 @@
     "createDesc": "Register a new member into the BCTA system.",
     "updateDesc": "Modify existing member details and account status.",
     "generatedId": "Generated ID",
+    "assignedId": "Assigned ID",
+    "assignedIdLabel": "ID Card Number",
     "modeLabel": "Account Mode",
     "editMode": "Edit Mode",
     "newReg": "New Registration",
@@ -1059,6 +1061,10 @@
     "accountSetup": "Account Setup",
     "accountDesc": "Member credentials and ID generation.",
     "regenerateId": "Regenerate ID",
+    "suggestId": "Suggest ID",
+    "assignIdLabel": "ID Card Number",
+    "assignIdPlaceholder": "e.g. 101",
+    "assignIdHint": "Enter a unique number for this member's ID card. This will appear on their digital ID.",
     "initialPassword": "Initial Password",
     "passwordPlaceholder": "••••••••",
     "photoNominee": "Photo & Nominee",
@@ -1081,7 +1087,9 @@
       "passLength": "Password must be at least 8 characters",
       "aadhaarLength": "Aadhaar must be 12 digits",
       "aadhaarUpdateLength": "Update Aadhaar must be exactly 12 digits",
-      "aadhaarInvalid": "Invalid Aadhaar verification"
+      "aadhaarInvalid": "Invalid Aadhaar verification",
+      "memberIdRequired": "ID card number is required",
+      "memberIdTaken": "ID card number \"{{id}}\" is already assigned to another member"
     },
     "success": {
       "idGenerated": "New ID generated: {{id}}",
