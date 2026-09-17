@@ -149,6 +149,7 @@
     "bhimavaram": "Bhimavaram",
     "dashboard": "Dashboard",
     "members": "Members",
+    "customers": "Customers",
     "admins": "Admins",
     "addAdmin": "Add Admin",
     "meetings": "Meetings",
@@ -1548,6 +1549,97 @@
       "resolveError": "Failed to resolve complaint: {{error}}",
       "deleteSuccess": "Deleted successfully",
       "deleteError": "Failed to delete complaint: {{error}}"
+    }
+  },
+  "customers": {
+    "title": "Customers",
+    "subtitle": "Manage walk-in customers and repair complaints",
+    "addCustomer": "Add Customer",
+    "editCustomer": "Edit Customer",
+    "addDesc": "Register a new customer and their device complaint.",
+    "editDesc": "Update the customer details and complaint.",
+    "modeLabel": "Form Mode",
+    "newMode": "New Customer",
+    "editMode": "Edit Mode",
+    "searchByPhone": "Search Customer by Phone Number",
+    "searchPlaceholder": "Enter phone number e.g. 9876543210",
+    "clearSearch": "Clear search",
+    "notFound": "Customer not found",
+    "notFoundDesc": "No customer found with this phone number. Clear the search to view all customers.",
+    "noCustomers": "No customers yet",
+    "noCustomersDesc": "Add your first customer to get started.",
+    "customerDetails": "Customer Details",
+    "customerDetailsDesc": "Basic customer and complaint information.",
+    "photoSection": "Photo & Status",
+    "photoDesc": "Device photo and payment status.",
+    "name": "Name",
+    "namePlaceholder": "e.g. Ravi Kumar",
+    "phoneNumber": "Phone Number",
+    "phonePlaceholder": "e.g. 9876543210",
+    "complaint": "Complaint",
+    "complaintPlaceholder": "Select the complaint type",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the device issue or additional details...",
+    "addPhoto": "Add Photo",
+    "replacePhoto": "Replace Photo",
+    "removePhoto": "Remove Photo",
+    "paymentStatus": "Payment Status",
+    "paymentPlaceholder": "Select payment status",
+    "paymentHint": "Update whether the customer has paid for the service.",
+    "saveCustomer": "Save Customer",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "deleting": "Deleting...",
+    "complaints": {
+      "Display": "Display",
+      "Battery": "Battery",
+      "Camera": "Camera",
+      "Motherboard": "Motherboard",
+      "Buttons": "Buttons"
+    },
+    "paymentStatuses": {
+      "Paid": "Paid",
+      "Unpaid": "Unpaid"
+    },
+    "th": {
+      "photo": "Photo",
+      "name": "Name",
+      "phone": "Phone Number",
+      "complaint": "Complaint",
+      "description": "Description",
+      "payment": "Payment Status",
+      "created": "Created Date",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "fields": {
+      "noDescription": "No description provided"
+    },
+    "deleteTitle": "Delete Customer",
+    "deleteConfirm": "Delete {{name}}?",
+    "deleteWarning": "This action cannot be undone. The customer record and uploaded photo will be permanently removed.",
+    "validation": {
+      "nameRequired": "Name is required",
+      "phoneRequired": "Phone number is required",
+      "phoneInvalid": "Phone number must be exactly 10 digits",
+      "complaintRequired": "Please select a complaint",
+      "paymentStatusRequired": "Please select a payment status",
+      "imageInvalid": "Only JPG, PNG and WEBP images are allowed",
+      "imageTooLarge": "Image size must be less than 2MB"
+    },
+    "toasts": {
+      "saved": "Customer saved successfully!",
+      "updated": "Customer updated successfully!",
+      "deleted": "Customer deleted successfully",
+      "saveError": "Failed to save customer",
+      "updateError": "Failed to update customer",
+      "deleteError": "Failed to delete customer",
+      "loadError": "Failed to load customer",
+      "notFound": "Customer was not found",
+      "searchError": "Failed to search customers"
     }
   },
   "adminPresidents": {

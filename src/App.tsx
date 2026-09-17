@@ -63,6 +63,8 @@ const AttendanceDashboard = lazyWithRetry(() => import("./pages/admin/Meetings/A
 const GlobalAttendance = lazyWithRetry(() => import("./pages/admin/Meetings/GlobalAttendance"));
 const ShopList = lazyWithRetry(() => import("./pages/admin/Shops/ShopList"));
 const AddShop = lazyWithRetry(() => import("./pages/admin/Shops/AddShop"));
+const CustomerList = lazyWithRetry(() => import("./pages/admin/Customers/CustomerList"));
+const AddEditCustomer = lazyWithRetry(() => import("./pages/admin/Customers/AddEditCustomer"));
 const PaymentsDashboard = lazyWithRetry(() => import("./pages/admin/Payments/PaymentsDashboard"));
 const PaymentsHistory = lazyWithRetry(() => import("./pages/admin/Payments/PaymentsHistory"));
 const ComplaintsList = lazyWithRetry(() => import("./pages/admin/Complaints/ComplaintsList"));
@@ -247,6 +249,11 @@ function App() {
               {/* Shops */}
               <Route path="shops" element={<ShopList />} />
               <Route path="shops/add" element={<AddShop />} />
+
+              {/* Customers */}
+              <Route path="customers" element={<CustomerList />} />
+              <Route path="customers/add" element={<AddEditCustomer />} />
+              <Route path="customers/:id/edit" element={<AddEditCustomer />} />
 
               {/* Other admin */}
               <Route path="payments" element={<PaymentsDashboard />} />
