@@ -21,3 +21,27 @@ export function formatAttendanceTime(d: Date): string {
     return `${String(hour12).padStart(2,'0')}:${mm} ${ampm}`;
   }
 }
+
+/** Coerce a Firestore Timestamp / Date / ISO string into a Date, or null. */
+export function toDate(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof (value as { toDate?: unknown }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  const parsed = new Date(value as string);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/** Human readable date + time for a Firestore Timestamp / Date / ISO string. */
+export function formatDateTime(value: unknown): string {
+  const d = toDate(value);
+  if (!d) return '—';
+  return `${formatAttendanceDate(d)}, ${formatAttendanceTime(d)}`;
+}
+
+/** Human readable date only. */
+export function formatDateOnly(value: unknown): string {
+  const d = toDate(value);
+  return d ? formatAttendanceDate(d) : '—';
+}

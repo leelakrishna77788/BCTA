@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, UserCheck, UserX, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { db } from "../../../firebase/firebaseConfig";
+import { isSoftDeleted } from "../../../services/membersService";
 import { doc, getDoc, getDocs, collection, query, where, onSnapshot } from "firebase/firestore";
 
 interface Member {
@@ -41,7 +42,9 @@ const AttendanceDashboard: React.FC = () => {
 
                 // 2. Get All Members
                 const membersSnap = await getDocs(query(collection(db, "users"), where("role", "==", "member")));
-                const membersList = membersSnap.docs.map(d => ({ id: d.id, ...d.data() } as Member));
+                const membersList = membersSnap.docs
+                    .filter(d => !isSoftDeleted(d.data()))
+                    .map(d => ({ id: d.id, ...d.data() } as Member));
                 setAllMembers(membersList);
 
                 // 3. Listen for Attendance Real-time

@@ -117,6 +117,7 @@ function Reveal({
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { subscribePresidents } from "../services/presidentsService";
+import { isSoftDeleted } from "../services/membersService";
 import type { President } from "../types/president.types";
 
 function useFirestorePresidents() {
@@ -151,7 +152,12 @@ function usePlatformStats() {
       unsubs.push(
         onSnapshot(
           membersQuery,
-          (snap) => setStats((s) => ({ ...s, members: snap.size })),
+          (snap) =>
+            setStats((s) => ({
+              ...s,
+              // Archived (soft deleted) members must not inflate the public count
+              members: snap.docs.filter((d) => !isSoftDeleted(d.data())).length,
+            })),
           handleError("users"),
         ),
       );

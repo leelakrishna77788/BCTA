@@ -2,12 +2,13 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation, Trans } from "react-i18next";
-import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw, Store, MapPin, Building2, Wheat, ChevronRight } from "lucide-react";
+import { Plus, Eye, UserX, UserCheck, Filter, Trash2, AlertTriangle, ShieldAlert, X, Loader2, Search, RotateCcw, Store, MapPin, Building2, Wheat, ChevronRight, Archive } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { collection, query, where, doc, updateDoc, Timestamp, DocumentData, onSnapshot } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
-import { membersApi, generateSequentialMemberId } from "../../../services/membersService";
+import { membersApi, generateSequentialMemberId, isSoftDeleted } from "../../../services/membersService";
+import { useAuth } from "../../../context/AuthContext";
 import { TableSkeleton } from "../../../components/shared/LoadingSkeleton";
 
 interface MemberDoc extends DocumentData {
@@ -28,10 +29,15 @@ interface MemberDoc extends DocumentData {
     location?: string;
     place?: string;
     attendanceCount?: number;
+    isDeleted?: boolean;
+    deletedAt?: Timestamp | Date;
+    deletedBy?: string;
+    deletedByName?: string;
 }
 
 const MemberList: React.FC = () => {
     const { t, i18n } = useTranslation();
+    const { currentUser, userProfile } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const [members, setMembers] = useState<MemberDoc[]>([]);
     const [filtered, setFiltered] = useState<MemberDoc[]>([]);
@@ -125,7 +131,10 @@ const MemberList: React.FC = () => {
             query(collection(db, "users"), where("role", "==", "member")),
             (snap) => {
                 hasUsersSnapshot = true;
-                userDocs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as MemberDoc));
+                // Soft deleted (archived) members are hidden from every active list
+                userDocs = snap.docs
+                    .filter((d) => !isSoftDeleted(d.data()))
+                    .map((d) => ({ id: d.id, ...d.data() } as MemberDoc));
                 hydrateMembers();
             },
             (err) => {
@@ -368,10 +377,15 @@ const MemberList: React.FC = () => {
         setShowDeleteConfirm(false);
 
         try {
-            await membersApi.delete(memberToDelete.id);
-            toast.success(t("memberList.memberRemoved", { name: memberToDelete.name }));
+            // SOFT DELETE — the Firestore document is updated, never removed.
+            await membersApi.softDelete(memberToDelete.id, {
+                uid: currentUser?.uid,
+                name: userProfile?.name,
+            });
+            toast.success(t("memberList.memberArchived", { name: memberToDelete.name }));
         } catch (err: any) {
-            toast.error(err.message || "Failed to delete member");
+            console.error("[MemberList] Archive failed:", err);
+            toast.error(err.message || t("memberList.archiveFailed"));
         } finally {
             setMemberToDelete(null);
         }
@@ -425,10 +439,13 @@ const MemberList: React.FC = () => {
                             <AlertTriangle className="text-red-600" size={32} />
                         </div>
                         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
-                            {t("memberList.removePermanently", { name: memberToDelete.name })}
+                            {t("memberList.deleteConfirmTitle")}
                         </h2>
-                        <p className="text-sm text-slate-600 text-center mb-6">
-                            {t("memberDetail.deleteWarning") || "This action cannot be undone. All member data will be permanently removed."}
+                        <p className="text-sm text-slate-600 text-center mb-2">
+                            {t("memberList.deleteConfirmMessage", { name: memberToDelete.name })}
+                        </p>
+                        <p className="text-xs text-slate-500 text-center mb-6">
+                            {t("memberList.deleteConfirmHint")}
                         </p>
                         <div className="flex gap-3">
                             <button
@@ -545,6 +562,13 @@ const MemberList: React.FC = () => {
                     )}
                 </div>
                 <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:items-center">
+                    <Link
+                        to="/admin/members/deleted"
+                        className="group h-12 w-full justify-center px-5 rounded-2xl glass-card border border-slate-300/60 text-slate-700 hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm font-bold text-sm sm:w-auto"
+                    >
+                        <Archive size={18} className="transition-transform group-hover:scale-110" />
+                        <span>{t("memberList.deletedMembers")}</span>
+                    </Link>
                     {urlLocation && (
                         <button
                             onClick={() => setShowBulkConfirm(true)}

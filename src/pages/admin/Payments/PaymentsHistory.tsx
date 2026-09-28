@@ -4,6 +4,7 @@ import { collection, onSnapshot, query, where, Timestamp } from "firebase/firest
 import { Link } from "react-router-dom";
 import { ArrowLeft, CalendarDays, ReceiptText, Search } from "lucide-react";
 import { db } from "../../../firebase/firebaseConfig";
+import { isSoftDeleted } from "../../../services/membersService";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 
@@ -66,6 +67,7 @@ const PaymentsHistory: React.FC = () => {
       (snap) => {
         const nextMap: Record<string, MemberDoc> = {};
         snap.docs.forEach((doc) => {
+          if (isSoftDeleted(doc.data())) return;
           const data = doc.data() as Omit<MemberDoc, "uid">;
           nextMap[doc.id] = { uid: doc.id, ...data };
         });

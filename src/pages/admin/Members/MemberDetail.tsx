@@ -8,11 +8,13 @@ import {
     ArrowLeft, Edit, UserX, UserCheck, Phone, MapPin,
     Droplet, CreditCard, Activity,
     ShieldCheck, Mail, AlertTriangle, Package, Trash2, X, QrCode, Download,
-    BadgeCheck, CheckCircle2, CalendarDays, ArrowUpFromLine
+    BadgeCheck, CheckCircle2, CalendarDays, ArrowUpFromLine, RotateCcw
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { membersApi, generateSequentialMemberId } from "../../../services/membersService";
+import { membersApi, generateSequentialMemberId, isSoftDeleted } from "../../../services/membersService";
 import { adminsApi } from "../../../services/adminService";
+import { useAuth } from "../../../context/AuthContext";
+import { formatDateTime } from "../../../utils/date";
 import LoadingSkeleton, { CardSkeleton } from "../../../components/shared/LoadingSkeleton";
 import { useTranslation } from "react-i18next";
 import { assets } from "../../../assets/assets";
@@ -34,6 +36,10 @@ interface MemberDoc extends DocumentData {
     location?: string;
     place?: string;
     createdAt?: Timestamp;
+    isDeleted?: boolean;
+    deletedAt?: Timestamp | Date;
+    deletedBy?: string;
+    deletedByName?: string;
     nomineeDetails?: {
         name: string;
         relation: string;
@@ -63,6 +69,7 @@ const MemberDetail: React.FC = () => {
     const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { currentUser, userProfile } = useAuth();
     const idCardRef = useRef<HTMLDivElement>(null);
     const [member, setMember] = useState<MemberDoc | null>(null);
     const [attendance, setAttendance] = useState<any[]>([]);
@@ -210,18 +217,37 @@ const MemberDetail: React.FC = () => {
         setShowDeleteConfirm(true);
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (!member) return;
         setShowDeleteConfirm(false);
-        toast.success(t("memberList.blocking"));
-        navigate("/admin/members");
 
-        membersApi.delete(member.id).then(() => {
-            toast.success(t("memberDetail.toastDeleted"));
-        }).catch((err: any) => {
-            console.error("Deletion failed:", err);
-            toast.error(err.message || t("memberDetail.toastDeleteFailed"));
-        });
+        try {
+            // SOFT DELETE — the Firestore document is updated, never removed.
+            await membersApi.softDelete(member.id, {
+                uid: currentUser?.uid,
+                name: userProfile?.name,
+            });
+            toast.success(t("memberList.memberArchived", { name: fullName || member.name }));
+            navigate("/admin/members");
+        } catch (err: any) {
+            console.error("Archiving failed:", err);
+            toast.error(err.message || t("memberList.archiveFailed"));
+        }
+    };
+
+    const confirmRestore = async () => {
+        if (!member) return;
+        const previous = member;
+        setMember((p) => (p ? { ...p, isDeleted: false } : null));
+        try {
+            await membersApi.restore(member.id);
+            toast.success(t("deletedMembers.restored", { name: fullName || member.name }));
+            navigate("/admin/members");
+        } catch (err: any) {
+            console.error("Restore failed:", err);
+            setMember(previous);
+            toast.error(err.message || t("deletedMembers.restoreFailed"));
+        }
     };
 
     const confirmConvertToAdmin = async () => {
@@ -738,14 +764,34 @@ const MemberDetail: React.FC = () => {
                             <span className="inline-block h-3.5 w-3.5 translate-x-[3px] rounded-full bg-white shadow transition-transform" />
                         </div>
                     </div>
-                    <button
-                        onClick={handleDelete}
-                        className="h-9 w-9 flex items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50"
-                    >
-                        <Trash2 size={15} />
-                    </button>
+                    {isSoftDeleted(member) ? (
+                        <button
+                            onClick={confirmRestore}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+                        >
+                            <RotateCcw size={14} /> {t("deletedMembers.restoreMember")}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleDelete}
+                            className="h-9 w-9 flex items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50"
+                            title={t("memberDetail.deleteMember")}
+                        >
+                            <Trash2 size={15} />
+                        </button>
+                    )}
                 </div>
             </div>
+
+            {isSoftDeleted(member) && (
+                <div className="flex flex-col gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="font-semibold">{t("deletedMembers.archivedBanner")}</p>
+                    <p className="text-xs text-amber-700">
+                        {t("deletedMembers.deletedOn")}: {formatDateTime(member.deletedAt)}
+                        {member.deletedByName ? ` • ${t("deletedMembers.deletedBy")}: ${member.deletedByName}` : ""}
+                    </p>
+                </div>
+            )}
 
             <section className="relative overflow-hidden rounded-4xl border border-blue-100 bg-linear-to-br from-[#0a1f5e] via-[#183b9a] to-[#2b62d4] p-5 text-white shadow-xl sm:p-8">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_46%)]" />
@@ -1001,10 +1047,13 @@ const MemberDetail: React.FC = () => {
                             <AlertTriangle className="text-red-600" size={32} />
                         </div>
                         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 text-center mb-3">
-                            {t("memberDetail.deleteConfirm")}
+                            {t("memberDetail.deleteConfirmTitle")}
                         </h2>
-                        <p className="text-sm text-slate-600 text-center mb-6">
-                            {t("memberDetail.deleteWarning") || "This action cannot be undone. All member data will be permanently removed."}
+                        <p className="text-sm text-slate-600 text-center mb-2">
+                            {t("memberList.deleteConfirmMessage", { name: fullName || member.name })}
+                        </p>
+                        <p className="text-xs text-slate-500 text-center mb-6">
+                            {t("memberList.deleteConfirmHint")}
                         </p>
                         <div className="flex gap-3">
                             <button

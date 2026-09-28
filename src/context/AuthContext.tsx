@@ -10,7 +10,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase/firebaseConfig";
-import { generateSequentialMemberId } from "../services/membersService";
+import { generateSequentialMemberId, isSoftDeleted } from "../services/membersService";
 import type { AuthContextValue } from "../types/auth.types";
 import type { Member, UserRole } from "../types/member.types";
 
@@ -102,6 +102,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (profile.status === "pending") {
         await signOut(auth);
         throw new Error("Your account is pending approval. Contact admin.");
+      }
+      if (isSoftDeleted(profile)) {
+        await signOut(auth);
+        throw new Error("This membership has been removed from the portal. Contact the admin if you believe this is a mistake.");
       }
 
       // MANUALLY SET STATE for immediate consistency during navigation

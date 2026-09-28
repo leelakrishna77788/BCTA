@@ -16,21 +16,39 @@ import {
   UserRound,
   Wrench,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import {
   subscribeCustomers,
   subscribeCustomersByPhone,
   deleteCustomer,
 } from "../../../services/customersService";
+import { CUSTOMER_COMPLAINTS } from "../../../types/customer.types";
 import type { Customer } from "../../../types/customer.types";
+import { useAuth } from "../../../context/AuthContext";
 import { TableSkeleton } from "../../../components/shared/LoadingSkeleton";
 
 const CustomerList: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { userRole } = useAuth();
+  const isAdmin = userRole?.toLowerCase().trim() === "admin" ||
+    userRole?.toLowerCase().trim() === "superadmin";
+  const basePath = isAdmin ? "/admin/customers" : "/member/customers";
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<
@@ -79,7 +97,7 @@ const CustomerList: React.FC = () => {
       const unsub = subscribeCustomers((data) => {
         setCustomers(data);
         setLoading(false);
-      });
+      }, isAdmin);
       return () => unsub();
     }
 
@@ -87,9 +105,27 @@ const CustomerList: React.FC = () => {
     const unsub = subscribeCustomersByPhone(normalized, (data) => {
       setCustomers(data);
       setLoading(false);
-    });
+    }, isAdmin);
     return () => unsub();
-  }, [searchTerm]);
+  }, [searchTerm, isAdmin]);
+
+  /**
+   * Complaints are free text now: translate the known suggestions and show the
+   * user's own wording verbatim for anything else. Nothing is generated.
+   */
+  const complaintLabel = (value?: string) => {
+    const raw = (value || "").trim();
+    if (!raw) return t("common.unknown");
+    if ((CUSTOMER_COMPLAINTS as readonly string[]).includes(raw)) {
+      return t(`customers.complaints.${raw}`, { defaultValue: raw });
+    }
+    return raw;
+  };
+
+  const paymentLabel = (value?: string) =>
+    t(`serviceBills.paymentStatus.${value || "unpaid"}`, {
+      defaultValue: value || t("common.unknown"),
+    });
 
   const clearSearch = () => {
     setSearchTerm("");
@@ -188,7 +224,7 @@ const CustomerList: React.FC = () => {
           <p className="text-slate-500 font-medium text-sm tracking-tight">{t("customers.subtitle")}</p>
         </div>
         <Link
-          to="/admin/customers/add"
+          to={`${basePath}/add`}
           className="h-12 w-full justify-center px-6 rounded-2xl bg-indigo-600 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 sm:w-auto"
         >
           <Plus size={20} strokeWidth={2.5} />
@@ -258,7 +294,7 @@ const CustomerList: React.FC = () => {
               <p className="font-black text-slate-700 text-lg tracking-tight">{t("customers.noCustomers")}</p>
               <p className="text-sm font-medium text-slate-400">{t("customers.noCustomersDesc")}</p>
               <Link
-                to="/admin/customers/add"
+                to={`${basePath}/add`}
                 className="mt-2 inline-flex items-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-2.5 text-sm font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
               >
                 <Plus size={16} strokeWidth={2.5} />
@@ -268,7 +304,12 @@ const CustomerList: React.FC = () => {
           )
         ) : (
           customers.map((c) => {
-            const isPaid = c.paymentStatus === "Paid";
+            const statusTone =
+              c.paymentStatus === "Paid"
+                ? { color: "text-emerald-700", dot: "bg-emerald-500" }
+                : c.paymentStatus === "Partial"
+                  ? { color: "text-amber-700", dot: "bg-amber-500" }
+                  : { color: "text-red-700", dot: "bg-red-500" };
             return (
               <div
                 key={c.id}
@@ -300,7 +341,7 @@ const CustomerList: React.FC = () => {
                       </p>
                       <span className="inline-flex items-center gap-1 mt-1 font-mono text-[10px] uppercase font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100 shadow-sm">
                         <Wrench size={10} />
-                        {t(`customers.complaints.${c.complaint}`)}
+                        {complaintLabel(c.complaint)}
                       </span>
                     </div>
                   </div>
@@ -317,30 +358,33 @@ const CustomerList: React.FC = () => {
                       <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
                         {t("customers.th.payment")}
                       </p>
-                      <p className={`text-sm font-black uppercase flex items-center gap-1.5 ${isPaid ? "text-emerald-700" : "text-red-700"}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full inline-block ${isPaid ? "bg-emerald-500" : "bg-red-500"}`} />
-                        {t(`customers.paymentStatuses.${c.paymentStatus}`)}
+                      <p className={`text-sm font-black uppercase flex items-center gap-1.5 ${statusTone.color}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full inline-block ${statusTone.dot}`} />
+                        {paymentLabel(c.paymentStatus)}
                       </p>
                     </div>
                   </div>
 
                   {/* Actions */}
                   <div className="w-full md:w-auto md:shrink-0 rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-lg shadow-slate-200/60">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className={`grid gap-2 ${isAdmin ? "grid-cols-2" : "grid-cols-1"}`}>
                       <Link
-                        to={`/admin/customers/${c.id}/edit`}
+                        to={`${basePath}/${c.id}/edit`}
                         className="h-11 sm:h-10 min-w-0 px-1.5 sm:px-2 flex items-center justify-center gap-1 rounded-xl border border-indigo-200 bg-white text-indigo-600 shadow-md shadow-indigo-100 transition-all font-bold text-[11px] sm:text-xs hover:bg-indigo-50 hover:shadow-lg hover:shadow-indigo-100 hover:-translate-y-0.5 active:translate-y-0.5"
                         title={t("customers.actions.edit")}
                       >
                         <Pencil size={15} /> <span className="inline">{t("customers.actions.edit")}</span>
                       </Link>
-                      <button
-                        onClick={() => handleDelete(c)}
-                        className="h-11 sm:h-10 min-w-0 px-1.5 sm:px-2 flex items-center justify-center gap-1 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[11px] sm:text-xs hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 hover:-translate-y-0.5 active:translate-y-0.5"
-                        title={t("customers.actions.delete")}
-                      >
-                        <Trash2 size={15} /> <span className="inline">{t("customers.actions.delete")}</span>
-                      </button>
+                      {/* Deleting a customer stays an Admin-only operation */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDelete(c)}
+                          className="h-11 sm:h-10 min-w-0 px-1.5 sm:px-2 flex items-center justify-center gap-1 rounded-xl border border-red-200 bg-white text-red-500 shadow-md shadow-red-100 transition-all font-bold text-[11px] sm:text-xs hover:bg-red-50 hover:text-red-700 hover:shadow-lg hover:shadow-red-100 hover:-translate-y-0.5 active:translate-y-0.5"
+                          title={t("customers.actions.delete")}
+                        >
+                          <Trash2 size={15} /> <span className="inline">{t("customers.actions.delete")}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -352,6 +396,58 @@ const CustomerList: React.FC = () => {
                     <span className="wrap-break-word">{c.description || t("customers.fields.noDescription")}</span>
                   </p>
                 </div>
+
+                {/* Saved manual bill / service details — shown exactly as stored */}
+                {(() => {
+                  // Legacy records predate these fields, so treat each as optional.
+                  const str = (v: unknown) => (v == null ? "" : String(v).trim());
+                  const rows: Array<[string, string]> = [
+                    [t("serviceBills.fields.billNumber"), str(c.billNumber)],
+                    [t("serviceBills.fields.billDate"), str(c.billDate)],
+                    [t("serviceBills.fields.customerAddress"), str(c.customerAddress)],
+                    [t("serviceBills.fields.mobileModel"), str(c.mobileModel)],
+                    [t("serviceBills.fields.imeiNumber"), str(c.imeiNumber)],
+                    [t("serviceBills.fields.serviceDetails"), str(c.serviceDetails)],
+                    [t("serviceBills.fields.partPrice"), str(c.partPrice)],
+                    [t("serviceBills.fields.labourCharges"), str(c.labourCharges)],
+                    [t("serviceBills.fields.estimatedPrice"), str(c.estimatedPrice)],
+                    [t("serviceBills.fields.finalPrice"), str(c.finalPrice)],
+                    [t("serviceBills.fields.paidDate"), str(c.paidDate)],
+                    [t("serviceBills.fields.termsConditions"), str(c.termsConditions)],
+                    ].filter((pair) => pair[1] !== "") as Array<[string, string]>;
+                  if (rows.length === 0) return null;
+                  const open = expanded.has(c.id || "");
+                  return (
+                    <div className="mt-3 pl-0 lg:ml-[76px]">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(c.id || "")}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white/80 px-2.5 py-1.5 text-[11px] font-bold text-slate-600 transition hover:border-indigo-200 hover:text-indigo-600"
+                      >
+                        <ChevronDown
+                          size={13}
+                          className={`transition-transform ${open ? "rotate-180" : ""}`}
+                        />
+                        {t("customers.details")}
+                      </button>
+
+                      {open && (
+                        <dl className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 rounded-2xl border border-slate-200 bg-white/70 p-3">
+                          {rows.map(([label, value]) => (
+                            <div key={label} className="min-w-0">
+                              <dt className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+                                {label}
+                              </dt>
+                              <dd className="mt-0.5 text-xs font-semibold text-slate-700 wrap-break-word">
+                                {value}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })

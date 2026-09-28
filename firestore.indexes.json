@@ -66,10 +66,19 @@
       ]
     },
     {
-      "collectionGroup": "presidents",
+      "collectionGroup": "customers",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "createdByUID", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "customers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdByUID", "order": "ASCENDING" },
+        { "fieldPath": "phoneNumber", "order": "ASCENDING" }
       ]
     }
   ],

@@ -17,7 +17,7 @@ import {
 import { db } from "../firebase/firebaseConfig";
 import { getMeetingById } from "./meetingsService";
 // use local formatting at write-time to ensure fields are present
-import { getMemberById, incrementAttendanceCount } from "./membersService";
+import { getMemberById, incrementAttendanceCount, isSoftDeleted } from "./membersService";
 import type { AttendanceRecord } from "../types/attendance.types";
 
 /** Response status for attendance operations */
@@ -78,6 +78,7 @@ export async function recordAttendance(
   }
 
   if (member.status === "blocked") return "BLOCKED";
+  if (isSoftDeleted(member)) return "BLOCKED";
 
   // 4. Atomic write with idempotent ID
   const attendanceDocIdByUID = `${meetingId}_${memberUID}`;

@@ -11,6 +11,14 @@ export interface NomineeDetails {
   phone: string;
 }
 
+/** Metadata written when a member is soft deleted (archived) by an admin. */
+export interface SoftDeleteMeta {
+  isDeleted?: boolean;
+  deletedAt?: Date | { toDate(): Date };
+  deletedBy?: string;
+  deletedByName?: string;
+}
+
 export interface Member {
   uid: string;
   memberId: string;
@@ -36,6 +44,11 @@ export interface Member {
   nomineeDetails?: NomineeDetails;
   createdAt?: Date | { toDate(): Date };
   updatedAt?: Date | { toDate(): Date };
+  /** Soft delete flag. Absent/false means the member is active. */
+  isDeleted?: boolean;
+  deletedAt?: Date | { toDate(): Date };
+  deletedBy?: string;
+  deletedByName?: string;
 }
 
 export interface CreateMemberInput {
@@ -62,4 +75,6 @@ export interface MemberStats {
   total: number;
   active: number;
   blocked: number;
+  /** Soft deleted (archived) members — kept in the database but hidden from active lists. */
+  deleted: number;
 }

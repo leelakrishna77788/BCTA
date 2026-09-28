@@ -26,8 +26,13 @@ service cloud.firestore {
               getUserData().get('role', 'member') == 'SuperAdmin');
     }
 
+    // An archived (soft-deleted) member must not act on any data, even if their
+    // auth token has not expired yet. `.get(..., false)` keeps legacy documents
+    // that have no `isDeleted` field working as before.
     function isActiveUser() {
-      return isAuthenticated() && getUserData().get('status', 'active') == 'active';
+      return isAuthenticated() && 
+             getUserData().get('status', 'active') == 'active' &&
+             getUserData().get('isDeleted', false) == false;
     }
 
     function isOwner(uid) {
@@ -42,12 +47,16 @@ service cloud.firestore {
       // User creates their own doc on registration
       allow create: if isAuthenticated() && request.auth.uid == userId;
 
-      // Members can update their own doc but NOT change role or status
+      // Members can update their own doc but NOT change role, status or the
+      // soft-delete / restore flags (those are admin-only operations).
       allow update: if (isOwner(userId) &&
-                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status']))
+                       !request.resource.data.diff(resource.data).affectedKeys()
+                       .hasAny(['role', 'status', 'isDeleted', 'deletedAt', 'deletedBy', 'deletedByName']))
                     || isAdmin();
 
-      // Only admin/superadmin can hard-delete a user doc (soft-delete via status preferred)
+      // Only admin/superadmin can hard-delete a user doc.
+      // The normal "Delete Member" workflow is a soft delete (updateDoc) so that
+      // member data always stays recoverable from the Archived Members page.
       allow delete: if isAdmin();
     }
 
@@ -137,9 +146,53 @@ service cloud.firestore {
     }
 
     // ─── Customers ─────────────────────────────────────────────────────────
+    // Admins manage every customer record. Members may create their own
+    // customer / service records (including a photo) and may read or edit only
+    // the records they created — they can never touch another member's record,
+    // and deletion stays an admin-only management operation.
     match /customers/{customerId} {
-      allow read:                    if isAdmin();
-      allow create, update, delete:  if isAdmin();
+      allow read: if isAdmin() || (
+                    isActiveUser() && resource.data.createdByUID == request.auth.uid
+                  );
+
+      // A member may only create records stamped with their own uid.
+      allow create: if isAdmin() || (
+                       isActiveUser() &&
+                       request.resource.data.createdByUID == request.auth.uid
+                     );
+
+      // Owners may edit their own record but must not re-assign ownership.
+      allow update: if isAdmin() || (
+                       isActiveUser() &&
+                       resource.data.createdByUID == request.auth.uid &&
+                       request.resource.data.createdByUID == request.auth.uid
+                     );
+
+      allow delete: if isAdmin();
+    }
+
+    // ─── Manual Bills / Service Details ────────────────────────────────────
+    // Every field is manually entered by the user — the rules below only guard
+    // ownership, they never generate or derive any value.
+    match /serviceBills/{billId} {
+      // Admins see every record; members see only the records they created.
+      allow read: if isActiveUser() && (
+                    isAdmin() || resource.data.createdByUID == request.auth.uid
+                  );
+
+      // A member may only create records stamped with their own uid.
+      allow create: if isActiveUser() &&
+                       request.resource.data.createdByUID == request.auth.uid;
+
+      // Owners may edit their own record but must not re-assign ownership.
+      allow update: if isAdmin() || (
+                       isActiveUser() &&
+                       resource.data.createdByUID == request.auth.uid &&
+                       request.resource.data.createdByUID == request.auth.uid
+                     );
+
+      // Only admins may permanently remove a bill record.
+      allow delete: if isAdmin();
     }
 
     // ─── Deny all else ─────────────────────────────────────────────────────

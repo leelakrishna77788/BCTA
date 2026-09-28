@@ -6,6 +6,7 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { CreditCard, TrendingUp, AlertCircle, CheckCircle, CalendarDays, History, X } from "lucide-react";
 import { markMemberFeePaid, removeMemberFeePaid } from "../../../services/paymentsService";
+import { isSoftDeleted } from "../../../services/membersService";
 import { useAuth } from "../../../context/AuthContext";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
@@ -106,7 +107,9 @@ const PaymentsDashboard: React.FC = () => {
     useEffect(() => {
         const q = query(collection(db, "users"), where("role", "==", "member"));
         const unsub = onSnapshot(q, (snap) => {
-            setMembers(snap.docs.map(d => ({ uid: d.id, ...d.data() } as Member)));
+            setMembers(snap.docs
+                .filter(d => !isSoftDeleted(d.data()))
+                .map(d => ({ uid: d.id, ...d.data() } as Member)));
             setLoadingMembers(false);
         }, (err) => {
             console.error("Members fetch error:", err);

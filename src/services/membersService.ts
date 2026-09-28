@@ -7,6 +7,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   query,
   where,
   orderBy,
@@ -24,6 +25,20 @@ import type { Member, CreateMemberInput, MemberStats } from "../types/member.typ
 
 const MEMBERS_PER_PAGE = 20;
 const MEMBER_ID_PATTERN_OLD = /^BCTA-(\d{4})-(\d+)$/;
+
+/**
+ * A member is considered archived (soft deleted) ONLY when `isDeleted === true`.
+ * Legacy documents that never had the field are treated as active, which keeps
+ * every pre-existing record visible after this feature ships.
+ */
+export function isSoftDeleted(data: unknown): boolean {
+  return (data as { isDeleted?: unknown } | null | undefined)?.isDeleted === true;
+}
+
+/** Keep only members that have NOT been soft deleted. */
+export function filterActive<T extends { isDeleted?: boolean }>(items: T[]): T[] {
+  return items.filter((item) => item.isDeleted !== true);
+}
 
 /**
  * Generate a plain numeric memberId without leading zeros.
@@ -75,7 +90,7 @@ export async function isMemberIdTaken(memberId: string, excludeUid?: string): Pr
   return true;
 }
 
-/** Fetch paginated list of members (role == "member") */
+/** Fetch paginated list of ACTIVE members (role == "member", isDeleted !== true) */
 export async function getMembers(lastDoc?: DocumentSnapshot): Promise<{ members: Member[]; lastVisible: DocumentSnapshot | null }> {
   let q = query(
     collection(db, "users"),
@@ -86,12 +101,14 @@ export async function getMembers(lastDoc?: DocumentSnapshot): Promise<{ members:
   if (lastDoc) q = query(q, startAfter(lastDoc));
 
   const snap = await getDocs(q);
-  const members = snap.docs.map((d) => ({ uid: d.id, ...d.data() } as Member));
+  const members = snap.docs
+    .filter((d) => !isSoftDeleted(d.data()))
+    .map((d) => ({ uid: d.id, ...d.data() } as Member));
   const lastVisible = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
   return { members, lastVisible };
 }
 
-/** Fetch ALL members (admin use — for stats, dropdowns, full lists) */
+/** Fetch ALL ACTIVE members (admin use — for stats, dropdowns, full lists) */
 export async function getAllMembers(maxLimit?: number, ordered = true): Promise<Member[]> {
   let q = query(collection(db, "users"), where("role", "==", "member"));
   
@@ -104,7 +121,32 @@ export async function getAllMembers(maxLimit?: number, ordered = true): Promise<
   }
   
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ uid: d.id, ...d.data() } as Member));
+  return snap.docs
+    .filter((d) => !isSoftDeleted(d.data()))
+    .map((d) => ({ uid: d.id, ...d.data() } as Member));
+}
+
+/** Fetch every SOFT DELETED (archived) member — admin only view */
+export async function getDeletedMembers(): Promise<Member[]> {
+  const snap = await getDocs(query(collection(db, "users"), where("role", "==", "member")));
+  return snap.docs
+    .filter((d) => isSoftDeleted(d.data()))
+    .map((d) => ({ uid: d.id, ...d.data() } as Member))
+    .sort((a, b) => {
+      const aTime = toMillis(a.deletedAt);
+      const bTime = toMillis(b.deletedAt);
+      return bTime - aTime;
+    });
+}
+
+function toMillis(value: unknown): number {
+  if (!value) return 0;
+  if (value instanceof Date) return value.getTime();
+  if (typeof (value as { toDate?: unknown }).toDate === "function") {
+    return (value as { toDate: () => Date }).toDate().getTime();
+  }
+  const parsed = new Date(value as string).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 /** Get a single member by UID */
@@ -178,7 +220,39 @@ export async function updateMemberStatus(uid: string, status: "active" | "blocke
   });
 }
 
-/** Delete member's Firestore doc. Auth deletion must be done via /api/admin */
+/**
+ * SOFT DELETE a member.
+ * The Firestore document is NEVER removed — it is flagged as deleted so the
+ * member disappears from every active list, count and location division while
+ * all of their data stays fully recoverable from the Archived Members page.
+ */
+export async function softDeleteMember(
+  uid: string,
+  deletedBy?: { uid?: string; name?: string } | null
+): Promise<void> {
+  const payload: Record<string, unknown> = {
+    isDeleted: true,
+    deletedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
+  if (deletedBy?.uid) payload.deletedBy = deletedBy.uid;
+  if (deletedBy?.name) payload.deletedByName = deletedBy.name;
+
+  await updateDoc(doc(db, "users", uid), payload);
+}
+
+/** Restore a soft deleted member back into the active members list */
+export async function restoreMember(uid: string): Promise<void> {
+  await updateDoc(doc(db, "users", uid), {
+    isDeleted: false,
+    deletedAt: deleteField(),
+    deletedBy: deleteField(),
+    deletedByName: deleteField(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** Permanently delete member's Firestore doc. Only used by the admin Danger Zone purge. */
 export async function deleteMemberDoc(uid: string): Promise<void> {
   await deleteDoc(doc(db, "users", uid));
 }
@@ -190,12 +264,17 @@ export async function getMemberStats(): Promise<MemberStats> {
   );
   let active = 0;
   let blocked = 0;
+  let deleted = 0;
   snap.forEach((d) => {
     const m = d.data() as Member;
+    if (isSoftDeleted(m)) {
+      deleted++;
+      return;
+    }
     if (m.status === "active") active++;
     else blocked++;
   });
-  return { total: snap.size, active, blocked };
+  return { total: active + blocked, active, blocked, deleted };
 }
 
 /** Bulk update member status using a batched write */
@@ -219,6 +298,39 @@ export async function incrementAttendanceCount(uid: string): Promise<void> {
  * Call the Vercel serverless privileged admin API securely.
  * Used for deleting a user entirely from Auth + Firestore.
  */
+async function revokeTokensInternal(uid: string): Promise<{ message: string }> {
+  if (import.meta.env.VITE_USE_SERVER_API && auth.currentUser) {
+    const idToken = await auth.currentUser.getIdToken();
+    const res = await fetch("/api/admin", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ action: "revokeTokens", uid }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      let errorMsg = "Failed to revoke sessions via admin API";
+      try {
+        const errorData = JSON.parse(text);
+        errorMsg = errorData.error || errorMsg;
+      } catch {
+        errorMsg = `Server returned ${res.status}: ${text.slice(0, 100)}`;
+      }
+      throw new Error(errorMsg);
+    }
+
+    return res.json();
+  }
+
+  // Local fallback: just sign out (limited client-side option)
+  if (!auth.currentUser) throw new Error("No authenticated admin user");
+  console.warn("[membersApi] Token revocation requires server-side API in production");
+  return { message: "Token revocation skipped in local mode" };
+}
+
 export const membersApi = {
   create: async (input: CreateMemberInput) => {
     console.log("[membersApi.create] Creating member:", input.email);
@@ -308,6 +420,41 @@ export const membersApi = {
     }
   },
 
+  /**
+   * The NORMAL "Delete Member" workflow.
+   * Archives the member (isDeleted / deletedAt / deletedBy) instead of removing
+   * the document. Sessions are revoked so the member loses access immediately.
+   */
+  softDelete: async (
+    uid: string,
+    deletedBy?: { uid?: string; name?: string } | null
+  ): Promise<{ message: string }> => {
+    if (!auth.currentUser) {
+      throw new Error("Not authenticated. Please login again.");
+    }
+
+    await softDeleteMember(uid, deletedBy ?? { uid: auth.currentUser.uid });
+
+    // Revoke the member's sessions on a best-effort basis (non-fatal in local mode)
+    try {
+      await revokeTokensInternal(uid);
+    } catch (err) {
+      console.warn("[membersApi.softDelete] Token revocation skipped:", err);
+    }
+
+    return { message: "Member archived" };
+  },
+
+  /** Restore a soft deleted member back into the active members list */
+  restore: async (uid: string): Promise<{ message: string }> => {
+    if (!auth.currentUser) {
+      throw new Error("Not authenticated. Please login again.");
+    }
+    await restoreMember(uid);
+    return { message: "Member restored" };
+  },
+
+  /** PERMANENT delete (Auth + Firestore). Reserved for the admin Danger Zone purge. */
   delete: async (uid: string) => {
     console.log("[membersApi.delete] Attempting to delete:", uid);
     
@@ -424,38 +571,7 @@ export const membersApi = {
     }
   },
 
-  revokeTokens: async (uid: string) => {
-    if (import.meta.env.VITE_USE_SERVER_API && auth.currentUser) {
-      const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/admin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({ action: "revokeTokens", uid }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        let errorMsg = "Failed to revoke sessions via admin API";
-        try {
-          const errorData = JSON.parse(text);
-          errorMsg = errorData.error || errorMsg;
-        } catch {
-          errorMsg = `Server returned ${res.status}: ${text.slice(0, 100)}`;
-        }
-        throw new Error(errorMsg);
-      }
-
-      return res.json();
-    }
-
-    // Local fallback: just sign out (limited client-side option)
-    if (!auth.currentUser) throw new Error("No authenticated admin user");
-    console.warn("[membersApi] Token revocation requires server-side API in production");
-    return { message: "Token revocation skipped in local mode" };
-  },
+  revokeTokens: async (uid: string) => revokeTokensInternal(uid),
 
   bulkDelete: async (uids: string[]) => {
     console.log("[membersApi.bulkDelete] Attempting to delete multiple users:", uids.length);
@@ -509,6 +625,11 @@ export const membersApi = {
     return { message: "Firestore documents deleted (Auth records remain in local mode)" };
   },
 
+  /**
+   * DANGER ZONE permanent purge.
+   * Only ever targets ACTIVE members — soft deleted (archived) members are
+   * never touched so their data always stays recoverable.
+   */
   deleteAll: async () => {
     console.log("[membersApi.deleteAll] Fetching all members for cleanup...");
     // Fetch WITHOUT ordering to avoid composite index requirements

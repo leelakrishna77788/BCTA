@@ -53,6 +53,7 @@ const AdminDashboard = lazyWithRetry(() => import("./pages/admin/Dashboard"));
 const MemberList = lazyWithRetry(() => import("./pages/admin/Members/MemberList"));
 const MemberDetail = lazyWithRetry(() => import("./pages/admin/Members/MemberDetail"));
 const AddEditMember = lazyWithRetry(() => import("./pages/admin/Members/AddEditMember"));
+const DeletedMembers = lazyWithRetry(() => import("./pages/admin/Members/DeletedMembers"));
 const AddAdmin = lazyWithRetry(() => import("./pages/admin/Members/AddAdmin"));
 const AdminList = lazyWithRetry(() => import("./pages/admin/Admins/AdminList"));
 const AdminDetail = lazyWithRetry(() => import("./pages/admin/Admins/AdminDetail"));
@@ -72,6 +73,11 @@ const SendNotification = lazyWithRetry(() => import("./pages/admin/Notifications
 const PresidentsList = lazyWithRetry(() => import("./pages/admin/Presidents/PresidentsList"));
 const AddPresident = lazyWithRetry(() => import("./pages/admin/Presidents/AddPresident"));
 const EditPresident = lazyWithRetry(() => import("./pages/admin/Presidents/EditPresident"));
+
+// Shared manual bill / service detail pages (used by both admin and member routes)
+const ServiceBillList = lazyWithRetry(() => import("./pages/bills/ServiceBillList"));
+const ServiceBillForm = lazyWithRetry(() => import("./pages/bills/ServiceBillForm"));
+const ServiceBillView = lazyWithRetry(() => import("./pages/bills/ServiceBillView"));
 
 // Member pages
 const MemberDashboard = lazyWithRetry(() => import("./pages/member/MemberDashboard"));
@@ -231,6 +237,7 @@ function App() {
               {/* Members */}
               <Route path="members" element={<MemberList />} />
               <Route path="members/add" element={<AddEditMember />} />
+              <Route path="members/deleted" element={<DeletedMembers />} />
               <Route path="members/:id" element={<MemberDetail />} />
               <Route path="members/:id/edit" element={<AddEditMember />} />
 
@@ -254,6 +261,12 @@ function App() {
               <Route path="customers" element={<CustomerList />} />
               <Route path="customers/add" element={<AddEditCustomer />} />
               <Route path="customers/:id/edit" element={<AddEditCustomer />} />
+
+              {/* Manual Bills / Service Details */}
+              <Route path="service-bills" element={<ServiceBillList />} />
+              <Route path="service-bills/new" element={<ServiceBillForm />} />
+              <Route path="service-bills/:id" element={<ServiceBillView />} />
+              <Route path="service-bills/:id/edit" element={<ServiceBillForm />} />
 
               {/* Other admin */}
               <Route path="payments" element={<PaymentsDashboard />} />
@@ -283,6 +296,14 @@ function App() {
               <Route path="meetings" element={<MeetingList />} />
               <Route path="scan" element={<ScanQR />} />
               <Route path="payments" element={<MyPayments />} />
+              <Route path="bills" element={<ServiceBillList />} />
+              <Route path="bills/new" element={<ServiceBillForm />} />
+              <Route path="bills/:id" element={<ServiceBillView />} />
+              <Route path="bills/:id/edit" element={<ServiceBillForm />} />
+              {/* Members manage only their own customer records */}
+              <Route path="customers" element={<CustomerList />} />
+              <Route path="customers/add" element={<AddEditCustomer />} />
+              <Route path="customers/:id/edit" element={<AddEditCustomer />} />
               <Route path="complaint" element={<RaiseComplaint />} />
               <Route path="emergency" element={<Emergency />} />
               <Route path="notifications" element={<MyNotifications />} />

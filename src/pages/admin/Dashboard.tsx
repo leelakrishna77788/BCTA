@@ -38,6 +38,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import { adminApi } from "../../services/adminService";
+import { isSoftDeleted } from "../../services/membersService";
 import {
   CardSkeleton,
   TableSkeleton,
@@ -148,9 +149,11 @@ const AdminDashboard: React.FC = () => {
         getDocs(query(collection(db, "payments"), where("month", "==", currentMonth), where("year", "==", currentYear))),
       ]);
 
-      const members = membersSnap.docs.map(
-        (d) => ({ uid: d.id, ...d.data() }) as MemberStat,
-      );
+      const members = membersSnap.docs
+        .filter((d) => !isSoftDeleted(d.data()))
+        .map(
+          (d) => ({ uid: d.id, ...d.data() }) as MemberStat,
+        );
       const meetings = meetingsSnap.docs.map(
         (d) => ({ id: d.id, ...d.data() }) as MeetingStat,
       );

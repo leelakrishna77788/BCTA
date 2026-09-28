@@ -13,6 +13,7 @@ import {
   Award,
 } from "lucide-react";
 import { db } from "../../../firebase/firebaseConfig";
+import { isSoftDeleted } from "../../../services/membersService";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
@@ -107,9 +108,11 @@ const GlobalAttendance: React.FC = () => {
         const uSnap = await getDocs(
           query(collection(db, "users"), where("role", "==", "member")),
         );
-        const uList = uSnap.docs.map(
-          (d) => ({ id: d.id, ...d.data() }) as Member,
-        );
+        const uList = uSnap.docs
+          .filter((d) => !isSoftDeleted(d.data()))
+          .map(
+            (d) => ({ id: d.id, ...d.data() }) as Member,
+          );
         uList.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
         setMembers(uList);
 

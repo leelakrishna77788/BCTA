@@ -3,7 +3,9 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
+  UsersRound,
   CreditCard,
+  FileText,
   Menu,
   Smartphone,
   User,
@@ -25,11 +27,14 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
     { to: "/admin/dashboard", icon: LayoutDashboard, label: t("bottomNav.home") },
     { to: "/admin/members", icon: Users, label: t("bottomNav.members") },
     { to: "/admin/payments", icon: CreditCard, label: t("bottomNav.payments") },
+    { to: "/admin/service-bills", icon: FileText, label: t("bottomNav.bills") },
   ];
 
   const memberNav = [
     { to: "/member/dashboard", icon: LayoutDashboard, label: t("bottomNav.home") },
     { to: "/member/scan", icon: Smartphone, label: t("bottomNav.scan") },
+    { to: "/member/bills", icon: FileText, label: t("bottomNav.bills") },
+    { to: "/member/customers", icon: UsersRound, label: t("bottomNav.customers") },
     { to: "/member/profile", icon: User, label: t("bottomNav.profile") },
   ];
 
