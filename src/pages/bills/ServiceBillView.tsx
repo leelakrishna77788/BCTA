@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import {
@@ -18,6 +18,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { auth } from "../../firebase/firebaseConfig";
 import { getServiceBillById } from "../../services/serviceBillsService";
 import type { SavedServiceBill } from "../../types/serviceBill.types";
 import { formatDateOnly, formatDateTime } from "../../utils/date";
@@ -70,6 +71,7 @@ const Block: React.FC<{
 const ServiceBillView: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { userRole } = useAuth();
   const isAdmin = ["admin", "superadmin"].includes(userRole?.toLowerCase().trim() || "");
   const basePath = isAdmin ? "/admin/service-bills" : "/member/bills";
@@ -87,12 +89,23 @@ const ServiceBillView: React.FC = () => {
         if (cancelled) return;
         if (!data) {
           toast.error(t("serviceBills.errors.notFound"));
+          navigate(basePath, { replace: true });
+          return;
+        }
+        // Frontend ownership guard: non-admins can only view their own bills.
+        // Firestore rules enforce this at the DB level; this gives a clean UX redirect.
+        if (!isAdmin && data.createdByUID && data.createdByUID !== auth.currentUser?.uid) {
+          toast.error(t("serviceBills.errors.notFound"));
+          navigate(basePath, { replace: true });
           return;
         }
         setBill(data);
       } catch (err: any) {
         console.error("[ServiceBillView] load failed:", err);
-        if (!cancelled) toast.error(err.message || t("serviceBills.errors.loadFailed"));
+        if (!cancelled) {
+          toast.error(err.message || t("serviceBills.errors.loadFailed"));
+          navigate(basePath, { replace: true });
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -101,7 +114,7 @@ const ServiceBillView: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [id, t]);
+  }, [id, isAdmin, basePath, navigate, t]);
 
   const handlePrint = () => {
     if (!bill) return;

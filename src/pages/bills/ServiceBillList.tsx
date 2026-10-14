@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import SecurityWarningPopup from "../../components/shared/SecurityWarningPopup";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import {
@@ -121,6 +122,9 @@ const ServiceBillList: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
+      {/* Security Warning Popup */}
+      <SecurityWarningPopup storageKey="securityWarning_bills" />
+
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end justify-between">
         <div>
           <div className="flex items-center gap-2">

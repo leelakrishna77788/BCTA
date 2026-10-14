@@ -56,7 +56,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     { to: "/admin/profile", icon: User, label: t("sidebar.myProfile") },
     { to: "/admin/meetings", icon: CalendarDays, label: t("sidebar.meetings") },
     { to: "/admin/shops", icon: Store, label: t("sidebar.shopsProducts") },
-    { to: "/admin/service-bills", icon: FileText, label: t("sidebar.serviceBills") },
     { to: "/admin/payments", icon: CreditCard, label: t("sidebar.payments") },
     { to: "/admin/complaints", icon: MessageSquareWarning, label: t("sidebar.complaints") },
     { to: "/admin/notifications", icon: Bell, label: t("sidebar.notifications") },

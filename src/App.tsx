@@ -74,7 +74,7 @@ const PresidentsList = lazyWithRetry(() => import("./pages/admin/Presidents/Pres
 const AddPresident = lazyWithRetry(() => import("./pages/admin/Presidents/AddPresident"));
 const EditPresident = lazyWithRetry(() => import("./pages/admin/Presidents/EditPresident"));
 
-// Shared manual bill / service detail pages (used by both admin and member routes)
+// Shared manual bill / service detail pages (used by member routes only)
 const ServiceBillList = lazyWithRetry(() => import("./pages/bills/ServiceBillList"));
 const ServiceBillForm = lazyWithRetry(() => import("./pages/bills/ServiceBillForm"));
 const ServiceBillView = lazyWithRetry(() => import("./pages/bills/ServiceBillView"));
@@ -261,12 +261,6 @@ function App() {
               <Route path="customers" element={<CustomerList />} />
               <Route path="customers/add" element={<AddEditCustomer />} />
               <Route path="customers/:id/edit" element={<AddEditCustomer />} />
-
-              {/* Manual Bills / Service Details */}
-              <Route path="service-bills" element={<ServiceBillList />} />
-              <Route path="service-bills/new" element={<ServiceBillForm />} />
-              <Route path="service-bills/:id" element={<ServiceBillView />} />
-              <Route path="service-bills/:id/edit" element={<ServiceBillForm />} />
 
               {/* Other admin */}
               <Route path="payments" element={<PaymentsDashboard />} />

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import SecurityWarningPopup from "../../../components/shared/SecurityWarningPopup";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import {
@@ -167,6 +168,9 @@ const CustomerList: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-8">
+      {/* Security Warning Popup */}
+      <SecurityWarningPopup storageKey="securityWarning_customers" />
+
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && customerToDelete && createPortal(
         <div

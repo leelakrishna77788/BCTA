@@ -26,8 +26,8 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
   const adminNav = [
     { to: "/admin/dashboard", icon: LayoutDashboard, label: t("bottomNav.home") },
     { to: "/admin/members", icon: Users, label: t("bottomNav.members") },
+    { to: "/admin/customers", icon: UsersRound, label: t("bottomNav.customers") },
     { to: "/admin/payments", icon: CreditCard, label: t("bottomNav.payments") },
-    { to: "/admin/service-bills", icon: FileText, label: t("bottomNav.bills") },
   ];
 
   const memberNav = [

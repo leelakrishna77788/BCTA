@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Camera, FileText, Loader2, Save, Upload, User, Wrench, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { auth } from "../../firebase/firebaseConfig";
 import {
   createServiceBill,
   EMPTY_SERVICE_BILL,
@@ -71,6 +72,13 @@ const ServiceBillForm: React.FC = () => {
           navigate(basePath, { replace: true });
           return;
         }
+        // Frontend ownership guard: non-admins can only edit their own bills.
+        // Firestore rules enforce this at the DB level; this gives a clean UX redirect.
+        if (!isAdmin && bill.createdByUID && bill.createdByUID !== auth.currentUser?.uid) {
+          toast.error(t("serviceBills.errors.notFound"));
+          navigate(basePath, { replace: true });
+          return;
+        }
         const { id: _id, createdByUID, createdByName, createdByRole, createdAt, updatedAt, ...rest } = bill;
         setForm(toFormState(rest as ServiceBillInput));
         if (bill.photoUrl) {
@@ -80,7 +88,10 @@ const ServiceBillForm: React.FC = () => {
         }
       } catch (err: any) {
         console.error("[ServiceBillForm] load failed:", err);
-        if (!cancelled) toast.error(err.message || t("serviceBills.errors.loadFailed"));
+        if (!cancelled) {
+          toast.error(err.message || t("serviceBills.errors.loadFailed"));
+          navigate(basePath, { replace: true });
+        }
       } finally {
         if (!cancelled) setFetching(false);
       }
@@ -89,7 +100,7 @@ const ServiceBillForm: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [id, isEdit, basePath, navigate, t]);
+  }, [id, isEdit, isAdmin, basePath, navigate, t]);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>

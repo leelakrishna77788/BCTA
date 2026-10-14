@@ -20,7 +20,7 @@ import {
   IndianRupee,
 } from "lucide-react";
 import { getDoc, doc } from "firebase/firestore";
-import { db } from "../../../firebase/firebaseConfig";
+import { auth, db } from "../../../firebase/firebaseConfig";
 import { useAuth } from "../../../context/AuthContext";
 import { uploadImage, ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, deleteImage } from "../../../utils/cloudinary";
 import {
@@ -212,6 +212,16 @@ const AddEditCustomer: React.FC = () => {
           const snap = await getDoc(doc(db, "customers", id));
           if (snap.exists()) {
             const d = snap.data();
+
+            // Frontend ownership guard: non-admins may only edit their own records.
+            // Firestore rules enforce this at the DB level too, but we redirect
+            // early here to give a clear UX rather than a raw permission error.
+            if (!isAdmin && d.createdByUID && d.createdByUID !== auth.currentUser?.uid) {
+              toast.error(t("customers.toasts.notFound"));
+              navigate(basePath, { replace: true });
+              return;
+            }
+
             setForm({
               ...EMPTY_FORM,
               name: d.name || "",
@@ -244,13 +254,14 @@ const AddEditCustomer: React.FC = () => {
         } catch (err) {
           console.error("Fetch customer error:", err);
           toast.error(t("customers.toasts.loadError"));
+          navigate(basePath, { replace: true });
         } finally {
           setFetching(false);
         }
       };
       fetchCustomer();
     }
-  }, [id, isEdit, navigate, t, basePath]);
+  }, [id, isEdit, isAdmin, navigate, t, basePath]);
 
   useEffect(() => {
     return () => {
